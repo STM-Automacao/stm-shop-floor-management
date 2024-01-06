@@ -1,0 +1,87 @@
+Boa tarde, Bruno.
+
+Seguem os dados para sua conexão no banco de dados:
+
+Usuário: o mesmo do AD, isto é, o mesmo que você usa para login em seu PC.
+
+IP: 192.168.0.6
+Porta: 1433
+gn68U@X@4o8
+
+Você tem acesso as bases de dados do tipo somente leitura nas tabelas:
+
+AUTOMACAO
+INTRANET
+TOTVSDB (Protheus)
+
+Seguem as queries e principais tabelas do Protheus referentes a manutenção:
+
+BENS (MÁQUINAS) – ST9000
+FAMÍLIA DE BEM – ST6000
+FABRICANTE DO BEM – ST7000
+SERVIÇOS DE MANUTENÇÃO – ST4000
+TIPO DE MANUTENÇÃO – STE000
+AREA DE MANUTENÇÃO – STD000
+ORDENS DE SERVIÇO DE MANUTENÇÃO – STJ000
+
+Exemplos genéricos:
+
+SELECT * FROM ST9000 (NOLOCK) WHERE T9_CODBEM LIKE '%TMF%' AND T9_DTBAIXA = '' AND D_E_L_E_T_ != '*'
+
+SELECT * FROM ST6000 (NOLOCK) WHERE D_E_L_E_T_ != '*'
+
+SELECT * FROM STJ000 (NOLOCK) WHERE TJ_CODBEM LIKE '%TMF%' AND D_E_L_E_T_ != '*'
+
+
+Informações da máquina via Protheus (você pode cruzar depois com a tabela AUTOMACAO):
+
+SELECT TOP 1
+                RTRIM(T9_CODBEM) id_maquina,
+                RTRIM(T9_NOME) nome,
+                RTRIM(T6_NOME) familia,
+                RTRIM(T9_MODELO) modelo,
+                RTRIM(T9_SERIE) serie,
+                RTRIM(T7_NOME) fabricante,
+                RTRIM(T9_ANOFAB) ano_fabricacao,
+                RTRIM(CTT_DESC01) centro_de_custo
+FROM ST9000 ST9 (NOLOCK)
+INNER JOIN CTT000 CTT (NOLOCK) ON CTT_FILIAL = '01  ' AND CTT_CUSTO  = T9_CCUSTO  AND CTT.D_E_L_E_T_ != '*'
+INNER JOIN ST6000 ST6 (NOLOCK) ON  T6_FILIAL = '0101' AND T6_CODFAMI = T9_CODFAMI AND ST6.D_E_L_E_T_ != '*'
+INNER JOIN ST7000 ST7 (NOLOCK) ON  T7_FILIAL = '0101' AND T7_FABRICA = T9_FABRICA AND ST7.D_E_L_E_T_ != '*'
+WHERE
+                T9_FILIAL = '0101' AND
+                T9_FERRAME = 'R' AND
+                T9_DTBAIXA = '' AND 
+                ST9.D_E_L_E_T_ != '*' 
+
+
+Última OS aberta para uma máquina:
+
+SELECT TOP 1
+                RTRIM(TJ_CODBEM) maquina_id,
+                RTRIM(TJ_ORDEM) ultima_os,
+                RTRIM(TJ_DTMRINI) data_ini_os,
+                RTRIM(TJ_HOMRINI) hora_ini_os,
+                RTRIM(TJ_DTMRFIM) data_fim_os,
+                RTRIM(TJ_HOMRFIM) hora_fim_os,
+                RTRIM(TD_NOME) nome_area,
+                RTRIM(T4_NOME) servico,
+                RTRIM(TE_NOME) tipo_manutencao,
+                RTRIM(UPPER(REPLACE(TJ_USUAINI,'.',' '))) usuario_ini,
+                RTRIM(UPPER(REPLACE(TJ_USUAFIM,'.',' '))) usuario_fim
+FROM STJ000 STJ (NOLOCK)
+INNER JOIN STD000 STD (NOLOCK) ON  TD_FILIAL = '0101' AND TD_CODAREA = TJ_CODAREA AND STD.D_E_L_E_T_ != '*'
+INNER JOIN ST4000 ST4 (NOLOCK) ON  T4_FILIAL = '0101' AND T4_SERVICO = TJ_SERVICO AND ST4.D_E_L_E_T_ != '*'
+INNER JOIN STE000 STE (NOLOCK) ON  TE_FILIAL = '0101' AND TE_TIPOMAN = TJ_TIPO AND STE.D_E_L_E_T_ != '*'
+WHERE
+                TJ_FILIAL = '0101' AND
+                TJ_CODBEM = 'TMF001' AND
+                STJ.D_E_L_E_T_ != '*'
+ORDER BY 
+                TJ_ORDEM
+DESC
+
+
+Estou à disposição.
+
+Atenciosamente,
