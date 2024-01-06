@@ -1,0 +1,27 @@
+@import url('https://fonts.googleapis.com/css2?family=Fira+Code&family=Hedvig+Letters+Serif:opsz@12..24&family=Inter&family=Rethink+Sans:wght@400;500;600;700;800&display=swap');
+
+/* ------------------- Fonts ------------------- */
+.fira-code {
+  font-family: 'Fira Code', monospace;
+}
+
+.inter {
+  font-family: 'Inter', sans-serif;
+}
+
+.rethink-sans {
+  font-family: 'Rethink Sans', sans-serif;
+}
+
+.hedvig-letters-serif {
+  font-family: 'Hedvig Letters Serif', serif;
+}
+
+/* ------------------- Colors ------------------- */
+
+
+/* ------------------- Responsibility ------------------- */
+@media (max-width: 768px) {
+  /* ... */
+}
+
