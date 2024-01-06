@@ -4,6 +4,7 @@ Class to read data from the database
 import pandas as pd
 
 # pylint: disable=import-error
+# cSpell:disable
 from Database.connection import Connection
 
 
