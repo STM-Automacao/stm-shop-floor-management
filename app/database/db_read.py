@@ -1,6 +1,8 @@
 """
 Class to read data from the database
 """
+
+# cSpell: words automacao
 import pandas as pd
 
 # pylint: disable=import-error
@@ -44,7 +46,9 @@ class Read(Connection):
             print(f"Error: {error}")
             return None
 
-    def create_automacao_query(self, table: str, where: str = None, orderby: str = None) -> str:
+    def create_automacao_query(
+        self, table: str, where: str = None, orderby: str = None
+    ) -> str:
         """
         Create query to be executed in the database AUTOMACAO.
 

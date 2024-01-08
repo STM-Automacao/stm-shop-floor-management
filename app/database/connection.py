@@ -1,7 +1,7 @@
 """
 Class Connection
 """
-
+# cSpell: words automacao, conexao
 import urllib
 from os import getenv
 
@@ -19,6 +19,18 @@ class Connection:
     def __init__(self):
         """
         Constructor
+
+        Args:
+            user (str): user
+            password (str): password
+            database (str): database
+            driver (str): driver
+            server (str): server
+
+        Usage:
+            >>> from connection import Connection
+            >>> connection = Connection()
+            >>> connection.get_connection()
         """
         self.__user = getenv("PYMSSQL_USER")
         self.__password = getenv("PYMSSQL_PASSWORD")
@@ -29,6 +41,14 @@ class Connection:
     def get_connection_automacao(self):
         """
         Get connection
+
+        Returns:
+            object: connection
+
+        Usage:
+            >>> from connection import Connection
+            >>> connection = Connection()
+            >>> connection.get_connection()
         """
         try:
             params = urllib.parse.quote_plus(
@@ -39,7 +59,9 @@ class Connection:
                 f"PWD={self.__password};"
             )
             # pylint: disable=consider-using-f-string
-            conexao_automacao = create_engine("mssql+pyodbc:///?odbc_connect=%s" % params)
+            conexao_automacao = create_engine(
+                "mssql+pyodbc:///?odbc_connect=%s" % params
+            )
             return conexao_automacao
         # pylint: disable=broad-except
         except Exception as error:
