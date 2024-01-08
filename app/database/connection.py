@@ -1,7 +1,7 @@
 """
 Class Connection
 """
-# cSpell:disable
+# cSpell: words automacao, conexao
 import urllib
 from os import getenv
 
