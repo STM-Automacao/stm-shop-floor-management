@@ -181,3 +181,74 @@ class JoinData:
         )
 
         return df
+
+    def info_cadastro_combine(
+        self, df_info: pd.DataFrame, df_cadastro: pd.DataFrame
+    ) -> pd.DataFrame:
+        """
+        Une os dados de info e cadastro
+
+        Args:
+        -----
+            df_info (pd.DataFrame): Dataframe com os dados de info
+            df_cadastro (pd.DataFrame): Dataframe com os dados de cadastro
+
+        Retorna:
+        --------
+            pd.DataFrame: Dataframe com os dados combinados
+        """
+
+        # Ordenar os dataframes
+        df_info.sort_values(by=["data_hora_registro"], inplace=True)
+        df_cadastro.sort_values(by=["data_hora_registro"], inplace=True)
+
+        # Renomear usuario id
+        df_cadastro.rename(
+            columns={"usuario_id": "usuario_id_maq_cadastro"}, inplace=True
+        )
+        df_info.rename(
+            columns={"usuario_id": "usuario_id_maq_occ"}, inplace=True
+        )
+
+        # Merge asof para unir os dataframes baseado na coluna data_hora_registro
+        df_info = pd.merge_asof(
+            df_info,
+            df_cadastro,
+            on="data_hora_registro",
+            by="maquina_id",
+            direction="backward",
+        )
+
+        # Reordenar as colunas
+        df_info = df_info[
+            [
+                "maquina_id",
+                "linha",
+                "fabrica",
+                "turno",
+                "status",
+                "motivo_id",
+                "motivo_nome",
+                "problema",
+                "solucao",
+                "tempo_registro_min",
+                "data_hora_registro",
+                "data_hora_final",
+                "usuario_id_maq_occ",
+                "data_hora_registro_operador",
+                "usuario_id_maq_cadastro",
+                "domingo_feriado_emenda",
+            ]
+        ]
+
+        # Ordenar pela maquina e hora
+        df_info.sort_values(
+            by=["maquina_id", "data_hora_registro"],
+            ascending=[True, False],
+            inplace=True,
+        )
+
+        # Ajustar o index
+        df_info.reset_index(drop=True, inplace=True)
+
+        return df_info
