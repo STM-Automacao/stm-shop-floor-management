@@ -13,18 +13,18 @@ class CleanData:
     """
     Classe para limpeza dos dados
 
-    Atributos:
-        df (pd.DataFrame): Dataframe com os dados a serem limpos
-
     Métodos:
+    --------
         clean_maq_cadastro: Limpa os dados de cadastro das máquinas
+        clean_maq_info: Limpa os dados de status das máquinas
+        clean_maq_occ: Limpa os dados de ocorrências das máquinas
 
     """
 
     def __init__(self):
         pass
 
-    def clean_maq_cadastro(self, df_cadastro: pd.DataFrame) -> pd.DataFrame:
+    def clean_maq_cadastro(self, cadastro: pd.DataFrame) -> pd.DataFrame:
         """
         Limpa os dados de cadastro das máquinas
 
@@ -55,8 +55,9 @@ class CleanData:
 
 
         """
+
         # Remover rows onde a linha é 0
-        df_cadastro = df_cadastro[df_cadastro["linha"] != 0]
+        df_cadastro = cadastro[cadastro["linha"] != 0]
 
         # Remover linhas duplicadas (erros de cadastro)
         df_cadastro = df_cadastro.drop_duplicates(
@@ -90,9 +91,9 @@ class CleanData:
 
         return df_cadastro
 
-    def clean_maq_info(self, df_info: pd.DataFrame) -> pd.DataFrame:
+    def clean_maq_info(self, info: pd.DataFrame) -> pd.DataFrame:
         """
-        Limpa os dados de cadastro das máquinas
+        Limpa os dados de info das máquinas para paradas
 
         Args:
         -----
@@ -127,8 +128,8 @@ class CleanData:
         """
 
         # Ordenar por maquina_id e data_registro, hora_registro
-        df_info.sort_values(
-            by=["maquina_id", "data_registro", "hora_registro"], inplace=True
+        df_info = info.sort_values(
+            by=["maquina_id", "data_registro", "hora_registro"],
         )
 
         # Criar nova coluna combinando data e hora
@@ -255,9 +256,9 @@ class CleanData:
 
         return df_info
 
-    def clean_maq_occ(self, df_occ: pd.DataFrame) -> pd.DataFrame:
+    def clean_maq_occ(self, occ: pd.DataFrame) -> pd.DataFrame:
         """
-        Limpa os dados de cadastro das máquinas
+        Limpa os dados de ocorrências das máquinas
 
         Args:
         -----
@@ -311,15 +312,15 @@ class CleanData:
             16: "Limpeza Industrial",
         }
 
+        # Modificar coluna motivo_id para int
+        df_occ = occ.astype({"motivo_id": int})
+
         # Unir as colunas de data e hora
         df_occ["data_hora_registro"] = (
             df_occ["data_registro"].astype(str)
             + " "
             + df_occ["hora_registro"].astype(str).str.split(".").str[0]
         )
-
-        # Modificar coluna motivo_id para int
-        df_occ = df_occ.astype({"motivo_id": int})
 
         # Criar coluna motivo_nome com base no dicionário motivos
         df_occ["motivo_nome"] = df_occ["motivo_id"].map(motivos)
@@ -350,3 +351,52 @@ class CleanData:
         ]
 
         return df_occ
+
+    def clean_maq_info_prod(self, info: pd.DataFrame) -> pd.DataFrame:
+        """
+        Limpa os dados de info das máquinas para produção
+        """
+
+        # Ordenar por maquina_id asc, turno asc, data_registro desc, hora_registro desc
+        df_info = info.sort_values(
+            by=["maquina_id", "turno", "data_registro", "hora_registro"],
+            ascending=[True, True, False, False],
+        )
+
+        # Agrupar por maquina_id e turno e manter o ultimo registro de cada grupo
+        df_info = (
+            df_info.groupby(["maquina_id", "turno", "data_registro"])
+            .first()
+            .reset_index()
+        )
+
+        # Criar nova coluna combinando data e hora
+        df_info["data_hora_registro"] = (
+            df_info["data_registro"].astype(str)
+            + " "
+            + df_info["hora_registro"].astype(str).str.split(".").str[0]
+        )
+
+        # Converter coluna data_hora_registro para datetime
+        df_info["data_hora_registro"] = pd.to_datetime(
+            df_info["data_hora_registro"], format="%Y-%m-%d %H:%M:%S"
+        )
+
+        # Remover colunas desnecessárias
+        df_info.drop(
+            columns=[
+                "recno",
+                "status",
+                "ciclo_1_min",
+                "ciclo_15_min",
+                "tempo_parada",
+                "tempo_rodando",
+                "hora_registro",
+            ],
+            inplace=True,
+        )
+
+        # Reiniciar o index
+        df_info.reset_index(drop=True, inplace=True)
+
+        return df_info

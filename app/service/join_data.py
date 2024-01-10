@@ -252,3 +252,50 @@ class JoinData:
         df_info.reset_index(drop=True, inplace=True)
 
         return df_info
+
+    def join_info_prod_cad(
+        self, info: pd.DataFrame, cad: pd.DataFrame
+    ) -> pd.DataFrame:
+        """
+        Une os dados de info e prod
+        """
+
+        # Ordenar os dataframes
+        df_info = info.sort_values(by=["data_hora_registro"])
+        df_cad = cad.sort_values(by=["data_hora_registro"])
+
+        # Unir baseado na coluna data_hora_registro
+        df_info_cad = pd.merge_asof(
+            df_info,
+            df_cad,
+            on="data_hora_registro",
+            by="maquina_id",
+            direction="backward",
+        )
+
+        # Ordenar pela maquina e hora
+        df_info_cad.sort_values(
+            by=["maquina_id", "data_hora_registro"],
+            ascending=[True, False],
+            inplace=True,
+        )
+
+        # Reordenar as colunas
+        df_info_cad = df_info_cad[
+            [
+                "maquina_id",
+                "linha",
+                "fabrica",
+                "turno",
+                "contagem_total_ciclos",
+                "contagem_total_produzido",
+                "data_registro",
+                "usuario_id_maq_cadastro",
+                "data_hora_registro",
+            ]
+        ]
+
+        # Ajustar o index
+        df_info_cad.reset_index(drop=True, inplace=True)
+
+        return df_info_cad
