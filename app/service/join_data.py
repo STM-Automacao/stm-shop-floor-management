@@ -3,7 +3,6 @@
 """
 
 import pandas as pd
-import numpy as np
 
 
 # cSpell: words solucao, usuario
@@ -16,7 +15,7 @@ class JoinData:
         pass
 
     def join_info_occ(
-        self, df_occ: pd.DataFrame, df_info: pd.DataFrame
+        self, occ: pd.DataFrame, info: pd.DataFrame
     ) -> pd.DataFrame:
         """
         Une os dados de info e ocorrência
@@ -32,6 +31,18 @@ class JoinData:
             >>> join_data = JoinData()
             >>> df_info_occ = join_data.join_info_occ(df_occ, df_info)
         """
+
+        df_occ = occ.copy()
+        df_info = info.copy()
+
+        # Garantir que as colunas de data sejam do tipo datetime
+        df_occ["data_hora_registro"] = pd.to_datetime(
+            df_occ["data_hora_registro"]
+        )
+        df_info["data_hora_registro"] = pd.to_datetime(
+            df_info["data_hora_registro"]
+        )
+        df_info["data_hora_final"] = pd.to_datetime(df_info["data_hora_final"])
 
         # Criar uma função para ser usada em cada linha do dataframe
         def merge_rows(row):
@@ -78,12 +89,46 @@ class JoinData:
             "status",
         ] = "rodando"
 
+        # Definir o status como 12, motivo_nome "Parada Programada" e problema "Domingo/Feriado"
+        # para os domingos e feriados onde o motivo_nome é nulo
+        df_info.loc[
+            (df_info["domingo_feriado_emenda"])
+            & (df_info["tempo_registro_min"] >= 478),
+            ["status", "motivo_id", "motivo_nome", "problema"],
+        ] = ["parada", 12, "Parada Programada", "Domingo/Feriado"]
+
+        # Definir como motivo_id 12 e motivo_nome "Parada Programada"
+        # se o problema for "Parada Programada"
+        df_info.loc[
+            df_info["problema"] == "Parada Programada",
+            ["motivo_id", "motivo_nome"],
+        ] = [12, "Parada Programada"]
+
+        # Reordenar as colunas
+        df_info = df_info[
+            [
+                "maquina_id",
+                "turno",
+                "status",
+                "motivo_id",
+                "motivo_nome",
+                "problema",
+                "solucao",
+                "tempo_registro_min",
+                "data_hora_registro",
+                "data_hora_final",
+                "usuario_id",
+                "data_hora_registro_operador",
+                "domingo_feriado_emenda",
+            ]
+        ]
+
         # Ajustar o index
         df_info.reset_index(drop=True, inplace=True)
 
         return df_info
 
-    def adjust_position(self, df: pd.DataFrame) -> pd.DataFrame:
+    def adjust_position(self, info: pd.DataFrame) -> pd.DataFrame:
         """
         Ajusta a posição das colunas
 
@@ -98,92 +143,71 @@ class JoinData:
             >>> df = join_data.adjust_position(df)
         """
 
-        # Criar uma coluna parada_inicio como bool para identificar o início de uma parada
-        df["parada_inicio"] = df["status"].eq("parada") & df[
-            "status"
-        ].shift().eq("rodando")
+        df = info.copy()
 
-        # Criar uma coluna parada_anterior como bool para identificar a parada anterior
-        df["parada_anterior"] = (
-            df.groupby("maquina_id")
-            .apply(
-                lambda group: group.apply(
-                    lambda row: row.name if row["parada_inicio"] else np.nan,
-                    axis=1,
-                )
-            )
-            .reset_index(level=0, drop=True)
-        )
+        # Listar paradas que podem ter sido lançadas adiantadas
+        paradas_adiantadas = [2, 3, 4, 5, 6, 10, 11, 13, 15, 17]
 
-        # Preencher os valores nulos de parada_anterior com o último valor válido
-        df["parada_anterior"] = df.groupby("maquina_id")[
-            ["parada_anterior"]
-        ].ffill()
-
-        # Criar colunas para preparar o movimento das linhas para correção
-        df["motivo_id_moved"] = df.groupby("parada_anterior")[
-            ["motivo_id"]
-        ].transform("first")
-        df["motivo_nome_moved"] = df.groupby("parada_anterior")[
-            ["motivo_nome"]
-        ].transform("first")
-        df["problema_moved"] = df.groupby("parada_anterior")[
-            ["problema"]
-        ].transform("first")
-        df["solucao_moved"] = df.groupby("parada_anterior")[
-            ["solucao"]
-        ].transform("first")
-        df["data_hora_registro_operador_moved"] = df.groupby(
-            "parada_anterior"
-        )[["data_hora_registro_operador"]].transform("first")
-        df["usuario_id_moved"] = df.groupby("parada_anterior")[
-            ["usuario_id"]
-        ].transform("first")
-
-        # Preencher valores nulos com os valores movidos
-        df["motivo_id"] = df["motivo_id"].fillna(df["motivo_id_moved"])
-        df["motivo_nome"] = df["motivo_nome"].fillna(df["motivo_nome_moved"])
-        df["problema"] = df["problema"].fillna(df["problema_moved"])
-        df["solucao"] = df["solucao"].fillna(df["solucao_moved"])
-        df["data_hora_registro_operador"] = df[
-            "data_hora_registro_operador"
-        ].fillna(df["data_hora_registro_operador_moved"])
-        df["usuario_id"] = df["usuario_id"].fillna(df["usuario_id_moved"])
-
-        # Remover o motivo_id, motivo_nome e problema caso o status seja rodando
+        # Se na linha anterior o motivo_id for uma parada adiantada,
+        # e o status for rodando, copiar o motivo_id
+        # e motivo_nome para a linha atual
         df.loc[
-            df["status"] == "rodando",
+            (df["motivo_id"].shift(1).isin(paradas_adiantadas))
+            & (df["status"].shift(1) == "rodando"),
             [
                 "motivo_id",
                 "motivo_nome",
                 "problema",
+                "solucao",
                 "data_hora_registro_operador",
                 "usuario_id",
             ],
-        ] = np.nan
+        ] = df[
+            [
+                "motivo_id",
+                "motivo_nome",
+                "problema",
+                "solucao",
+                "data_hora_registro_operador",
+                "usuario_id",
+            ]
+        ].shift(
+            1
+        )
 
-        # Preencher os valores nulos com np.nan
-        df.fillna(np.nan, inplace=True)
+        # Definir paradas marcadas atrasadas
+        paradas_atrasadas = [1, 7, 8]
 
-        # Remover as colunas desnecessárias
-        df.drop(
-            columns=[
-                "parada_inicio",
-                "parada_anterior",
-                "motivo_id_moved",
-                "motivo_nome_moved",
-                "problema_moved",
-                "solucao_moved",
-                "data_hora_registro_operador_moved",
-                "usuario_id_moved",
+        # Corrigir paradas atrasadas
+        df.loc[
+            (df["motivo_id"].shift(-1).isin(paradas_atrasadas))
+            & (df["status"].shift(-1) == "rodando")
+            & (df["motivo_id"]),
+            [
+                "motivo_id",
+                "motivo_nome",
+                "problema",
+                "solucao",
+                "data_hora_registro_operador",
+                "usuario_id",
             ],
-            inplace=True,
+        ] = df[
+            [
+                "motivo_id",
+                "motivo_nome",
+                "problema",
+                "solucao",
+                "data_hora_registro_operador",
+                "usuario_id",
+            ]
+        ].shift(
+            -1
         )
 
         return df
 
     def info_cadastro_combine(
-        self, df_info: pd.DataFrame, df_cadastro: pd.DataFrame
+        self, info: pd.DataFrame, cadastro: pd.DataFrame
     ) -> pd.DataFrame:
         """
         Une os dados de info e cadastro
@@ -199,8 +223,8 @@ class JoinData:
         """
 
         # Ordenar os dataframes
-        df_info.sort_values(by=["data_hora_registro"], inplace=True)
-        df_cadastro.sort_values(by=["data_hora_registro"], inplace=True)
+        df_info = info.sort_values(by=["data_hora_registro"])
+        df_cadastro = cadastro.sort_values(by=["data_hora_registro"])
 
         # Renomear usuario id
         df_cadastro.rename(
@@ -243,8 +267,7 @@ class JoinData:
 
         # Ordenar pela maquina e hora
         df_info.sort_values(
-            by=["maquina_id", "data_hora_registro"],
-            ascending=[True, False],
+            by=["maquina_id", "data_hora_registro", "turno"],
             inplace=True,
         )
 
@@ -275,9 +298,14 @@ class JoinData:
 
         # Ordenar pela maquina e hora
         df_info_cad.sort_values(
-            by=["maquina_id", "data_hora_registro"],
+            by=["maquina_id", "data_hora_registro", "turno"],
             ascending=[True, False],
             inplace=True,
+        )
+
+        # Renomear usuario id
+        df_info_cad.rename(
+            columns={"usuario_id": "usuario_id_maq_cadastro"}, inplace=True
         )
 
         # Reordenar as colunas

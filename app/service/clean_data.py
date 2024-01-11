@@ -2,8 +2,7 @@
     Módulo para limpeza dos dados
 """
 
-# desabilitar o cSpell nas palavras entre aspas abaixo
-# cSpell:words usuario, solucao
+# cSpell:words usuario, solucao, dayofweek, sabado
 
 import pandas as pd
 import numpy as np
@@ -91,7 +90,7 @@ class CleanData:
 
         return df_cadastro
 
-    def clean_maq_info(self, info: pd.DataFrame) -> pd.DataFrame:
+    def maq_info(self, info: pd.DataFrame) -> pd.DataFrame:
         """
         Limpa os dados de info das máquinas para paradas
 
@@ -144,16 +143,12 @@ class CleanData:
             columns=["recno", "data_registro", "hora_registro"]
         )
 
-        # Corrigindo erros da DB (horário dos turnos) - vai se tornar obsoleto à partir de Fev/24
-        df_info.sort_values(
-            by=["maquina_id", "data_hora_registro"], inplace=True
-        )
-        df_info = df_info[
-            ~(
-                (df_info["turno"] == "VES")
-                & (df_info["maquina_id"] != df_info["maquina_id"].shift())
-            )
-        ]  # descarta a primeira linha se o turno for VES
+        # Se for a primeira linha de cada máquina e o turno for VES, alterar para NOT
+        df_info.loc[
+            (df_info["turno"] == "VES")
+            & (df_info["maquina_id"] != df_info["maquina_id"].shift()),
+            "turno",
+        ] = "NOT"
 
         # Criar nova coluna status_change para identificar mudança de status
         df_info["status_change"] = df_info["status"].ne(
@@ -230,7 +225,7 @@ class CleanData:
         )  # para evitar erros de comparação
         df_info.loc[
             (df_info["status"] == "true")
-            & (df_info["tempo_registro_min"] <= 10),
+            & (df_info["tempo_registro_min"] < 10),
             "status",
         ] = "in_test"
 
@@ -255,6 +250,174 @@ class CleanData:
         df_info.reset_index(drop=True, inplace=True)
 
         return df_info
+
+    def get_stops_data(self, info: pd.DataFrame) -> pd.DataFrame:
+        """
+        Retorna um dataframe com os dados de paradas consolidados
+
+        Args:
+        -----
+            df (pd.DataFrame): Dataframe com os dados de paradas
+
+        Retorna:
+        --------
+            pd.DataFrame: Dataframe com os dados de paradas consolidados
+
+        Exemplo:
+        --------
+
+            >>> from app.service.get_stops_data import GetStopsData
+            >>> import pandas as pd
+            >>> get_stops_data = GetStopsData()
+            >>> df_stops = get_stops_data.get_stops_data(df)
+
+        """
+
+        # Copiar o dataframe
+        df = info.copy()
+
+        # Transformar data e hora em datetime
+        df["data_hora_registro"] = pd.to_datetime(df["data_hora_registro"])
+        df["data_hora_final"] = pd.to_datetime(df["data_hora_final"])
+
+        # Ordenar por maquina_id, turno, data_hora_registro
+        df.sort_values(
+            by=["maquina_id", "turno", "data_hora_registro"], inplace=True
+        )
+
+        # Criar coluna data_hora_registro_turno para identificar onde está rodando
+        df["rodando"] = df["status"] == "rodando"
+
+        # Cria uma coluna grupo para identificar os grupos de paradas
+        df["grupo"] = (
+            (df["rodando"] != df["rodando"].shift())
+            | (df["maquina_id"] != df["maquina_id"].shift())
+            | (df["turno"] != df["turno"].shift())
+            | (
+                df["data_hora_registro"].dt.date
+                != df["data_hora_registro"].shift().dt.date
+            )
+        )
+
+        # Soma o tempo de parada por grupo
+        df["grupo"] = df["grupo"].cumsum()
+
+        # Agregar os dados por grupo
+        df = (
+            df.groupby("grupo")
+            .agg(
+                {
+                    "maquina_id": "first",
+                    "turno": "first",
+                    "status": "first",
+                    "tempo_registro_min": "sum",
+                    "data_hora_registro": "first",
+                    "data_hora_final": "last",
+                }
+            )
+            .reset_index(drop=True)
+        )
+
+        # Ordenar por maquina_id, data_hora_registro
+        df.sort_values(by=["maquina_id", "data_hora_registro"], inplace=True)
+
+        # Substituir status in_test por parada
+        df.loc[df["status"] == "in_test", "status"] = "parada"
+
+        # Substituir valores nulos por np.nan
+        df.fillna(np.nan, inplace=True)
+
+        # Reiniciar o index
+        df.reset_index(drop=True, inplace=True)
+
+        return df
+
+    def dayofweek_adjust(self, df: pd.DataFrame) -> pd.DataFrame:
+        """
+        Ajusta o dia da semana para incluir paradas programadas
+
+        Args:
+        -----
+            df (pd.DataFrame): Dataframe com os dados de paradas
+
+        Retorna:
+        --------
+            pd.DataFrame: Dataframe com os dados de paradas ajustados
+
+        Exemplo:
+        --------
+
+            >>> from app.service.get_stops_data import GetStopsData
+            >>> import pandas as pd
+            >>> get_stops_data = GetStopsData()
+            >>> df_stops = get_stops_data.dayofweek_adjust(df)
+
+        """
+
+        # Garantir que a coluna data_hora_registro é datetime
+        df["data_hora_registro"] = pd.to_datetime(df["data_hora_registro"])
+
+        # Identificar os domingos
+        df["domingo"] = df["data_hora_registro"].dt.dayofweek == 6
+
+        # Listar feriados
+        feriados = pd.read_csv("../database/feriados.csv")
+
+        # Converter a coluna data para datetime
+        feriados["feriados"] = pd.to_datetime(feriados["feriados"])
+
+        # Identificar os feriados
+        df["feriado"] = df["data_hora_registro"].dt.date.isin(
+            feriados["feriados"].dt.date
+        )
+
+        # Identificar os dias após os feriados
+        feriados["dia_apos_feriado"] = feriados["feriados"] + pd.Timedelta(
+            days=1
+        )
+        df["dia_apos_feriado"] = df["data_hora_registro"].dt.date.isin(
+            feriados["dia_apos_feriado"].dt.date
+        )
+
+        # Identificar sábados
+        df["sabado"] = df["data_hora_registro"].dt.dayofweek == 5
+
+        # Criar nova coluna unindo domingo, feriado e dia após feriado e descartar
+        # as colunas domingo, feriado e dia após feriado
+        df["domingo_feriado_emenda"] = (
+            df["domingo"]
+            | df["feriado"]
+            | df["dia_apos_feriado"]
+            | df["sabado"]
+        )
+        df.drop(
+            columns=["domingo", "feriado", "dia_apos_feriado"], inplace=True
+        )
+
+        return df
+
+    def clean_maq_info(self, info: pd.DataFrame) -> pd.DataFrame:
+        """Agrupa funções de limpeza dos dados de info das máquinas para parada
+
+        Funções:
+            maq_info
+            get_stops_data
+            dayofweek_adjust
+
+        Args:
+            info (pd.DataFrame): Info das máquinas do Banco de Dados
+
+        Returns:
+            pd.DataFrame: Dataframe com os dados limpos
+        """
+
+        df_info = info.copy()
+
+        df_clean = self.maq_info(df_info)
+        df_clean = self.get_stops_data(df_clean)
+        df_clean = self.dayofweek_adjust(df_clean)
+
+        return df_clean
 
     def clean_maq_occ(self, occ: pd.DataFrame) -> pd.DataFrame:
         """
