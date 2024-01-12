@@ -1,6 +1,9 @@
 """
 Módulo que prepara dados para os indicadores
 """
+from datetime import datetime
+
+import numpy as np
 import pandas as pd
 
 # cSpell: words solucao, usuario, producao, eficiencia
@@ -116,6 +119,31 @@ class TimesData:
 
         return info_stops
 
+    def get_elapsed_time(self, turno):
+        """
+        Função para obter o tempo decorrido desde o início do turno atual.
+        """
+        now = datetime.now()
+        if turno == "MAT" and 8 <= now.hour < 16:
+            shift_start = now.replace(
+                hour=8, minute=0, second=0, microsecond=0
+            )
+        elif turno == "VES" and 16 <= now.hour < 24:
+            shift_start = now.replace(
+                hour=16, minute=0, second=0, microsecond=0
+            )
+        elif turno == "NOT" and (now.hour < 8 or now.hour >= 24):
+            shift_start = now.replace(
+                hour=0, minute=0, second=0, microsecond=0
+            )
+        else:
+            return 480  # retorna o tempo padrão se não estiver no turno atual
+
+        elapsed_time = now - shift_start
+        return (
+            elapsed_time.total_seconds() / 60
+        )  # retorna o tempo decorrido em minutos
+
     def get_eff_data(
         self, df_info: pd.DataFrame, df_prod: pd.DataFrame
     ) -> pd.DataFrame:
@@ -192,8 +220,13 @@ class TimesData:
         ] = 0
 
         # Criar coluna com tempo esperado de produção
-        df_eff_times_desc["tempo_esperado_min"] = (
-            480 - df_eff_times_desc["desconto_min"]
+        df_eff_times_desc["tempo_esperado_min"] = df_eff_times_desc.apply(
+            lambda row: np.floor(
+                self.get_elapsed_time(row["turno"]) - row["desconto_min"]
+            )
+            if row["data_registro"] == datetime.now().date()
+            else 480 - row["desconto_min"],
+            axis=1,
         )
 
         # Produção esperada por turno
@@ -300,8 +333,13 @@ class TimesData:
         ] = 0
 
         # Criar coluna com tempo esperado de produção
-        df_perf_times_desc["tempo_esperado_min"] = (
-            480 - df_perf_times_desc["desconto_min"]
+        df_perf_times_desc["tempo_esperado_min"] = df_perf_times_desc.apply(
+            lambda row: np.floor(
+                self.get_elapsed_time(row["turno"]) - row["desconto_min"]
+            )
+            if row["data_registro"] == datetime.now().date()
+            else 480 - row["desconto_min"],
+            axis=1,
         )
 
         # Calcular a performance
@@ -311,3 +349,106 @@ class TimesData:
         )
 
         return df_perf_times_desc
+
+    def get_reparos_data(
+        self, df_info: pd.DataFrame, df_prod: pd.DataFrame
+    ) -> pd.DataFrame:
+        """
+        Método para calcular os dados de reparo.
+
+        Este método recebe dois DataFrames, um contendo informações de máquina e
+        e outro contendo informações de produção,
+        e retorna um DataFrame com informações de Reparo.
+
+        ### Parâmetros:
+        df_info (pd.DataFrame): DataFrame contendo informações de maquina
+
+        df_prod (pd.DataFrame): DataFrame contendo informações de produção.
+
+        ### Retorna:
+        pd.DataFrame: DataFrame com informações de performance.
+
+        ### Exemplo de uso:
+        ```
+        times_data = TimesData()
+        df_info = pd.dataframe()
+        df_prod = pd.dataframe()
+        df_result = times_data.get_reparos_data(df_info, df_prod)
+        ```
+        """
+
+        df_rep_times_desc = self.__get_times_discount(df_info, self.desc_rep)
+        df_prod_total = df_prod.copy()
+
+        # Descartar colunas desnecessárias de df_prod
+        df_prod_total.drop(
+            columns=[
+                "contagem_total_ciclos",
+                "contagem_total_produzido",
+                "data_hora_registro",
+                "usuario_id_maq_cadastro",
+            ],
+            inplace=True,
+        )
+
+        # Remover as linhas que não afetam o reparo
+        df_rep_times_desc = df_rep_times_desc[
+            df_rep_times_desc["motivo_id"].isin(self.af_rep)
+        ]
+
+        # Criar coluna 'afeta' para identificar as paradas que afetam o reparo
+        df_rep_times_desc["afeta"] = df_rep_times_desc["excedente"]
+
+        # Se desconto for nulo, substituir afeta pelo valor de tempo_registro_min
+        df_rep_times_desc.loc[
+            df_rep_times_desc["desconto_min"].isnull(), "afeta"
+        ] = df_rep_times_desc["tempo_registro_min"]
+
+        # Agrupar por maquina_id, data_registro e turno e somar o tempo de
+        # desconto e o afeta
+        df_rep_times_desc = (
+            df_rep_times_desc.groupby(
+                ["maquina_id", "linha", "fabrica", "data_registro", "turno"]
+            )
+            .agg(
+                {
+                    "desconto_min": "sum",
+                    "afeta": "sum",
+                }
+            )
+            .reset_index()
+        )
+
+        # Fazer merge com df_prod_total
+        df_rep_times_desc = pd.merge(
+            df_prod_total,
+            df_rep_times_desc,
+            on=["maquina_id", "linha", "fabrica", "turno", "data_registro"],
+            how="left",
+        )
+
+        # Ajustar desconto_min para 0 quando for nulo
+        df_rep_times_desc.loc[
+            df_rep_times_desc["desconto_min"].isnull(), "desconto_min"
+        ] = 0
+
+        # Ajustar afeta para 0 quando for nulo
+        df_rep_times_desc.loc[df_rep_times_desc["afeta"].isnull(), "afeta"] = 0
+
+        # Criar coluna com tempo esperado de produção
+        df_rep_times_desc["tempo_esperado_min"] = df_rep_times_desc.apply(
+            lambda row: np.floor(
+                self.get_elapsed_time(row["turno"]) - row["desconto_min"]
+            )
+            if row["data_registro"] == datetime.now().date()
+            else 480 - row["desconto_min"],
+            axis=1,
+        )
+
+        # Calcular o reparo
+        df_rep_times_desc["reparo"] = (
+            df_rep_times_desc["afeta"]
+            / df_rep_times_desc["tempo_esperado_min"]
+        )
+
+        return df_rep_times_desc
