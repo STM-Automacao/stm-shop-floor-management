@@ -43,7 +43,7 @@ class TimesData:
         # Lista com os motivos de parada que são considerados para Reparos
         self.af_rep = [7, 8, 11]
 
-    def __get_times_disc(
+    def __get_times_discount(
         self, info: pd.DataFrame, desc_pcp: dict[int, int]
     ) -> pd.DataFrame:
         """
@@ -143,7 +143,7 @@ class TimesData:
         ```
         """
 
-        df_eff_times_desc = self.__get_times_disc(df_info, self.desc_eff)
+        df_eff_times_desc = self.__get_times_discount(df_info, self.desc_eff)
         df_prod_total = df_prod.copy()
         ciclo_ideal = 10.6
 
@@ -239,7 +239,7 @@ class TimesData:
         ```
         """
 
-        df_perf_times_desc = self.__get_times_disc(df_info, self.desc_perf)
+        df_perf_times_desc = self.__get_times_discount(df_info, self.desc_perf)
         df_prod_total = df_prod.copy()
 
         # Descartar colunas desnecessárias de df_prod
