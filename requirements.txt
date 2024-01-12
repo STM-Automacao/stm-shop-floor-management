@@ -8,6 +8,7 @@ dash-mantine-components
 fuzzywuzzy
 ipykernel
 Levenshtein==0.23.0
+matplotlib
 numpy
 pandas
 plotly
