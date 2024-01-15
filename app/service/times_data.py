@@ -72,6 +72,11 @@ class TimesData:
 
         info_stops = info.copy()
 
+        # Certificar que data_hora_registro é do tipo datetime
+        info_stops["data_hora_registro"] = pd.to_datetime(
+            info_stops["data_hora_registro"]
+        )
+
         # Adicionar coluna com descontos de parada
         info_stops["desconto_min"] = info_stops["motivo_id"].map(desc_pcp)
 

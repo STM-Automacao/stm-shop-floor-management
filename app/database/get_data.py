@@ -3,7 +3,12 @@
     É utilizada para fazer a leitura em segundo plano, sem que o usuário perceba.
 """
 import pandas as pd
+
+# pylint: disable=E0401
 from database.db_read import Read
+from service.clean_data import CleanData
+from service.join_data import JoinData
+from service.problems_chart_adjust import ProblemsChartAdjust
 
 
 # cSpell: words automacao, ocorrencia
@@ -15,10 +20,14 @@ class GetData:
 
     def __init__(self):
         self.db_read = Read()
+        self.clean_df = CleanData()
+        self.join_df = JoinData()
+        self.problems_chart_adjust = ProblemsChartAdjust()
 
-    def get_data(self):
+    def get_data(self) -> tuple:
         """
         Realiza a leitura dos dados do banco de dados.
+        Retorna na ordem: df_occ, df_info, df_cadastro
         """
 
         # Dia de hoje
@@ -63,3 +72,33 @@ class GetData:
         print("Ok...")
 
         return df_occ, df_info, df_cadastro
+
+    def get_cleaned_data(self) -> tuple:
+        """
+        Recebe a leitura dos dados do banco de dados e faz a limpeza dos dados.
+        Retorna na ordem: df_maq_info_cadastro, df_maq_info_prod_cad
+        """
+        data = self.get_data()
+        # Dados do banco de dados (dataframe)
+        df_occ, df_info, df_cadastro = data
+        print("========== Limpando dados ==========")
+        # Limpeza inicial dos dados
+        df_occ = self.clean_df.clean_maq_occ(df_occ)
+        df_info_cleaned = self.clean_df.clean_maq_info(df_info)
+        df_info_prod = self.clean_df.clean_maq_info_prod(df_info)
+        df_cadastro = self.clean_df.clean_maq_cadastro(df_cadastro)
+        print("Ok...")
+        print("========== Juntando dados ==========")
+        # Junção dos dados
+        df_info_occ = self.join_df.join_info_occ(df_occ, df_info_cleaned)
+        df_info_occ = self.join_df.adjust_position(df_info_occ)
+        df_info_occ = self.problems_chart_adjust.problems_adjust(df_info_occ)
+        df_maq_info_cadastro = self.join_df.info_cadastro_combine(
+            df_info_occ, df_cadastro
+        )
+        df_maq_info_prod_cad = self.join_df.join_info_prod_cad(
+            df_info_prod, df_cadastro
+        )
+        print(f"Ok ás {pd.to_datetime('today')}")
+        # Retorno dos dados
+        return df_maq_info_cadastro, df_maq_info_prod_cad

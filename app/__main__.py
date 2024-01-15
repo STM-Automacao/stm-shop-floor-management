@@ -4,6 +4,8 @@
     A aplicação Dash é baseada em Flask e React.
     Para mais informações, acesse: https://dash.plotly.com/
 """
+
+# cSpell: words apscheduler,
 from threading import Lock
 
 import dash_bootstrap_components as dbc
@@ -12,14 +14,17 @@ from dash import callback, dcc, html
 from dash.dependencies import Input, Output
 
 # pylint: disable=E0401
-from database import get_data
+from database.get_data import GetData
 from flask_caching import Cache
 from pages import main_page
 
 from app import app
 
-# ========================================= Cache ========================================= #
 lock = Lock()
+get_data = GetData()
+
+# ========================================= Cache ========================================= #
+
 cache = Cache(
     app.server,
     config={
@@ -30,23 +35,22 @@ cache = Cache(
 )
 
 
-# @cache.memoize(timeout=60)  # Cache por 1 hora
-def get_df():
-    data = get_data.GetData()
-    df1, df2, df3 = data.get_data()
-    return df1, df2, df3
-
-
 def update_cache():
+    """
+    Função que atualiza o cache com os dados do banco de dados.
+    Agiliza o carregamento dos dados na aplicação.
+    """
     with lock:
-        df1, df2, df3 = get_df()
+        cache.clear()
+        df1, df2 = get_data.get_cleaned_data()
         cache.set("df1", df1.to_json(date_format="iso", orient="split"))
         cache.set("df2", df2.to_json(date_format="iso", orient="split"))
-        cache.set("df3", df3.to_json(date_format="iso", orient="split"))
 
 
 scheduler = BackgroundScheduler()
-scheduler.add_job(func=update_cache, trigger="interval", seconds=60)
+scheduler.add_job(
+    func=update_cache, trigger="interval", seconds=900
+)  # Atualiza a cada 15 minutos
 scheduler.start()
 
 
@@ -56,8 +60,7 @@ content = html.Div(id="page-content")
 app.layout = dbc.Container(
     children=[
         dcc.Store(id="store-info"),
-        dcc.Store(id="store-occ"),
-        dcc.Store(id="store-cadastro"),
+        dcc.Store(id="store-prod"),
         html.H1("Shop Floor Management", className="text-center"),
         html.Hr(),
         dbc.Row(
@@ -70,21 +73,24 @@ app.layout = dbc.Container(
 )
 
 
+# ========================================= Callbacks ========================================= #
 @callback(
     [
         Output("store-info", "data"),
-        Output("store-occ", "data"),
-        Output("store-cadastro", "data"),
+        Output("store-prod", "data"),
     ],
     Input("store-info", "data"),
 )
 def update_store(_data):
-    print("Updating store...")
-    df1 = cache.get("df1")
-    df2 = cache.get("df2")
-    df3 = cache.get("df3")
+    """
+    Função que atualiza o store com os dados do banco de dados.
+    Utiliza dados do cache para agilizar o carregamento.
+    """
+    df_maq_info_cadastro = cache.get("df1")
+    df_maq_info_prod_cad = cache.get("df2")
+    print("========== Atualizando store ==========")
 
-    return df1, df2, df3
+    return df_maq_info_cadastro, df_maq_info_prod_cad
 
 
 # ======================================== Run App ======================================== #

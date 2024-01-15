@@ -4,8 +4,17 @@
 
 # cSpell:words usuario, solucao, dayofweek, sabado
 
-import pandas as pd
+import os
+
 import numpy as np
+import pandas as pd
+
+script_dir = os.path.dirname(
+    os.path.abspath(__file__)
+)  # <-- absolute dir the script is in
+file_path = os.path.join(
+    script_dir, "feriados.csv"
+)  # <-- absolute dir the script is in
 
 
 class CleanData:
@@ -361,7 +370,7 @@ class CleanData:
         df["domingo"] = df["data_hora_registro"].dt.dayofweek == 6
 
         # Listar feriados
-        feriados = pd.read_csv("../database/feriados.csv")
+        feriados = pd.read_csv(file_path)
 
         # Converter a coluna data para datetime
         feriados["feriados"] = pd.to_datetime(feriados["feriados"])
@@ -519,7 +528,6 @@ class CleanData:
         """
         Limpa os dados de info das máquinas para produção
         """
-
         # Ordenar por maquina_id asc, turno asc, data_registro desc, hora_registro desc
         df_info = info.sort_values(
             by=["maquina_id", "turno", "data_registro", "hora_registro"],

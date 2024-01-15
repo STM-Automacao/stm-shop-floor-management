@@ -4,10 +4,24 @@ Gráficos de indicadores
 # cSpell: words mcolors, eficiencia, vmin, vmax, cmap, figsize, linewidths, annot, cbar, xlabel,
 # cSpell: words ylabel, xticks, yticks
 
+import os
+
+import matplotlib
 import matplotlib.colors as mcolors
 import matplotlib.pyplot as plt
 import pandas as pd
+import plotly.graph_objects as go
+import plotly.tools as tls
 import seaborn as sns
+
+matplotlib.use("Agg")
+
+script_dir = os.path.dirname(
+    os.path.abspath(__file__)
+)  # <-- absolute dir the script is in
+file_path = os.path.join(
+    script_dir, "../assets/"
+)  # <-- absolute dir the script is in
 
 
 class Indicators:
@@ -96,7 +110,10 @@ class Indicators:
         plt.gca().tick_params(axis="both", which="both", length=0)
 
         # plt.show()
-        return plt
+
+        plotly_fig = tls.mpl_to_plotly(plt.gcf())
+
+        return go.Figure(plotly_fig)
 
     def performance_graphic(self, dataframe: pd.DataFrame, meta: int):
         """
