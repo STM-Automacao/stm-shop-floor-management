@@ -211,6 +211,14 @@ class TimesData:
             .reset_index()
         )
 
+        # Converta a coluna "data_registro" para data em ambos os dataframes
+        df_eff_times_desc["data_registro"] = pd.to_datetime(
+            df_eff_times_desc["data_registro"]
+        ).dt.date
+        df_prod_total["data_registro"] = pd.to_datetime(
+            df_prod_total["data_registro"]
+        ).dt.date
+
         # Fazer merge com df_prod_total
         df_eff_times_desc = pd.merge(
             df_prod_total,
@@ -319,6 +327,14 @@ class TimesData:
             .reset_index()
         )
 
+        # Converta a coluna "data_registro" para data em ambos os dataframes
+        df_perf_times_desc["data_registro"] = pd.to_datetime(
+            df_perf_times_desc["data_registro"]
+        ).dt.date
+        df_prod_total["data_registro"] = pd.to_datetime(
+            df_prod_total["data_registro"]
+        ).dt.date
+
         # Fazer merge com df_prod_total
         df_perf_times_desc = pd.merge(
             df_prod_total,
@@ -355,7 +371,7 @@ class TimesData:
 
         return df_perf_times_desc
 
-    def get_reparos_data(
+    def get_repair_data(
         self, df_info: pd.DataFrame, df_prod: pd.DataFrame
     ) -> pd.DataFrame:
         """
@@ -423,6 +439,14 @@ class TimesData:
             )
             .reset_index()
         )
+
+        # Converta a coluna "data_registro" para data em ambos os dataframes
+        df_rep_times_desc["data_registro"] = pd.to_datetime(
+            df_rep_times_desc["data_registro"]
+        ).dt.date
+        df_prod_total["data_registro"] = pd.to_datetime(
+            df_prod_total["data_registro"]
+        ).dt.date
 
         # Fazer merge com df_prod_total
         df_rep_times_desc = pd.merge(

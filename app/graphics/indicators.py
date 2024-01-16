@@ -2,17 +2,14 @@
 Gráficos de indicadores
 """
 # cSpell: words mcolors, eficiencia, vmin, vmax, cmap, figsize, linewidths, annot, cbar, xlabel,
-# cSpell: words ylabel, xticks, yticks
+# cSpell: words ylabel, xticks, yticks, colorscale, hoverongaps, zmin, zmax, showscale, xgap, ygap,
+# cSpell: words nticks, tickmode, tickvals, ticktext, tickangle
 
 import os
 
 import matplotlib
-import matplotlib.colors as mcolors
-import matplotlib.pyplot as plt
 import pandas as pd
 import plotly.graph_objects as go
-import plotly.tools as tls
-import seaborn as sns
 
 matplotlib.use("Agg")
 
@@ -42,7 +39,7 @@ class Indicators:
         meta (int): Meta de eficiência a ser alcançada.
 
         Retorna:
-        plt: Objeto matplotlib.pyplot com o gráfico de eficiência.
+        fig: Objeto plotly.graph_objects.Figure com o gráfico de eficiência.
 
         O gráfico é um heatmap que mostra a eficiência média por turno e data.
         A eficiência é colorida de vermelho se estiver abaixo de 90% e
@@ -68,56 +65,80 @@ class Indicators:
         )
 
         # Reordenar o índice do DataFrame
-        df_pivot = df_pivot.reindex(["NOT", "MAT", "VES"])
+        df_pivot = df_pivot.reindex(["VES", "MAT", "NOT"])
 
-        # Definir as cores baseado na eficiência
-        colors = ["red", "red", "green", "green"]
-        vmin, vmax = 0, 1  # Definir o intervalo de cores de 0 a 1
-        norm = plt.Normalize(vmin, vmax)
-        nodes = [
-            vmin,
-            0.89,
-            0.9,
-            vmax,
-        ]  # Definir o ponto de mudança de cor para 90%
-        cmap = mcolors.LinearSegmentedColormap.from_list(
-            "", list(zip(nodes, colors))
-        )
+        # Criar escala de cores personalizada
+        colors = [[0, "red"], [0.9, "red"], [0.9, "green"], [1, "green"]]
+
+        # Extrair apenas o dia da data
+        df_pivot.columns = pd.to_datetime(df_pivot.columns).day
 
         # Criar o gráfico de calor
-        plt.figure(figsize=(15, 5))
-        sns.heatmap(
-            df_pivot,
-            cmap=cmap,
-            norm=norm,
-            linewidths=0.5,
-            annot=True,
-            fmt=".1%",
-            cbar=False,
+        fig = go.Figure(
+            data=go.Heatmap(
+                z=df_pivot.values,
+                x=df_pivot.columns,
+                y=df_pivot.index,
+                colorscale=colors,
+                zmin=0,
+                zmax=1,  # Escala de valores de 0 a 1
+                hoverongaps=False,
+                hovertemplate="Turno: %{y}<br>Dia: %{x}<br>Valor: %{z:.1%}",
+                showscale=False,  # Não mostrar a escala de cores
+                xgap=1,  # Espaçamento entre os dias
+                ygap=1,  # Espaçamento entre os turnos
+            )
         )
-        plt.title(f"Eficiência - Meta {meta}%")
-        plt.xlabel("Data")
-        plt.ylabel("Turno")
 
-        # Definir os rótulos do eixo x para os dias e rotacionar 45 graus
-        days = [date[-2:] for date in df_pivot.columns]
-        plt.xticks(ticks=plt.xticks()[0], labels=days, rotation=45)
+        # Adicionar anotações com a média da eficiência
+        # pylint: disable=consider-using-enumerate
+        for i in range(len(df_pivot.index)):
+            for j in range(len(df_pivot.columns)):
+                fig.add_annotation(
+                    x=df_pivot.columns[j],
+                    y=df_pivot.index[i],
+                    text=f"{df_pivot.values[i, j]:.1%}",
+                    showarrow=False,
+                    font=dict(color="white"),
+                )
 
-        # Rotacionar os rótulos do eixo y
-        plt.yticks(rotation=45)
+        # Definir o título do gráfico
+        fig.update_layout(
+            title=f"Eficiência - Meta {meta}%",
+            xaxis_title="Dia",
+            yaxis_title="Turno",
+            title_x=0.5,  # Centralizar o título
+            xaxis_nticks=31,  # Definir o número de dias
+            xaxis=dict(
+                tickmode="linear",
+                tickvals=list(range(1, 32)),  # Definir os dias
+                ticktext=list(range(1, 32)),  # Definir os dias
+                tickangle=45,  # Rotacionar os dias
+            ),
+            yaxis=dict(
+                tickmode="linear",
+                tickangle=45,
+            ),
+            plot_bgcolor="white",
+        )
 
-        # Remover os ticks dos eixos x e y
-        plt.gca().tick_params(axis="both", which="both", length=0)
-
-        # plt.show()
-
-        plotly_fig = tls.mpl_to_plotly(plt.gcf())
-
-        return go.Figure(plotly_fig)
+        return fig
 
     def performance_graphic(self, dataframe: pd.DataFrame, meta: int):
         """
         Este método é responsável por criar o gráfico de performance.
+
+        Parâmetros:
+        dataframe (pd.DataFrame): DataFrame contendo os dados para o gráfico.
+                                Deve incluir as colunas 'data_registro', 'turno' e 'performance'.
+        meta (int): Meta de performance a ser alcançada.
+
+        Retorna:
+        fig: Objeto plotly.graph_objects.Figure com o gráfico de eficiência.
+
+        O gráfico é um heatmap que mostra a performance média por turno e data.
+        A performance é colorida de vermelho se estiver abaixo de 4% e
+        de verde se estiver acima de 4%.
         """
 
         # Converter 'data_registro' para datetime e criar uma nova coluna 'data_turno'
@@ -141,51 +162,78 @@ class Indicators:
         # Reordenar o índice do DataFrame
         df_pivot = df_pivot.reindex(["NOT", "MAT", "VES"])
 
-        # Definir as cores baseado na eficiência
-        colors = ["green", "green", "red", "red"]
-        vmin, vmax = 0, 1  # Definir o intervalo de cores de 0 a 1
-        norm = plt.Normalize(vmin, vmax)
-        nodes = [
-            vmin,
-            0.04,
-            0.041,
-            vmax,
-        ]  # Definir o ponto de mudança de cor para 4%
-        cmap = mcolors.LinearSegmentedColormap.from_list(
-            "", list(zip(nodes, colors))
-        )
+        # Criar escala de cores personalizada
+        colors = [[0, "green"], [0.04, "green"], [0.04, "red"], [1, "red"]]
+
+        # Extrair apenas o dia da data
+        df_pivot.columns = pd.to_datetime(df_pivot.columns).day
 
         # Criar o gráfico de calor
-        plt.figure(figsize=(15, 5))
-        sns.heatmap(
-            df_pivot,
-            cmap=cmap,
-            norm=norm,
-            linewidths=0.5,
-            annot=True,
-            fmt=".1%",
-            cbar=False,
+        fig = go.Figure(
+            data=go.Heatmap(
+                z=df_pivot.values,
+                x=df_pivot.columns,
+                y=df_pivot.index,
+                colorscale=colors,
+                zmin=0,
+                zmax=1,  # Escala de valores de 0 a 1
+                hoverongaps=False,
+                hovertemplate="Turno: %{y}<br>Dia: %{x}<br>Valor: %{z:.1%}",
+                showscale=False,  # Não mostrar a escala de cores
+                xgap=1,  # Espaçamento entre os dias
+                ygap=1,  # Espaçamento entre os turnos
+            )
         )
-        plt.title(f"Performance - Meta {meta}%")
-        plt.xlabel("Data")
-        plt.ylabel("Turno")
 
-        # Definir os rótulos do eixo x para os dias e rotacionar 45 graus
-        days = [date[-2:] for date in df_pivot.columns]
-        plt.xticks(ticks=plt.xticks()[0], labels=days, rotation=45)
+        # Adicionar anotações com a média da eficiência
+        # pylint: disable=consider-using-enumerate
+        for i in range(len(df_pivot.index)):
+            for j in range(len(df_pivot.columns)):
+                fig.add_annotation(
+                    x=df_pivot.columns[j],
+                    y=df_pivot.index[i],
+                    text=f"{df_pivot.values[i, j]:.1%}",
+                    showarrow=False,
+                    font=dict(color="white"),
+                )
 
-        # Rotacionar os rótulos do eixo y
-        plt.yticks(rotation=45)
+        # Definir o título do gráfico
+        fig.update_layout(
+            title=f"Performance - Meta {meta}%",
+            xaxis_title="Dia",
+            yaxis_title="Turno",
+            title_x=0.5,  # Centralizar o título
+            xaxis_nticks=31,  # Definir o número de dias
+            xaxis=dict(
+                tickmode="linear",
+                tickvals=list(range(1, 32)),  # Definir os dias
+                ticktext=list(range(1, 32)),  # Definir os dias
+                tickangle=45,  # Rotacionar os dias
+            ),
+            yaxis=dict(
+                tickmode="linear",
+                tickangle=45,
+            ),
+            plot_bgcolor="white",
+        )
 
-        # Remover os ticks dos eixos x e y
-        plt.gca().tick_params(axis="both", which="both", length=0)
+        return fig
 
-        # plt.show()
-        return plt
-
-    def reparos_graphic(self, dataframe: pd.DataFrame, meta: int):
+    def repair_graphic(self, dataframe: pd.DataFrame, meta: int):
         """
         Este método é responsável por criar o gráfico de reparos.
+
+        Parâmetros:
+        dataframe (pd.DataFrame): DataFrame contendo os dados para o gráfico.
+                                Deve incluir as colunas 'data_registro', 'turno' e 'reparo'.
+        meta (int): Meta de reparos a ser alcançada.
+
+        Retorna:
+        fig: Objeto plotly.graph_objects.Figure com o gráfico de eficiência.
+
+        O gráfico é um heatmap que mostra a performance média por turno e data.
+        A performance é colorida de vermelho se estiver abaixo de 4% e
+        de verde se estiver acima de 4%.
         """
 
         # Converter 'data_registro' para datetime e criar uma nova coluna 'data_turno'
@@ -209,44 +257,59 @@ class Indicators:
         # Reordenar o índice do DataFrame
         df_pivot = df_pivot.reindex(["NOT", "MAT", "VES"])
 
-        # Definir as cores baseado na eficiência
-        colors = ["green", "green", "red", "red"]
-        vmin, vmax = 0, 1  # Definir o intervalo de cores de 0 a 1
-        norm = plt.Normalize(vmin, vmax)
-        nodes = [
-            vmin,
-            0.04,
-            0.041,
-            vmax,
-        ]  # Definir o ponto de mudança de cor para 4%
-        cmap = mcolors.LinearSegmentedColormap.from_list(
-            "", list(zip(nodes, colors))
-        )
+        # Criar escala de cores personalizada
+        colors = [[0, "green"], [0.04, "green"], [0.04, "red"], [1, "red"]]
+
+        # Extrair apenas o dia da data
+        df_pivot.columns = pd.to_datetime(df_pivot.columns).day
 
         # Criar o gráfico de calor
-        plt.figure(figsize=(15, 5))
-        sns.heatmap(
-            df_pivot,
-            cmap=cmap,
-            norm=norm,
-            linewidths=0.5,
-            annot=True,
-            fmt=".1%",
-            cbar=False,
+        fig = go.Figure(
+            data=go.Heatmap(
+                z=df_pivot.values,
+                x=df_pivot.columns,
+                y=df_pivot.index,
+                colorscale=colors,
+                zmin=0,
+                zmax=1,  # Escala de valores de 0 a 1
+                hoverongaps=False,
+                hovertemplate="Turno: %{y}<br>Dia: %{x}<br>Valor: %{z:.1%}",
+                showscale=False,  # Não mostrar a escala de cores
+                xgap=1,  # Espaçamento entre os dias
+                ygap=1,  # Espaçamento entre os turnos
+            )
         )
-        plt.title(f"Reparos - Meta {meta}%")
-        plt.xlabel("Data")
-        plt.ylabel("Turno")
 
-        # Definir os rótulos do eixo x para os dias e rotacionar 45 graus
-        days = [date[-2:] for date in df_pivot.columns]
-        plt.xticks(ticks=plt.xticks()[0], labels=days, rotation=45)
+        # Adicionar anotações com a média da eficiência
+        # pylint: disable=consider-using-enumerate
+        for i in range(len(df_pivot.index)):
+            for j in range(len(df_pivot.columns)):
+                fig.add_annotation(
+                    x=df_pivot.columns[j],
+                    y=df_pivot.index[i],
+                    text=f"{df_pivot.values[i, j]:.1%}",
+                    showarrow=False,
+                    font=dict(color="white"),
+                )
 
-        # Rotacionar os rótulos do eixo y
-        plt.yticks(rotation=45)
+        # Definir o título do gráfico
+        fig.update_layout(
+            title=f"Reparos - Meta {meta}%",
+            xaxis_title="Dia",
+            yaxis_title="Turno",
+            title_x=0.5,  # Centralizar o título
+            xaxis_nticks=31,  # Definir o número de dias
+            xaxis=dict(
+                tickmode="linear",
+                tickvals=list(range(1, 32)),  # Definir os dias
+                ticktext=list(range(1, 32)),  # Definir os dias
+                tickangle=45,  # Rotacionar os dias
+            ),
+            yaxis=dict(
+                tickmode="linear",
+                tickangle=45,
+            ),
+            plot_bgcolor="white",
+        )
 
-        # Remover os ticks dos eixos x e y
-        plt.gca().tick_params(axis="both", which="both", length=0)
-
-        # plt.show()
-        return plt
+        return fig

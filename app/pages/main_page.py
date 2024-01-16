@@ -30,28 +30,31 @@ layout = html.Div(
                         html.P("Anterior"),
                         html.P("Aqui vem a imagem"),
                     ],
-                    md=2,
+                    md=1,
                     id="last-eficiencia-col",
+                    style={"background-color": "red"},
                 ),
                 dbc.Col(
                     [
-                        html.H3("Eficiência"),
                         dcc.Graph(
                             figure={},
-                            id="eficiencia-graph",
+                            id="eficiencia-heat-graph",
                         ),
                         html.P("Aqui vem o gráfico de eficiência(linhas)"),
                     ],
-                    md=8,
+                    md=10,
                     id="eficiencia-col",
+                    style={"background-color": "green"},
+                    class_name="p-0",
                 ),
                 dbc.Col(
                     [
                         html.P("Atual"),
                         html.P("Aqui vem a imagem"),
                     ],
-                    md=2,
+                    md=1,
                     id="current-eficiencia-col",
+                    style={"background-color": "blue"},
                 ),
             ],
             id="eficiencia-row",
@@ -63,16 +66,18 @@ layout = html.Div(
                         html.P("Anterior"),
                         html.P("Aqui vem a imagem"),
                     ],
-                    md=2,
+                    md=1,
                     id="last-performance-col",
                 ),
                 dbc.Col(
                     [
-                        html.H3("Performance"),
-                        html.P("Aqui vem o gráfico de performance"),
+                        dcc.Graph(
+                            figure={},
+                            id="performance-heat-graph",
+                        ),
                         html.P("Aqui vem o gráfico de performance(linhas)"),
                     ],
-                    md=8,
+                    md=10,
                     id="performance-col",
                 ),
                 dbc.Col(
@@ -80,7 +85,7 @@ layout = html.Div(
                         html.P("Atual"),
                         html.P("Aqui vem a imagem"),
                     ],
-                    md=2,
+                    md=1,
                     id="current-performance-col",
                 ),
             ],
@@ -93,16 +98,18 @@ layout = html.Div(
                         html.P("Anterior"),
                         html.P("Aqui vem a imagem"),
                     ],
-                    md=2,
+                    md=1,
                     id="last-reparos-col",
                 ),
                 dbc.Col(
                     [
-                        html.H3("Reparos"),
-                        html.P("Aqui vem o gráfico de reparos"),
+                        dcc.Graph(
+                            figure={},
+                            id="reparos-heat-graph",
+                        ),
                         html.P("Aqui vem o gráfico de reparos(linhas)"),
                     ],
-                    md=8,
+                    md=10,
                     id="reparos-col",
                 ),
                 dbc.Col(
@@ -110,7 +117,7 @@ layout = html.Div(
                         html.P("Atual"),
                         html.P("Aqui vem a imagem"),
                     ],
-                    md=2,
+                    md=1,
                     id="current-reparos-col",
                 ),
             ],
@@ -123,8 +130,9 @@ layout = html.Div(
 # ========================================= Callbacks ========================================= #
 
 
+# --------- Gráficos de calor --------- #
 @callback(
-    Output("eficiencia-graph", "figure"),
+    Output("eficiencia-heat-graph", "figure"),
     [
         Input("store-info", "data"),
         Input("store-prod", "data"),
@@ -145,5 +153,57 @@ def update_eficiencia_graph(info, prod):
 
     df = times_data.get_eff_data(df_maq_info_cadastro, df_maq_info_prod_cad)
     fig = ind_graphics.efficiency_graphic(df, 90)
+
+    return fig
+
+
+@callback(
+    Output("performance-heat-graph", "figure"),
+    [
+        Input("store-info", "data"),
+        Input("store-prod", "data"),
+    ],
+)
+def update_performance_graph(info, prod):
+    """
+    Função que atualiza o gráfico de eficiência.
+    """
+    ctx = dash.callback_context
+    if not ctx.triggered:
+        raise PreventUpdate
+
+    if info is None:
+        raise PreventUpdate
+    df_maq_info_cadastro = pd.read_json(StringIO(info), orient="split")
+    df_maq_info_prod_cad = pd.read_json(StringIO(prod), orient="split")
+
+    df = times_data.get_perf_data(df_maq_info_cadastro, df_maq_info_prod_cad)
+    fig = ind_graphics.performance_graphic(df, 4)
+
+    return fig
+
+
+@callback(
+    Output("reparos-heat-graph", "figure"),
+    [
+        Input("store-info", "data"),
+        Input("store-prod", "data"),
+    ],
+)
+def update_reparos_graph(info, prod):
+    """
+    Função que atualiza o gráfico de eficiência.
+    """
+    ctx = dash.callback_context
+    if not ctx.triggered:
+        raise PreventUpdate
+
+    if info is None:
+        raise PreventUpdate
+    df_maq_info_cadastro = pd.read_json(StringIO(info), orient="split")
+    df_maq_info_prod_cad = pd.read_json(StringIO(prod), orient="split")
+
+    df = times_data.get_repair_data(df_maq_info_cadastro, df_maq_info_prod_cad)
+    fig = ind_graphics.repair_graphic(df, 4)
 
     return fig
