@@ -69,7 +69,7 @@ app.layout = dbc.Container(
         ),
     ],
     fluid=True,
-    style={"padding": "5px"},
+    style={"width": "100%"},
     className="dbc",
 )
 

@@ -375,11 +375,11 @@ class TimesData:
         self, df_info: pd.DataFrame, df_prod: pd.DataFrame
     ) -> pd.DataFrame:
         """
-        Método para calcular os dados de reparo.
+        Método para calcular os dados de reparos.
 
         Este método recebe dois DataFrames, um contendo informações de máquina e
         e outro contendo informações de produção,
-        e retorna um DataFrame com informações de Reparo.
+        e retorna um DataFrame com informações de Reparos.
 
         ### Parâmetros:
         df_info (pd.DataFrame): DataFrame contendo informações de maquina
@@ -475,7 +475,7 @@ class TimesData:
         )
 
         # Calcular o reparo
-        df_rep_times_desc["reparo"] = (
+        df_rep_times_desc["reparos"] = (
             df_rep_times_desc["afeta"]
             / df_rep_times_desc["tempo_esperado_min"]
         )

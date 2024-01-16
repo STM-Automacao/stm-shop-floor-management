@@ -3,22 +3,12 @@ Gráficos de indicadores
 """
 # cSpell: words mcolors, eficiencia, vmin, vmax, cmap, figsize, linewidths, annot, cbar, xlabel,
 # cSpell: words ylabel, xticks, yticks, colorscale, hoverongaps, zmin, zmax, showscale, xgap, ygap,
-# cSpell: words nticks, tickmode, tickvals, ticktext, tickangle
+# cSpell: words nticks, tickmode, tickvals, ticktext, tickangle, lightgray, tickfont
 
-import os
-
-import matplotlib
 import pandas as pd
 import plotly.graph_objects as go
-
-matplotlib.use("Agg")
-
-script_dir = os.path.dirname(
-    os.path.abspath(__file__)
-)  # <-- absolute dir the script is in
-file_path = os.path.join(
-    script_dir, "../assets/"
-)  # <-- absolute dir the script is in
+# pylint: disable=E0401
+from helpers.types import IndicatorType
 
 
 class Indicators:
@@ -99,7 +89,7 @@ class Indicators:
                     y=df_pivot.index[i],
                     text=f"{df_pivot.values[i, j]:.1%}",
                     showarrow=False,
-                    font=dict(color="white"),
+                    font=dict(color="white", size=8),
                 )
 
         # Definir o título do gráfico
@@ -120,6 +110,7 @@ class Indicators:
                 tickangle=45,
             ),
             plot_bgcolor="white",
+            margin=dict(t=40, b=40, l=40, r=40),
         )
 
         return fig
@@ -194,7 +185,7 @@ class Indicators:
                     y=df_pivot.index[i],
                     text=f"{df_pivot.values[i, j]:.1%}",
                     showarrow=False,
-                    font=dict(color="white"),
+                    font=dict(color="white", size=8),
                 )
 
         # Definir o título do gráfico
@@ -215,6 +206,7 @@ class Indicators:
                 tickangle=45,
             ),
             plot_bgcolor="white",
+            margin=dict(t=40, b=40, l=40, r=40),
         )
 
         return fig
@@ -244,14 +236,14 @@ class Indicators:
 
         # Agrupar por 'data_turno' e 'turno' e calcular a média da eficiência
         df_grouped = (
-            dataframe.groupby(["data_turno", "turno"])["reparo"]
+            dataframe.groupby(["data_turno", "turno"])["reparos"]
             .mean()
             .reset_index()
         )
 
         # Remodelar os dados para o formato de heatmap
         df_pivot = df_grouped.pivot(
-            index="turno", columns="data_turno", values="reparo"
+            index="turno", columns="data_turno", values="reparos"
         )
 
         # Reordenar o índice do DataFrame
@@ -289,7 +281,7 @@ class Indicators:
                     y=df_pivot.index[i],
                     text=f"{df_pivot.values[i, j]:.1%}",
                     showarrow=False,
-                    font=dict(color="white"),
+                    font=dict(color="white", size=8),
                 )
 
         # Definir o título do gráfico
@@ -309,6 +301,144 @@ class Indicators:
                 tickmode="linear",
                 tickangle=45,
             ),
+            plot_bgcolor="white",
+            margin=dict(t=40, b=40, l=40, r=40),
+        )
+
+        return fig
+
+    @staticmethod
+    def __calculate_efficiency_mean(df: pd.DataFrame) -> float:
+        """
+        Este método é responsável por calcular a eficiência.
+
+        Parâmetros:
+        df (pd.DataFrame): DataFrame contendo os dados para o cálculo.
+
+        Retorna:
+        efficiency (float): Eficiência calculada.
+        """
+
+        efficiency = df["eficiencia"].mean()
+
+        return efficiency
+
+    @staticmethod
+    def __calculate_performance_mean(df: pd.DataFrame) -> float:
+        """
+        Este método é responsável por calcular a performance.
+
+        Parâmetros:
+        df (pd.DataFrame): DataFrame contendo os dados para o cálculo.
+
+        Retorna:
+        performance (float): Performance calculada.
+        """
+
+        performance = df["performance"].mean()
+
+        return performance
+
+    @staticmethod
+    def __calculate_repair_mean(df: pd.DataFrame) -> float:
+        """
+        Este método é responsável por calcular a performance.
+
+        Parâmetros:
+        df (pd.DataFrame): DataFrame contendo os dados para o cálculo.
+
+        Retorna:
+        repair (float): Reparos calculados.
+        """
+
+        repair = df["reparos"].mean()
+
+        return repair
+
+    def draw_gauge_graphic(
+        self, df: pd.DataFrame, ind_type: IndicatorType, meta: int
+    ):
+        """
+        Este método é responsável por criar o gráfico de indicadores.
+
+        Parâmetros:
+        df (pd.DataFrame): DataFrame contendo os dados para o gráfico.
+        ind_type (IndicatorType): Tipo de indicador.
+        meta (int): Meta do indicador.
+
+        Retorna:
+        fig: Objeto plotly.graph_objects.Figure com o gráfico de indicadores.
+
+        O gráfico é um gauge que mostra a porcentagem do indicador.
+        A porcentagem é colorida de vermelho se estiver abaixo da meta e
+        de verde se estiver acima da meta.
+        """
+
+        # Mapear as funções
+        func_map = {
+            IndicatorType.EFFICIENCY: self.__calculate_efficiency_mean,
+            IndicatorType.PERFORMANCE: self.__calculate_performance_mean,
+            IndicatorType.REPAIR: self.__calculate_repair_mean,
+        }
+
+        # Verificar a primeira data_registro do dataframe para saber se os dados são do mês atual
+        this_month = (
+            df["data_registro"].iloc[0].month == pd.Timestamp.now().month
+        )
+        month = "Atual" if this_month else "Anterior"
+
+        # Obter a função de acordo com o tipo de indicador
+        func = func_map[ind_type]
+
+        # Calcular a porcentagem
+        percentage = func(df) if func is not None else 0
+
+        # Arredondar a porcentagem
+        percentage = round(percentage, 2)
+
+        # Definir a cor de acordo com a porcentagem
+        if ind_type == IndicatorType.EFFICIENCY:
+            color = "green" if percentage >= (meta / 100) else "red"
+        else:
+            color = "red" if percentage >= (meta / 100) else "green"
+
+        # Definir a escala do eixo para "performance" e "reparos"
+        axis_range = (
+            [0, 100] if ind_type == IndicatorType.EFFICIENCY else [100, 0]
+        )
+
+        # Criar o gráfico
+        fig = go.Figure(
+            go.Indicator(
+                mode="gauge+number",
+                value=percentage * 100,
+                number={"suffix": "%"},
+                domain={"x": [0, 1], "y": [0, 1]},
+                title={
+                    "text": month,
+                    "font": {"size": 14},
+                },
+                gauge={
+                    "axis": {
+                        "range": axis_range,
+                        "tickfont": {"size": 8},
+                    },
+                    "bar": {"color": color},
+                    "steps": [
+                        {"range": [0, 100], "color": "lightgray"},
+                    ],
+                    "threshold": {
+                        "line": {"color": "black", "width": 4},
+                        "thickness": 0.75,
+                        "value": meta,
+                    },
+                },
+            )
+        )
+
+        fig.update_layout(
+            autosize=True,
+            margin=dict(t=30, b=30, l=30, r=30),
             plot_bgcolor="white",
         )
 

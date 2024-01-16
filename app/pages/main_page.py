@@ -15,6 +15,7 @@ from dash.exceptions import PreventUpdate
 
 # pylint: disable=E0401
 from graphics.indicators import Indicators
+from helpers.types import IndicatorType
 from service.times_data import TimesData
 
 ind_graphics = Indicators()
@@ -26,13 +27,11 @@ layout = html.Div(
         dbc.Row(
             [
                 dbc.Col(
-                    [
-                        html.P("Anterior"),
-                        html.P("Aqui vem a imagem"),
-                    ],
-                    md=1,
+                    [],
+                    md=2,
+                    xl=1,
                     id="last-eficiencia-col",
-                    style={"background-color": "red"},
+                    class_name="p-1",
                 ),
                 dbc.Col(
                     [
@@ -42,32 +41,35 @@ layout = html.Div(
                         ),
                         html.P("Aqui vem o gráfico de eficiência(linhas)"),
                     ],
-                    md=10,
+                    md=8,
+                    xl=10,
                     id="eficiencia-col",
-                    style={"background-color": "green"},
-                    class_name="p-0",
+                    class_name="p-1",
                 ),
                 dbc.Col(
                     [
-                        html.P("Atual"),
-                        html.P("Aqui vem a imagem"),
+                        dcc.Graph(
+                            figure={},
+                            id="eficiencia-gauge-graph_actual",
+                        ),
                     ],
-                    md=1,
+                    md=2,
+                    xl=1,
                     id="current-eficiencia-col",
-                    style={"background-color": "blue"},
+                    class_name="p-1",
                 ),
             ],
             id="eficiencia-row",
         ),
+        html.Hr(),
         dbc.Row(
             [
                 dbc.Col(
-                    [
-                        html.P("Anterior"),
-                        html.P("Aqui vem a imagem"),
-                    ],
-                    md=1,
+                    [],
+                    md=2,
+                    xl=1,
                     id="last-performance-col",
+                    class_name="p-1",
                 ),
                 dbc.Col(
                     [
@@ -77,29 +79,35 @@ layout = html.Div(
                         ),
                         html.P("Aqui vem o gráfico de performance(linhas)"),
                     ],
-                    md=10,
+                    md=8,
+                    xl=10,
                     id="performance-col",
+                    class_name="p-1",
                 ),
                 dbc.Col(
                     [
-                        html.P("Atual"),
-                        html.P("Aqui vem a imagem"),
+                        dcc.Graph(
+                            figure={},
+                            id="performance-gauge-graph_actual",
+                        ),
                     ],
-                    md=1,
+                    md=2,
+                    xl=1,
                     id="current-performance-col",
+                    class_name="p-1",
                 ),
             ],
             id="performance-row",
         ),
+        html.Hr(),
         dbc.Row(
             [
                 dbc.Col(
-                    [
-                        html.P("Anterior"),
-                        html.P("Aqui vem a imagem"),
-                    ],
-                    md=1,
+                    [],
+                    md=2,
+                    xl=1,
                     id="last-reparos-col",
+                    class_name="p-1",
                 ),
                 dbc.Col(
                     [
@@ -109,21 +117,28 @@ layout = html.Div(
                         ),
                         html.P("Aqui vem o gráfico de reparos(linhas)"),
                     ],
-                    md=10,
+                    md=8,
+                    xl=10,
                     id="reparos-col",
+                    class_name="p-1",
                 ),
                 dbc.Col(
                     [
-                        html.P("Atual"),
-                        html.P("Aqui vem a imagem"),
+                        dcc.Graph(
+                            figure={},
+                            id="reparos-gauge-graph_actual",
+                        ),
                     ],
-                    md=1,
+                    md=2,
+                    xl=1,
                     id="current-reparos-col",
+                    class_name="p-1",
                 ),
             ],
             id="reparos-row",
         ),
-    ]
+    ],
+    id="main-page",
 )
 
 
@@ -205,5 +220,84 @@ def update_reparos_graph(info, prod):
 
     df = times_data.get_repair_data(df_maq_info_cadastro, df_maq_info_prod_cad)
     fig = ind_graphics.repair_graphic(df, 4)
+
+    return fig
+
+
+# --------- Gráficos de Gauge --------- #
+@callback(
+    Output("eficiencia-gauge-graph_actual", "figure"),
+    [
+        Input("store-info", "data"),
+        Input("store-prod", "data"),
+    ],
+)
+def update_eficiencia_gauge_graph_actual(info, prod):
+    """
+    Função que atualiza o gráfico de eficiência.
+    """
+    ctx = dash.callback_context
+    if not ctx.triggered:
+        raise PreventUpdate
+
+    if info is None:
+        raise PreventUpdate
+    df_maq_info_cadastro = pd.read_json(StringIO(info), orient="split")
+    df_maq_info_prod_cad = pd.read_json(StringIO(prod), orient="split")
+
+    df = times_data.get_eff_data(df_maq_info_cadastro, df_maq_info_prod_cad)
+    fig = ind_graphics.draw_gauge_graphic(df, IndicatorType.EFFICIENCY, 90)
+
+    return fig
+
+
+@callback(
+    Output("performance-gauge-graph_actual", "figure"),
+    [
+        Input("store-info", "data"),
+        Input("store-prod", "data"),
+    ],
+)
+def update_performance_gauge_graph_actual(info, prod):
+    """
+    Função que atualiza o gráfico de eficiência.
+    """
+    ctx = dash.callback_context
+    if not ctx.triggered:
+        raise PreventUpdate
+
+    if info is None:
+        raise PreventUpdate
+    df_maq_info_cadastro = pd.read_json(StringIO(info), orient="split")
+    df_maq_info_prod_cad = pd.read_json(StringIO(prod), orient="split")
+
+    df = times_data.get_perf_data(df_maq_info_cadastro, df_maq_info_prod_cad)
+    fig = ind_graphics.draw_gauge_graphic(df, IndicatorType.PERFORMANCE, 4)
+
+    return fig
+
+
+@callback(
+    Output("reparos-gauge-graph_actual", "figure"),
+    [
+        Input("store-info", "data"),
+        Input("store-prod", "data"),
+    ],
+)
+def update_reparos_gauge_graph_actual(info, prod):
+    """
+    Função que atualiza o gráfico de eficiência.
+    """
+    ctx = dash.callback_context
+    if not ctx.triggered:
+        raise PreventUpdate
+
+    if info is None:
+        raise PreventUpdate
+    df_maq_info_cadastro = pd.read_json(StringIO(info), orient="split")
+    df_maq_info_prod_cad = pd.read_json(StringIO(prod), orient="split")
+
+    df = times_data.get_repair_data(df_maq_info_cadastro, df_maq_info_prod_cad)
+    fig = ind_graphics.draw_gauge_graphic(df, IndicatorType.REPAIR, 4)
 
     return fig
