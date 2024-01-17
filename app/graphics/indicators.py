@@ -60,8 +60,13 @@ class Indicators:
         # Reordenar o índice do DataFrame
         df_pivot = df_pivot.reindex(["VES", "MAT", "NOT"])
 
-        # Criar escala de cores personalizada
-        colors = [[0, "red"], [0.9, "red"], [0.9, "green"], [1, "green"]]
+        # Criar escala de cores personalizada - cores do bootstrap
+        colors = [
+            [0, "#dc3545"],  # danger
+            [0.9, "#dc3545"],
+            [0.9, "#28a745"],
+            [1, "#28a745"],  # success
+        ]
 
         # Extrair apenas o dia da data
         df_pivot.columns = pd.to_datetime(df_pivot.columns).day
@@ -158,8 +163,13 @@ class Indicators:
         # Reordenar o índice do DataFrame
         df_pivot = df_pivot.reindex(["NOT", "MAT", "VES"])
 
-        # Criar escala de cores personalizada
-        colors = [[0, "green"], [0.04, "green"], [0.04, "red"], [1, "red"]]
+        # Criar escala de cores personalizada - cores do bootstrap
+        colors = [
+            [0, "#28a745"],  # danger
+            [0.04, "#28a745"],
+            [0.04, "#dc3545"],
+            [1, "#dc3545"],  # success
+        ]
 
         # Extrair apenas o dia da data
         df_pivot.columns = pd.to_datetime(df_pivot.columns).day
@@ -254,8 +264,13 @@ class Indicators:
         # Reordenar o índice do DataFrame
         df_pivot = df_pivot.reindex(["NOT", "MAT", "VES"])
 
-        # Criar escala de cores personalizada
-        colors = [[0, "green"], [0.04, "green"], [0.04, "red"], [1, "red"]]
+        # Criar escala de cores personalizada - cores do bootstrap
+        colors = [
+            [0, "#28a745"],  # danger
+            [0.04, "#28a745"],
+            [0.04, "#dc3545"],
+            [1, "#dc3545"],  # success
+        ]
 
         # Extrair apenas o dia da data
         df_pivot.columns = pd.to_datetime(df_pivot.columns).day
@@ -406,9 +421,9 @@ class Indicators:
 
         # Definir a cor de acordo com a porcentagem
         if ind_type == IndicatorType.EFFICIENCY:
-            color = "green" if percentage >= (meta / 100) else "red"
+            color = "#28a745" if percentage >= (meta / 100) else "#dc3545"
         else:
-            color = "red" if percentage >= (meta / 100) else "green"
+            color = "#dc3545" if percentage >= (meta / 100) else "#28a745"
 
         # Definir a escala do eixo para "performance" e "reparos"
         axis_range = (
