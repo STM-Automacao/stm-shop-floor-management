@@ -204,6 +204,12 @@ class JoinData:
             -1
         )
 
+        # Remover as linhas com status rodando
+        df = df[df["status"] != "rodando"]
+
+        # Ajustar o index
+        df.reset_index(drop=True, inplace=True)
+
         return df
 
     def info_cadastro_combine(

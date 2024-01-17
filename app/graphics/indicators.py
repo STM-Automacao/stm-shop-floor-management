@@ -3,10 +3,11 @@ Gráficos de indicadores
 """
 # cSpell: words mcolors, eficiencia, vmin, vmax, cmap, figsize, linewidths, annot, cbar, xlabel,
 # cSpell: words ylabel, xticks, yticks, colorscale, hoverongaps, zmin, zmax, showscale, xgap, ygap,
-# cSpell: words nticks, tickmode, tickvals, ticktext, tickangle, lightgray, tickfont
+# cSpell: words nticks, tickmode, tickvals, ticktext, tickangle, lightgray, tickfont, showticklabels
 
 import pandas as pd
 import plotly.graph_objects as go
+
 # pylint: disable=E0401
 from helpers.types import IndicatorType
 
@@ -128,8 +129,8 @@ class Indicators:
         fig: Objeto plotly.graph_objects.Figure com o gráfico de eficiência.
 
         O gráfico é um heatmap que mostra a performance média por turno e data.
-        A performance é colorida de vermelho se estiver abaixo de 4% e
-        de verde se estiver acima de 4%.
+        A performance é colorida de vermelho se estiver acima de 4% e
+        de verde se estiver abaixo de 4%.
         """
 
         # Converter 'data_registro' para datetime e criar uma nova coluna 'data_turno'
@@ -224,8 +225,8 @@ class Indicators:
         fig: Objeto plotly.graph_objects.Figure com o gráfico de eficiência.
 
         O gráfico é um heatmap que mostra a performance média por turno e data.
-        A performance é colorida de vermelho se estiver abaixo de 4% e
-        de verde se estiver acima de 4%.
+        A performance é colorida de vermelho se estiver acima de 4% e
+        de verde se estiver abaixo de 4%.
         """
 
         # Converter 'data_registro' para datetime e criar uma nova coluna 'data_turno'
@@ -440,6 +441,58 @@ class Indicators:
             autosize=True,
             margin=dict(t=30, b=30, l=30, r=30),
             plot_bgcolor="white",
+        )
+
+        return fig
+
+    def plot_daily_efficiency(
+        self, df: pd.DataFrame, indicator: IndicatorType
+    ):
+        """
+        Este método é responsável por criar o gráfico de linhas diária.
+
+        Parâmetros:
+        df (pd.DataFrame): DataFrame contendo os dados para o gráfico.
+        indicator (IndicatorType): Tipo de indicador.
+
+        Retorna:
+        fig: Objeto plotly.graph_objects.Figure com o gráfico de linhas diária.
+        """
+
+        indicator = indicator.value
+
+        # Converter 'data_registro' para datetime e criar uma nova coluna 'data_turno'
+        df["data_registro"] = pd.to_datetime(df["data_registro"])
+        df["data_turno"] = df["data_registro"].dt.strftime("%Y-%m-%d")
+
+        # Agrupar por 'data_turno' e 'turno' e calcular a média do indicador
+        df_grouped = df.groupby(["data_turno"])[indicator].mean().reset_index()
+
+        # Multiplicar por 100 para converter para porcentagem
+        df_grouped[indicator] = df_grouped[indicator] * 100
+
+        # Criar o gráfico
+        fig = go.Figure(
+            go.Scatter(
+                x=df_grouped["data_turno"],
+                y=df_grouped[indicator],
+                mode="lines+markers",
+                line=dict(color="blue"),
+                marker=dict(color="blue"),
+                hovertemplate="<i>Dia</i>: %{x}"
+                + "<br><b>Porcentagem</b>: %{y:.1f}<br>",
+                hoverinfo="skip",
+            )
+        )
+
+        fig.update_layout(
+            showlegend=False,
+            plot_bgcolor="white",
+            xaxis=dict(showticklabels=False),  # Esconde os valores dos eixos
+            yaxis=dict(showticklabels=False),
+            margin=dict(t=0, b=0, l=0, r=0),
+            height=None,
+            autosize=True,
         )
 
         return fig

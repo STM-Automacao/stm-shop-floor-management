@@ -39,7 +39,11 @@ layout = html.Div(
                             figure={},
                             id="eficiencia-heat-graph",
                         ),
-                        html.P("Aqui vem o gráfico de eficiência(linhas)"),
+                        dcc.Graph(
+                            figure={},
+                            id="eficiencia-line-graph",
+                            style={"height": "80px"},
+                        ),
                     ],
                     md=8,
                     xl=10,
@@ -77,7 +81,11 @@ layout = html.Div(
                             figure={},
                             id="performance-heat-graph",
                         ),
-                        html.P("Aqui vem o gráfico de performance(linhas)"),
+                        dcc.Graph(
+                            figure={},
+                            id="performance-line-graph",
+                            style={"height": "80px"},
+                        ),
                     ],
                     md=8,
                     xl=10,
@@ -115,7 +123,11 @@ layout = html.Div(
                             figure={},
                             id="reparos-heat-graph",
                         ),
-                        html.P("Aqui vem o gráfico de reparos(linhas)"),
+                        dcc.Graph(
+                            figure={},
+                            id="reparos-line-graph",
+                            style={"height": "80px"},
+                        ),
                     ],
                     md=8,
                     xl=10,
@@ -299,5 +311,84 @@ def update_reparos_gauge_graph_actual(info, prod):
 
     df = times_data.get_repair_data(df_maq_info_cadastro, df_maq_info_prod_cad)
     fig = ind_graphics.draw_gauge_graphic(df, IndicatorType.REPAIR, 4)
+
+    return fig
+
+
+# --------- Gráficos de linha --------- #
+@callback(
+    Output("eficiencia-line-graph", "figure"),
+    [
+        Input("store-info", "data"),
+        Input("store-prod", "data"),
+    ],
+)
+def update_eficiencia_line_graph(info, prod):
+    """
+    Função que atualiza o gráfico de eficiência.
+    """
+    ctx = dash.callback_context
+    if not ctx.triggered:
+        raise PreventUpdate
+
+    if info is None:
+        raise PreventUpdate
+    df_maq_info_cadastro = pd.read_json(StringIO(info), orient="split")
+    df_maq_info_prod_cad = pd.read_json(StringIO(prod), orient="split")
+
+    df = times_data.get_eff_data(df_maq_info_cadastro, df_maq_info_prod_cad)
+    fig = ind_graphics.plot_daily_efficiency(df, IndicatorType.EFFICIENCY)
+
+    return fig
+
+
+@callback(
+    Output("performance-line-graph", "figure"),
+    [
+        Input("store-info", "data"),
+        Input("store-prod", "data"),
+    ],
+)
+def update_performance_line_graph(info, prod):
+    """
+    Função que atualiza o gráfico de eficiência.
+    """
+    ctx = dash.callback_context
+    if not ctx.triggered:
+        raise PreventUpdate
+
+    if info is None:
+        raise PreventUpdate
+    df_maq_info_cadastro = pd.read_json(StringIO(info), orient="split")
+    df_maq_info_prod_cad = pd.read_json(StringIO(prod), orient="split")
+
+    df = times_data.get_perf_data(df_maq_info_cadastro, df_maq_info_prod_cad)
+    fig = ind_graphics.plot_daily_efficiency(df, IndicatorType.PERFORMANCE)
+
+    return fig
+
+
+@callback(
+    Output("reparos-line-graph", "figure"),
+    [
+        Input("store-info", "data"),
+        Input("store-prod", "data"),
+    ],
+)
+def update_reparos_line_graph(info, prod):
+    """
+    Função que atualiza o gráfico de eficiência.
+    """
+    ctx = dash.callback_context
+    if not ctx.triggered:
+        raise PreventUpdate
+
+    if info is None:
+        raise PreventUpdate
+    df_maq_info_cadastro = pd.read_json(StringIO(info), orient="split")
+    df_maq_info_prod_cad = pd.read_json(StringIO(prod), orient="split")
+
+    df = times_data.get_repair_data(df_maq_info_cadastro, df_maq_info_prod_cad)
+    fig = ind_graphics.plot_daily_efficiency(df, IndicatorType.REPAIR)
 
     return fig
