@@ -1,4 +1,6 @@
 """
+    Autor: Bruno Tomaz
+    Data: 15/01/2023
     Este módulo é o responsável por iniciar a aplicação Dash.
     A aplicação Dash é uma aplicação web que permite a criação de dashboards interativos.
     A aplicação Dash é baseada em Flask e React.
@@ -17,12 +19,14 @@ from dash.exceptions import PreventUpdate
 # pylint: disable=E0401
 from database.get_data import GetData
 from flask_caching import Cache
+from graphics.last_month_ind import LastMonthInd
 from pages import main_page
 
 from app import app
 
 lock = Lock()
 get_data = GetData()
+last_month_ind = LastMonthInd()
 
 # ========================================= Cache ========================================= #
 
@@ -48,10 +52,21 @@ def update_cache():
         cache.set("df2", df2.to_json(date_format="iso", orient="split"))
 
 
+def update_last_month_gauge():
+    """
+    Função que salva imagens de gauge do mês anterior.
+    """
+    with lock:
+        last_month_ind.get_last_month_ind()
+
+
 scheduler = BackgroundScheduler()
 scheduler.add_job(
     func=update_cache, trigger="interval", seconds=120
 )  # Atualiza a cada 2 minutos
+scheduler.add_job(
+    func=update_last_month_gauge, trigger="cron", hour=1
+)  # Atualiza a cada 24 horas
 scheduler.start()
 
 

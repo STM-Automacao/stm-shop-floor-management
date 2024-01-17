@@ -102,3 +102,68 @@ class GetData:
         print(f"Ok ás {pd.to_datetime('today')}")
         # Retorno dos dados
         return df_maq_info_cadastro, df_maq_info_prod_cad
+
+    def get_last_month_data(self) -> tuple:
+        """
+        Recebe a leitura dos dados do banco de dados e faz a limpeza dos dados.
+        Dados referentes ao mês anterior ao atual.
+        Retorna na ordem: df_maq_info_cadastro, df_maq_info_prod_cad
+        """
+
+        # Dia de hoje
+        now = pd.to_datetime("today")
+
+        # Encontrando primeiro dia do mês atual
+        first_day_this_month = now.replace(day=1)
+
+        # Encontrando primeiro e último dia do mês anterior
+        last_month = first_day_this_month - pd.DateOffset(months=1)
+        first_day_last_month = last_month.replace(day=1)
+        last_day_last_month = last_month.replace(day=last_month.days_in_month)
+
+        # Mantendo apenas a data
+        first_day = first_day_last_month.strftime("%Y-%m-%d")
+        last_day = last_day_last_month.strftime("%Y-%m-%d")
+
+        # Query para leitura dos dados de ocorrência
+        query_occ = self.db_read.create_automacao_query(
+            table="maquina_ocorrencia",
+            where=f"data_registro >= '{first_day}' AND data_registro <= '{last_day}'",
+        )
+
+        # Query para leitura dos dados de informações
+        query_info = self.db_read.create_automacao_query(
+            table="maquina_info",
+            where=f"data_registro >= '{first_day}' AND data_registro <= '{last_day}'",
+        )
+
+        # Query para leitura dos dados de cadastro de máquinas
+        query_cadastro = self.db_read.create_automacao_query(
+            table="maquina_cadastro",
+            orderby="linha, data_registro DESC, hora_registro DESC",
+        )
+
+        # Leitura dos dados
+        df_occ = self.db_read.get_automacao_data(query_occ)
+        df_info = self.db_read.get_automacao_data(query_info)
+        df_cadastro = self.db_read.get_automacao_data(query_cadastro)
+
+        # Limpeza inicial dos dados
+        df_occ = self.clean_df.clean_maq_occ(df_occ)
+        df_info_cleaned = self.clean_df.clean_maq_info(df_info)
+        df_info_prod = self.clean_df.clean_maq_info_prod(df_info)
+        df_cadastro = self.clean_df.clean_maq_cadastro(df_cadastro)
+
+        # Junção dos dados
+        df_info_occ = self.join_df.join_info_occ(df_occ, df_info_cleaned)
+        df_info_occ = self.join_df.adjust_position(df_info_occ)
+        df_info_occ = self.problems_chart_adjust.problems_adjust(df_info_occ)
+        df_maq_info_cadastro = self.join_df.info_cadastro_combine(
+            df_info_occ, df_cadastro
+        )
+        df_maq_info_prod_cad = self.join_df.join_info_prod_cad(
+            df_info_prod, df_cadastro
+        )
+
+        # Retorno dos dados
+        return df_maq_info_cadastro, df_maq_info_prod_cad

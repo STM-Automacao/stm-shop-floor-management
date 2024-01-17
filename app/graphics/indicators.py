@@ -20,7 +20,9 @@ class Indicators:
     def __init__(self):
         pass
 
-    def efficiency_graphic(self, dataframe: pd.DataFrame, meta: int):
+    def efficiency_graphic(
+        self, dataframe: pd.DataFrame, meta: int
+    ) -> go.Figure:
         """
         Este método é responsável por criar o gráfico de eficiência.
 
@@ -116,7 +118,9 @@ class Indicators:
 
         return fig
 
-    def performance_graphic(self, dataframe: pd.DataFrame, meta: int):
+    def performance_graphic(
+        self, dataframe: pd.DataFrame, meta: int
+    ) -> go.Figure:
         """
         Este método é responsável por criar o gráfico de performance.
 
@@ -212,7 +216,7 @@ class Indicators:
 
         return fig
 
-    def repair_graphic(self, dataframe: pd.DataFrame, meta: int):
+    def repair_graphic(self, dataframe: pd.DataFrame, meta: int) -> go.Figure:
         """
         Este método é responsável por criar o gráfico de reparos.
 
@@ -358,7 +362,7 @@ class Indicators:
 
     def draw_gauge_graphic(
         self, df: pd.DataFrame, ind_type: IndicatorType, meta: int
-    ):
+    ) -> go.Figure:
         """
         Este método é responsável por criar o gráfico de indicadores.
 
@@ -381,6 +385,9 @@ class Indicators:
             IndicatorType.PERFORMANCE: self.__calculate_performance_mean,
             IndicatorType.REPAIR: self.__calculate_repair_mean,
         }
+
+        # Garantir que data_registro seja do tipo datetime
+        df["data_registro"] = pd.to_datetime(df["data_registro"])
 
         # Verificar a primeira data_registro do dataframe para saber se os dados são do mês atual
         this_month = (
@@ -405,7 +412,7 @@ class Indicators:
 
         # Definir a escala do eixo para "performance" e "reparos"
         axis_range = (
-            [0, 100] if ind_type == IndicatorType.EFFICIENCY else [100, 0]
+            [0, 100] if ind_type == IndicatorType.EFFICIENCY else [40, 0]
         )
 
         # Criar o gráfico
@@ -429,7 +436,7 @@ class Indicators:
                         {"range": [0, 100], "color": "lightgray"},
                     ],
                     "threshold": {
-                        "line": {"color": "black", "width": 4},
+                        "line": {"color": "black", "width": 2},
                         "thickness": 0.75,
                         "value": meta,
                     },
@@ -447,7 +454,7 @@ class Indicators:
 
     def plot_daily_efficiency(
         self, df: pd.DataFrame, indicator: IndicatorType
-    ):
+    ) -> go.Figure:
         """
         Este método é responsável por criar o gráfico de linhas diária.
 

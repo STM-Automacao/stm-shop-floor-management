@@ -3,9 +3,9 @@
     Criada por: Bruno Tomaz
     Data: 15/01/2024
 """
+# cSpell: words eficiencia
 from io import StringIO
 
-# cSpell: words eficiencia
 import dash
 import dash_bootstrap_components as dbc
 import pandas as pd
@@ -15,6 +15,7 @@ from dash.exceptions import PreventUpdate
 
 # pylint: disable=E0401
 from graphics.indicators import Indicators
+from helpers.path_config import EFF_LAST, PERF_LAST, REPAIR_LAST
 from helpers.types import IndicatorType
 from service.times_data import TimesData
 
@@ -27,7 +28,12 @@ layout = html.Div(
         dbc.Row(
             [
                 dbc.Col(
-                    [],
+                    [
+                        dcc.Graph(
+                            figure={},
+                            id="eficiencia-gauge-graph_last",
+                        ),
+                    ],
                     md=2,
                     xl=1,
                     id="last-eficiencia-col",
@@ -69,7 +75,12 @@ layout = html.Div(
         dbc.Row(
             [
                 dbc.Col(
-                    [],
+                    [
+                        dcc.Graph(
+                            figure={},
+                            id="performance-gauge-graph_last",
+                        ),
+                    ],
                     md=2,
                     xl=1,
                     id="last-performance-col",
@@ -111,7 +122,12 @@ layout = html.Div(
         dbc.Row(
             [
                 dbc.Col(
-                    [],
+                    [
+                        dcc.Graph(
+                            figure={},
+                            id="reparos-gauge-graph_last",
+                        ),
+                    ],
                     md=2,
                     xl=1,
                     id="last-reparos-col",
@@ -392,3 +408,46 @@ def update_reparos_line_graph(info, prod):
     fig = ind_graphics.plot_daily_efficiency(df, IndicatorType.REPAIR)
 
     return fig
+
+
+# --------- Gráficos de Gauge do mês anterior --------- #
+# callback que atualiza os 3 quando renderiza a página
+@callback(
+    [
+        Output("eficiencia-gauge-graph_last", "figure"),
+        Output("performance-gauge-graph_last", "figure"),
+        Output("reparos-gauge-graph_last", "figure"),
+    ],
+    [
+        Input("store-info", "data"),
+        Input("store-prod", "data"),
+    ],
+)
+def update_last_month_gauge_graphs(info, prod):
+    """
+    Função que atualiza os gráficos de gauge do mês anterior.
+    """
+    ctx = dash.callback_context
+    if not ctx.triggered:
+        raise PreventUpdate
+
+    if info is None or prod is None:
+        raise PreventUpdate
+
+    # Leitura dos dados de assets (salvos em csv)
+    # pylint: disable=E1101
+    df_eff = pd.read_csv((EFF_LAST))
+    df_perf = pd.read_csv((PERF_LAST))
+    df_repair = pd.read_csv((REPAIR_LAST))
+
+    fig_eff = ind_graphics.draw_gauge_graphic(
+        df_eff, IndicatorType.EFFICIENCY, 90
+    )
+    fig_perf = ind_graphics.draw_gauge_graphic(
+        df_perf, IndicatorType.PERFORMANCE, 4
+    )
+    fig_repair = ind_graphics.draw_gauge_graphic(
+        df_repair, IndicatorType.REPAIR, 4
+    )
+
+    return fig_eff, fig_perf, fig_repair
