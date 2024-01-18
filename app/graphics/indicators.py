@@ -71,6 +71,9 @@ class Indicators:
         # Extrair apenas o dia da data
         df_pivot.columns = pd.to_datetime(df_pivot.columns).day
 
+        num_cells = len(df_pivot.index) * len(df_pivot.columns)
+        font_size = 400 / num_cells  # Ajustar o valor 100 conforme necessário
+
         # Criar o gráfico de calor
         fig = go.Figure(
             data=go.Heatmap(
@@ -97,7 +100,7 @@ class Indicators:
                     y=df_pivot.index[i],
                     text=f"{df_pivot.values[i, j]:.1%}",
                     showarrow=False,
-                    font=dict(color="white", size=8),
+                    font=dict(color="white", size=font_size),
                 )
 
         # Definir o título do gráfico
@@ -161,7 +164,7 @@ class Indicators:
         )
 
         # Reordenar o índice do DataFrame
-        df_pivot = df_pivot.reindex(["NOT", "MAT", "VES"])
+        df_pivot = df_pivot.reindex(["VES", "MAT", "NOT"])
 
         # Criar escala de cores personalizada - cores do bootstrap
         colors = [
@@ -262,7 +265,7 @@ class Indicators:
         )
 
         # Reordenar o índice do DataFrame
-        df_pivot = df_pivot.reindex(["NOT", "MAT", "VES"])
+        df_pivot = df_pivot.reindex(["VES", "MAT", "NOT"])
 
         # Criar escala de cores personalizada - cores do bootstrap
         colors = [
@@ -463,6 +466,7 @@ class Indicators:
             autosize=True,
             margin=dict(t=30, b=30, l=30, r=30),
             plot_bgcolor="white",
+            height=250,
         )
 
         return fig

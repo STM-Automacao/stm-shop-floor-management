@@ -3,7 +3,7 @@
     Criada por: Bruno Tomaz
     Data: 15/01/2024
 """
-# cSpell: words eficiencia
+# cSpell: words eficiencia fullscreen
 from io import StringIO
 
 import dash
@@ -12,6 +12,7 @@ import pandas as pd
 from dash import callback, dcc, html
 from dash.dependencies import Input, Output
 from dash.exceptions import PreventUpdate
+
 # pylint: disable=E0401
 from graphics.indicators import Indicators
 from helpers.path_config import EFF_LAST, PERF_LAST, REPAIR_LAST
@@ -22,150 +23,172 @@ ind_graphics = Indicators()
 times_data = TimesData()
 
 # ========================================= Layout ========================================= #
-layout = html.Div(
-    [
-        dbc.Row(
+layout = dcc.Loading(
+    id="loading",
+    type="circle",
+    fullscreen=True,
+    children=[
+        html.Div(
             [
-                dbc.Col(
+                dbc.Row(
                     [
-                        dcc.Graph(
-                            figure={},
-                            id="eficiencia-gauge-graph_last",
+                        dbc.Col(
+                            [
+                                dcc.Graph(
+                                    figure={},
+                                    id="eficiencia-gauge-graph_last",
+                                ),
+                            ],
+                            xs={"size": 6, "order": 2, "offset": 0},
+                            sm={"size": 4, "order": 2, "offset": 1},
+                            md={"size": 4, "order": 2, "offset": 1},
+                            xl={"size": 2, "order": 1, "offset": 0},
+                            xxl={"size": 1, "order": 1, "offset": 0},
+                            id="last-eficiencia-col",
+                            class_name="p-1",
+                        ),
+                        dbc.Col(
+                            [
+                                dcc.Graph(
+                                    figure={},
+                                    id="eficiencia-heat-graph",
+                                ),
+                                dcc.Graph(
+                                    figure={},
+                                    id="eficiencia-line-graph",
+                                    style={"height": "80px"},
+                                ),
+                            ],
+                            xs={"size": 12, "order": 1},
+                            sm={"size": 12, "order": 1},
+                            md={"size": 12, "order": 1},
+                            xl={"size": 8, "order": 2},
+                            xxl={"size": 10, "order": 2},
+                            id="eficiencia-col",
+                            class_name="p-1",
+                        ),
+                        dbc.Col(
+                            [
+                                dcc.Graph(
+                                    figure={},
+                                    id="eficiencia-gauge-graph_actual",
+                                ),
+                            ],
+                            xs={"size": 6, "order": 2, "offset": 0},
+                            sm={"size": 4, "order": 2, "offset": 2},
+                            md={"size": 4, "order": 2, "offset": 2},
+                            xl={"size": 2, "order": 3, "offset": 0},
+                            xxl={"size": 1, "order": 3, "offset": 0},
+                            id="current-eficiencia-col",
+                            class_name="p-1",
                         ),
                     ],
-                    md=2,
-                    xl=1,
-                    id="last-eficiencia-col",
-                    class_name="p-1",
+                    id="eficiencia-row",
                 ),
-                dbc.Col(
+                html.Hr(),
+                dbc.Row(
                     [
-                        dcc.Graph(
-                            figure={},
-                            id="eficiencia-heat-graph",
+                        dbc.Col(
+                            [
+                                dcc.Graph(
+                                    figure={},
+                                    id="performance-gauge-graph_last",
+                                ),
+                            ],
+                            sm={"size": 4, "order": 2, "offset": 1},
+                            md={"size": 2, "order": 1, "offset": 0},
+                            xl={"size": 1, "order": 1, "offset": 0},
+                            id="last-performance-col",
+                            class_name="p-1",
                         ),
-                        dcc.Graph(
-                            figure={},
-                            id="eficiencia-line-graph",
-                            style={"height": "80px"},
+                        dbc.Col(
+                            [
+                                dcc.Graph(
+                                    figure={},
+                                    id="performance-heat-graph",
+                                ),
+                                dcc.Graph(
+                                    figure={},
+                                    id="performance-line-graph",
+                                    style={"height": "80px"},
+                                ),
+                            ],
+                            sm={"size": 12, "order": 1},
+                            md={"size": 8, "order": 2},
+                            xl={"size": 10, "order": 2},
+                            id="performance-col",
+                            class_name="p-1",
+                        ),
+                        dbc.Col(
+                            [
+                                dcc.Graph(
+                                    figure={},
+                                    id="performance-gauge-graph_actual",
+                                ),
+                            ],
+                            sm={"size": 4, "order": 3, "offset": 2},
+                            md={"size": 2, "order": 3, "offset": 0},
+                            xl={"size": 1, "order": 3, "offset": 0},
+                            id="current-performance-col",
+                            class_name="p-1",
                         ),
                     ],
-                    md=8,
-                    xl=10,
-                    id="eficiencia-col",
-                    class_name="p-1",
+                    id="performance-row",
                 ),
-                dbc.Col(
+                html.Hr(),
+                dbc.Row(
                     [
-                        dcc.Graph(
-                            figure={},
-                            id="eficiencia-gauge-graph_actual",
+                        dbc.Col(
+                            [
+                                dcc.Graph(
+                                    figure={},
+                                    id="reparos-gauge-graph_last",
+                                ),
+                            ],
+                            sm={"size": 4, "order": 2, "offset": 1},
+                            md={"size": 2, "order": 1, "offset": 0},
+                            xl={"size": 1, "order": 1, "offset": 0},
+                            id="last-reparos-col",
+                            class_name="p-1",
+                        ),
+                        dbc.Col(
+                            [
+                                dcc.Graph(
+                                    figure={},
+                                    id="reparos-heat-graph",
+                                ),
+                                dcc.Graph(
+                                    figure={},
+                                    id="reparos-line-graph",
+                                    style={"height": "80px"},
+                                ),
+                            ],
+                            sm={"size": 12, "order": 1},
+                            md={"size": 8, "order": 2},
+                            xl={"size": 10, "order": 2},
+                            id="reparos-col",
+                            class_name="p-1",
+                        ),
+                        dbc.Col(
+                            [
+                                dcc.Graph(
+                                    figure={},
+                                    id="reparos-gauge-graph_actual",
+                                ),
+                            ],
+                            sm={"size": 4, "order": 3, "offset": 2},
+                            md={"size": 2, "order": 3, "offset": 0},
+                            xl={"size": 1, "order": 3, "offset": 0},
+                            id="current-reparos-col",
+                            class_name="p-1",
                         ),
                     ],
-                    md=2,
-                    xl=1,
-                    id="current-eficiencia-col",
-                    class_name="p-1",
+                    id="reparos-row",
                 ),
             ],
-            id="eficiencia-row",
-        ),
-        html.Hr(),
-        dbc.Row(
-            [
-                dbc.Col(
-                    [
-                        dcc.Graph(
-                            figure={},
-                            id="performance-gauge-graph_last",
-                        ),
-                    ],
-                    md=2,
-                    xl=1,
-                    id="last-performance-col",
-                    class_name="p-1",
-                ),
-                dbc.Col(
-                    [
-                        dcc.Graph(
-                            figure={},
-                            id="performance-heat-graph",
-                        ),
-                        dcc.Graph(
-                            figure={},
-                            id="performance-line-graph",
-                            style={"height": "80px"},
-                        ),
-                    ],
-                    md=8,
-                    xl=10,
-                    id="performance-col",
-                    class_name="p-1",
-                ),
-                dbc.Col(
-                    [
-                        dcc.Graph(
-                            figure={},
-                            id="performance-gauge-graph_actual",
-                        ),
-                    ],
-                    md=2,
-                    xl=1,
-                    id="current-performance-col",
-                    class_name="p-1",
-                ),
-            ],
-            id="performance-row",
-        ),
-        html.Hr(),
-        dbc.Row(
-            [
-                dbc.Col(
-                    [
-                        dcc.Graph(
-                            figure={},
-                            id="reparos-gauge-graph_last",
-                        ),
-                    ],
-                    md=2,
-                    xl=1,
-                    id="last-reparos-col",
-                    class_name="p-1",
-                ),
-                dbc.Col(
-                    [
-                        dcc.Graph(
-                            figure={},
-                            id="reparos-heat-graph",
-                        ),
-                        dcc.Graph(
-                            figure={},
-                            id="reparos-line-graph",
-                            style={"height": "80px"},
-                        ),
-                    ],
-                    md=8,
-                    xl=10,
-                    id="reparos-col",
-                    class_name="p-1",
-                ),
-                dbc.Col(
-                    [
-                        dcc.Graph(
-                            figure={},
-                            id="reparos-gauge-graph_actual",
-                        ),
-                    ],
-                    md=2,
-                    xl=1,
-                    id="current-reparos-col",
-                    class_name="p-1",
-                ),
-            ],
-            id="reparos-row",
-        ),
+            id="main-page",
+        )
     ],
-    id="main-page",
 )
 
 
