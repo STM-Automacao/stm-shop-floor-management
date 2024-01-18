@@ -1,0 +1,39 @@
+[tool.poetry]
+name = "stm-shop-floor-management"
+version = "1.0.0"
+description = "Sistema para gerenciar eficiência, performance e outros em uma fábrica"
+authors = ["brunotomaz-dev <tomaz.bruno@gmail.com>"]
+license = "MIT"
+readme = "README.md"
+packages = [{include = "app", from = "."}]
+
+[tool.poetry.dependencies]
+python = "^3.12"
+black = "^23.12.1"
+dash = "^2.14.2"
+dash-bootstrap-components = "^1.5.0"
+dash-core-components = "^2.0.0"
+dash-html-components = "^2.0.0"
+dash-iconify = "^0.1.2"
+dash-mantine-components = "^0.12.1"
+apscheduler = "^3.10.4"
+flask-caching = "^2.1.0"
+fuzzywuzzy = "^0.18.0"
+ipykernel = "^6.29.0"
+levenshtein = "^0.23.0"
+matplotlib = "^3.8.2"
+nbformat = "^5.9.2"
+numpy = "^1.26.3"
+pandas = "^2.1.4"
+plotly = "^5.18.0"
+pymssql = "^2.2.11"
+pyodbc = "^5.0.1"
+python-dotenv = "^1.0.0"
+seaborn = "^0.13.1"
+sqlalchemy = "^2.0.25"
+kaleido = {version = "0.2.1", optional = true}
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

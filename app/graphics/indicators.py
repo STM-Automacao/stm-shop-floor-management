@@ -7,7 +7,6 @@ Gráficos de indicadores
 
 import pandas as pd
 import plotly.graph_objects as go
-
 # pylint: disable=E0401
 from helpers.types import IndicatorType
 
