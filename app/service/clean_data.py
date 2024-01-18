@@ -2,10 +2,14 @@
     Módulo para limpeza dos dados
 """
 
-# cSpell:words usuario, solucao, dayofweek, sabado
+from datetime import time
 
-import pandas as pd
+# cSpell:words usuario, solucao, dayofweek, sabado
 import numpy as np
+import pandas as pd
+
+# pylint: disable=E0401
+from helpers.path_config import FERIADOS
 
 
 class CleanData:
@@ -361,7 +365,8 @@ class CleanData:
         df["domingo"] = df["data_hora_registro"].dt.dayofweek == 6
 
         # Listar feriados
-        feriados = pd.read_csv("../database/feriados.csv")
+        # feriados = pd.read_csv(file_path)
+        feriados = pd.read_csv(FERIADOS)
 
         # Converter a coluna data para datetime
         feriados["feriados"] = pd.to_datetime(feriados["feriados"])
@@ -519,7 +524,6 @@ class CleanData:
         """
         Limpa os dados de info das máquinas para produção
         """
-
         # Ordenar por maquina_id asc, turno asc, data_registro desc, hora_registro desc
         df_info = info.sort_values(
             by=["maquina_id", "turno", "data_registro", "hora_registro"],
@@ -543,6 +547,29 @@ class CleanData:
         # Converter coluna data_hora_registro para datetime
         df_info["data_hora_registro"] = pd.to_datetime(
             df_info["data_hora_registro"], format="%Y-%m-%d %H:%M:%S"
+        )
+
+        # Se o turno for VES, e a hora de data_hora_registro for entre 00:00:00 e 00:01:00, alterar
+        # a data_registro para o dia anterior
+        df_info.loc[
+            (df_info["turno"] == "VES")
+            & (time(0, 0, 0) < df_info["data_hora_registro"].dt.time)
+            & (df_info["data_hora_registro"].dt.time < time(0, 5, 0)),
+            "data_registro",
+        ] = df_info["data_registro"] - pd.Timedelta(days=1)
+
+        # Encontrar primeiro dia do mês atual
+        first_day_this_month = pd.to_datetime("today").replace(day=1)
+
+        # Remover datas do mês anterior
+        df_info = df_info[
+            df_info["data_registro"] >= first_day_this_month.date()
+        ]
+
+        # Remover duplicatas com base em 'maquina_id', 'turno' e 'data_registro', mantendo apenas
+        # a entrada com a 'data_hora_registro' mais recente
+        df_info = df_info.drop_duplicates(
+            subset=["maquina_id", "turno", "data_registro"], keep="last"
         )
 
         # Remover colunas desnecessárias

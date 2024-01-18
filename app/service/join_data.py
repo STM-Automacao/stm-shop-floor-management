@@ -204,6 +204,12 @@ class JoinData:
             -1
         )
 
+        # Remover as linhas com status rodando
+        df = df[df["status"] != "rodando"]
+
+        # Ajustar o index
+        df.reset_index(drop=True, inplace=True)
+
         return df
 
     def info_cadastro_combine(
@@ -299,7 +305,7 @@ class JoinData:
         # Ordenar pela maquina e hora
         df_info_cad.sort_values(
             by=["maquina_id", "data_hora_registro", "turno"],
-            ascending=[True, False],
+            ascending=True,
             inplace=True,
         )
 

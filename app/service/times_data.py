@@ -72,6 +72,11 @@ class TimesData:
 
         info_stops = info.copy()
 
+        # Certificar que data_hora_registro é do tipo datetime
+        info_stops["data_hora_registro"] = pd.to_datetime(
+            info_stops["data_hora_registro"]
+        )
+
         # Adicionar coluna com descontos de parada
         info_stops["desconto_min"] = info_stops["motivo_id"].map(desc_pcp)
 
@@ -206,6 +211,14 @@ class TimesData:
             .reset_index()
         )
 
+        # Converta a coluna "data_registro" para data em ambos os dataframes
+        df_eff_times_desc["data_registro"] = pd.to_datetime(
+            df_eff_times_desc["data_registro"]
+        ).dt.date
+        df_prod_total["data_registro"] = pd.to_datetime(
+            df_prod_total["data_registro"]
+        ).dt.date
+
         # Fazer merge com df_prod_total
         df_eff_times_desc = pd.merge(
             df_prod_total,
@@ -314,6 +327,14 @@ class TimesData:
             .reset_index()
         )
 
+        # Converta a coluna "data_registro" para data em ambos os dataframes
+        df_perf_times_desc["data_registro"] = pd.to_datetime(
+            df_perf_times_desc["data_registro"]
+        ).dt.date
+        df_prod_total["data_registro"] = pd.to_datetime(
+            df_prod_total["data_registro"]
+        ).dt.date
+
         # Fazer merge com df_prod_total
         df_perf_times_desc = pd.merge(
             df_prod_total,
@@ -350,15 +371,15 @@ class TimesData:
 
         return df_perf_times_desc
 
-    def get_reparos_data(
+    def get_repair_data(
         self, df_info: pd.DataFrame, df_prod: pd.DataFrame
     ) -> pd.DataFrame:
         """
-        Método para calcular os dados de reparo.
+        Método para calcular os dados de reparos.
 
         Este método recebe dois DataFrames, um contendo informações de máquina e
         e outro contendo informações de produção,
-        e retorna um DataFrame com informações de Reparo.
+        e retorna um DataFrame com informações de Reparos.
 
         ### Parâmetros:
         df_info (pd.DataFrame): DataFrame contendo informações de maquina
@@ -419,6 +440,14 @@ class TimesData:
             .reset_index()
         )
 
+        # Converta a coluna "data_registro" para data em ambos os dataframes
+        df_rep_times_desc["data_registro"] = pd.to_datetime(
+            df_rep_times_desc["data_registro"]
+        ).dt.date
+        df_prod_total["data_registro"] = pd.to_datetime(
+            df_prod_total["data_registro"]
+        ).dt.date
+
         # Fazer merge com df_prod_total
         df_rep_times_desc = pd.merge(
             df_prod_total,
@@ -446,7 +475,7 @@ class TimesData:
         )
 
         # Calcular o reparo
-        df_rep_times_desc["reparo"] = (
+        df_rep_times_desc["reparos"] = (
             df_rep_times_desc["afeta"]
             / df_rep_times_desc["tempo_esperado_min"]
         )

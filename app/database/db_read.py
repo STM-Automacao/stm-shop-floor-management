@@ -6,7 +6,7 @@ Class to read data from the database
 import pandas as pd
 
 # pylint: disable=import-error
-from Database.connection import Connection
+from database.connection import Connection
 
 
 class Read(Connection):
