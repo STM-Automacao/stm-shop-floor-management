@@ -277,6 +277,15 @@ class JoinData:
             inplace=True,
         )
 
+        # Remover linhas onde a 'linha' é 0
+        df_info = df_info[df_info["linha"] != 0]
+
+        # Ajuste para dias que falta energia
+        # Se o tempo de registro for maior que 480 minutos, definir como 480 minutos
+        df_info.loc[
+            df_info["tempo_registro_min"] > 480, "tempo_registro_min"
+        ] = 480
+
         # Ajustar o index
         df_info.reset_index(drop=True, inplace=True)
 

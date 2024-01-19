@@ -12,6 +12,7 @@ import pandas as pd
 from dash import callback, dcc, html
 from dash.dependencies import Input, Output
 from dash.exceptions import PreventUpdate
+
 # pylint: disable=E0401
 from graphics.indicators import Indicators
 from helpers.path_config import EFF_LAST, PERF_LAST, REPAIR_LAST
@@ -22,6 +23,7 @@ ind_graphics = Indicators()
 times_data = TimesData()
 
 # ========================================= Layout ========================================= #
+
 layout = dcc.Loading(
     id="loading",
     type="circle",

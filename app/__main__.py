@@ -77,6 +77,7 @@ app.layout = dbc.Container(
     children=[
         dcc.Store(id="store-info"),
         dcc.Store(id="store-prod"),
+        dcc.Store(id="is-data-store", storage_type="session", data=False),
         html.H1("Shop Floor Management", className="text-center"),
         html.Hr(),
         dbc.Row(
@@ -110,6 +111,24 @@ def update_store(_data):
     print("========== Atualizando store ==========")
 
     return df_maq_info_cadastro, df_maq_info_prod_cad
+
+
+@callback(
+    Output("is-data-store", "data"),
+    [
+        Input("store-info", "data"),
+        Input("store-prod", "data"),
+    ],
+)
+def update_is_data_store(data_info, data_prod):
+    """
+    Função que atualiza o store com os dados do banco de dados.
+    Utiliza dados do cache para agilizar o carregamento.
+    """
+    if data_info is None or data_prod is None:
+        return False
+
+    return True
 
 
 # ======================================== Run App ======================================== #
