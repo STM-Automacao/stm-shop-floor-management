@@ -59,8 +59,10 @@ class CleanData:
 
         """
 
+        df_cadastro = cadastro.copy()
+
         # Remover linhas duplicadas (erros de cadastro)
-        df_cadastro = cadastro.drop_duplicates(
+        df_cadastro = df_cadastro.drop_duplicates(
             subset=["data_registro", "linha"], keep="first"
         )
 

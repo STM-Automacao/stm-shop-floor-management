@@ -273,7 +273,7 @@ class JoinData:
 
         # Ordenar pela maquina e hora
         df_info.sort_values(
-            by=["maquina_id", "data_hora_registro", "turno"],
+            by=["linha", "data_hora_registro", "turno"],
             inplace=True,
         )
 
@@ -313,7 +313,7 @@ class JoinData:
 
         # Ordenar pela maquina e hora
         df_info_cad.sort_values(
-            by=["maquina_id", "data_hora_registro", "turno"],
+            by=["linha", "data_hora_registro", "turno"],
             ascending=True,
             inplace=True,
         )
@@ -337,6 +337,9 @@ class JoinData:
                 "data_hora_registro",
             ]
         ]
+
+        # Remover linhas onde a 'linha' é 0
+        df_info_cad = df_info_cad[df_info_cad["linha"] != 0]
 
         # Ajustar o index
         df_info_cad.reset_index(drop=True, inplace=True)
