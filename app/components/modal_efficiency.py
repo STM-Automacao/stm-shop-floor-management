@@ -13,6 +13,7 @@ from dash.exceptions import PreventUpdate
 
 # pylint: disable=E0401
 from graphics.indicators_turn import IndicatorsTurn
+from helpers.types import IndicatorType
 from service.times_data import TimesData
 
 times_data = TimesData()
@@ -60,7 +61,9 @@ layout = [
                     dbc.Col(dcc.Graph(id="graph-eficiencia-modal-2"), md=6),
                     dbc.Col(
                         [
-                            dbc.Row(html.P("Principais Perdas na Eficiência")),
+                            dbc.Row(
+                                dcc.Graph(id="graph-eficiencia-modal-perdas")
+                            ),
                             dbc.Row(html.P("Aqui Input da ações")),
                         ],
                         md=6,
@@ -121,5 +124,27 @@ def update_graph_eficiencia_modal_2(data_info, data_prod):
     df = times_data.get_eff_data(df_maq_info_cadastro, df_maq_info_prod_cad)
 
     figure = indicators.get_eff_bar_turn(df)
+
+    return figure
+
+
+@callback(
+    Output("graph-eficiencia-modal-perdas", "figure"),
+    Input("store-info", "data"),
+)
+def update_graph_eficiencia_modal_perdas(data_info):
+    """
+    Função que atualiza o gráfico de barras de eficiência do modal.
+    """
+    if data_info is None:
+        raise PreventUpdate
+
+    df_maq_info_cadastro = pd.read_json(stringIO(data_info), orient="split")
+
+    df = indicators.get_time_lost(
+        df_maq_info_cadastro, IndicatorType.EFFICIENCY
+    )
+
+    figure = indicators.get_eff_bar_lost(df)
 
     return figure

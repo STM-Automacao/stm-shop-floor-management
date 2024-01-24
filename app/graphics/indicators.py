@@ -4,6 +4,7 @@ Gráficos de indicadores
 # cSpell: words mcolors, eficiencia, vmin, vmax, cmap, figsize, linewidths, annot, cbar, xlabel,
 # cSpell: words ylabel, xticks, yticks, colorscale, hoverongaps, zmin, zmax, showscale, xgap, ygap,
 # cSpell: words nticks, tickmode, tickvals, ticktext, tickangle, lightgray, tickfont, showticklabels
+# cSpell: words ndenumerate
 
 import numpy as np
 import pandas as pd

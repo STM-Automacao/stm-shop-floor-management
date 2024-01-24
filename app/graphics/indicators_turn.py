@@ -4,7 +4,7 @@ Gráficos de indicadores por turno.
 # cSpell: words mcolors, eficiencia, vmin, vmax, cmap, figsize, linewidths, annot, cbar, xlabel,
 # cSpell: words ylabel, xticks, yticks, colorscale, hoverongaps, zmin, zmax, showscale, xgap, ygap,
 # cSpell: words nticks, tickmode, tickvals, ticktext, tickangle, lightgray, tickfont, showticklabels
-# cSpell: words ndenumerate producao_total customdata xaxes
+# cSpell: words ndenumerate producao_total customdata xaxes usuario
 
 import numpy as np
 import pandas as pd
@@ -12,7 +12,8 @@ import plotly.express as px
 import plotly.graph_objects as go
 
 # pylint: disable=E0401
-# from helpers.types import IndicatorType
+from helpers.types import IndicatorType
+from service.times_data import TimesData
 
 
 class IndicatorsTurn:
@@ -24,6 +25,7 @@ class IndicatorsTurn:
         self.danger_color = "#dc3545"
         self.warning_color = "#ffc107"
         self.success_color = "#198754"
+        self.times_data = TimesData()
 
     def get_eff_heat_turn(
         self,
@@ -197,8 +199,7 @@ class IndicatorsTurn:
             title="Eficiência por Linhas",
             xaxis_title="Eficiência",
             yaxis_title="Linha",
-            title_x=0.5,  # Centralizar o título
-            plot_bgcolor="white",
+            title_x=0.5,
             margin=dict(t=40, b=40, l=40, r=40),
             legend=dict(
                 title_text="Turno",
@@ -233,6 +234,132 @@ class IndicatorsTurn:
                 line=dict(dash="dash", color="red"),
                 hovertemplate="<b>Meta</b>: %{x:.1%}<br>",
             )
+        )
+
+        return fig
+
+    def get_time_lost(
+        self, df_info: pd.DataFrame, ind_type: IndicatorType
+    ) -> pd.DataFrame:
+        """
+        Este método é responsável por criar o dataframe de tempo perdido.
+
+        Parâmetros:
+        df_info (pd.DataFrame): DataFrame contendo os dados para o gráfico.
+                                Deve incluir as colunas 'data_registro', 'turno' e 'eficiencia'.
+        ind_type (IndicatorType): Tipo do indicador.
+
+        Retorna:
+        df_info_desc_times (pd.DataFrame): DataFrame com os dados de tempo perdido.
+        """
+
+        # Mapear pelo tipo do indicador
+        ind_type_map = {
+            IndicatorType.EFFICIENCY: self.times_data.desc_eff,
+            IndicatorType.REPAIR: self.times_data.desc_rep,
+            IndicatorType.PERFORMANCE: self.times_data.desc_perf,
+        }
+
+        # Conseguindo dataframe com tempos ajustados
+        df_info_desc_times = self.times_data.get_times_discount(
+            df_info, ind_type_map[ind_type]
+        )
+
+        # Se coluna "excedente" for nula, substituir pelo valor de "tempo_registro_min"
+        df_info_desc_times.loc[
+            df_info_desc_times["excedente"].isnull(), "excedente"
+        ] = df_info_desc_times["tempo_registro_min"]
+
+        # Descartar colunas desnecessárias
+        df_info_desc_times.drop(
+            columns=[
+                "tempo_registro_min",
+                "desconto_min",
+                "data_hora_registro",
+                "data_hora_final",
+                "usuario_id_maq_occ",
+                "data_hora_registro_operador",
+                "usuario_id_maq_cadastro",
+            ],
+            inplace=True,
+        )
+
+        # Preencher onde motivo_nome for nulo
+        df_info_desc_times["motivo_nome"].fillna(
+            "Motivo não informado", inplace=True
+        )
+
+        return df_info_desc_times
+
+    def get_eff_bar_lost(self, df: pd.DataFrame) -> go.Figure:
+        """
+        Retorna um gráfico de barras representando o tempo perdido que mais impacta a eficiência.
+
+        Parâmetros:
+        - df: DataFrame contendo os dados necessários para a criação do gráfico.
+
+        Retorno:
+        - fig: Objeto go.Figure contendo o gráfico de barras.
+        """
+
+        # Agrupar motivo_nome
+        df_motivo = (
+            df.groupby("motivo_nome")["excedente"]
+            .sum()
+            .sort_values(ascending=False)
+            .head(5)
+            .reset_index()
+        )
+
+        # Preencher onde motivo_id for 3 e problema for nulo
+        df.loc[
+            (df["motivo_id"] == 3) & (df["problema"].isnull()),
+            "problema",
+        ] = "Refeição"
+        # Preencher onde problema for nulo
+        df["problema"].fillna("Problema não informado", inplace=True)
+        # Remover linhas onde motivo_nome é igual ao problema
+        df = df[df["motivo_nome"] != df["problema"]]
+        # Agrupar por problema
+        df_problema = (
+            df.groupby("problema")["excedente"]
+            .sum()
+            .sort_values(ascending=False)
+            .head(5)
+            .reset_index()
+        )
+
+        # Motivo
+        motive_bar = go.Bar(
+            name="Motivo",
+            x=df_motivo["motivo_nome"],
+            y=df_motivo["excedente"],
+        )
+
+        motive_bar.update(
+            hovertemplate="<b>Motivo</b>: %{x}<br><b>Tempo Perdido</b>: %{y:.0f} min<br>",
+        )
+
+        # Problema
+        problem_bar = go.Bar(
+            name="Problema",
+            x=df_problema["problema"],
+            y=df_problema["excedente"],
+        )
+
+        problem_bar.update(
+            hovertemplate="<b>Problema</b>: %{x}<br><b>Tempo Perdido</b>: %{y:.0f} min<br>",
+        )
+
+        # Gráfico de barras
+        fig = go.Figure(data=[motive_bar, problem_bar])
+
+        fig.update_layout(
+            title="Tempo Perdido que mais impacta a Eficiência",
+            xaxis_title="Motivo/Problema",
+            yaxis_title="Tempo Perdido",
+            title_x=0.5,
+            margin=dict(t=40, b=40, l=40, r=40),
         )
 
         return fig

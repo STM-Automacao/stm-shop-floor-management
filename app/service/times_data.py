@@ -46,7 +46,7 @@ class TimesData:
         # Lista com os motivos de parada que são considerados para Reparos
         self.af_rep = [7, 8, 11]
 
-    def __get_times_discount(
+    def get_times_discount(
         self, info: pd.DataFrame, desc_pcp: dict[int, int]
     ) -> pd.DataFrame:
         """
@@ -119,8 +119,21 @@ class TimesData:
                 "data_hora_registro_operador",
                 "usuario_id_maq_cadastro",
                 "data_registro",
+                "domingo_feriado_emenda",
             ]
         ]
+
+        # ----- Corrigindo erros da tabela de motivos ----- #
+        # Substituir "Nan" por np.nan
+        info_stops["problema"].replace("Nan", np.nan, inplace=True)
+
+        # Ajuste para paradas programadas
+        info_stops.loc[
+            (info_stops["domingo_feriado_emenda"] is True)
+            & (info_stops["motivo_id"].isnull())
+            & (info_stops["tempo_registro_min"] > 200),
+            ["motivo_nome", "motivo_id", "problema"],
+        ] = ["Parada Programada", 12, "Domingo/feriado"]
 
         return info_stops
 
@@ -176,7 +189,7 @@ class TimesData:
         ```
         """
 
-        df_eff_times_desc = self.__get_times_discount(df_info, self.desc_eff)
+        df_eff_times_desc = self.get_times_discount(df_info, self.desc_eff)
         df_prod_total = df_prod.copy()
         ciclo_ideal = 10.6
 
@@ -285,7 +298,7 @@ class TimesData:
         ```
         """
 
-        df_perf_times_desc = self.__get_times_discount(df_info, self.desc_perf)
+        df_perf_times_desc = self.get_times_discount(df_info, self.desc_perf)
         df_prod_total = df_prod.copy()
 
         # Descartar colunas desnecessárias de df_prod
@@ -398,7 +411,7 @@ class TimesData:
         ```
         """
 
-        df_rep_times_desc = self.__get_times_discount(df_info, self.desc_rep)
+        df_rep_times_desc = self.get_times_discount(df_info, self.desc_rep)
         df_prod_total = df_prod.copy()
 
         # Descartar colunas desnecessárias de df_prod
