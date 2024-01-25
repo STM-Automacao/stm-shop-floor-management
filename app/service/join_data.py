@@ -312,10 +312,9 @@ class JoinData:
         )
 
         # Ordenar pela maquina e hora
-        df_info_cad.sort_values(
+        df_info_cad = df_info_cad.sort_values(
             by=["linha", "data_hora_registro", "turno"],
             ascending=True,
-            inplace=True,
         )
 
         # Renomear usuario id

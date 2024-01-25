@@ -238,6 +238,7 @@ class TimesData:
             df_eff_times_desc,
             on=["maquina_id", "linha", "fabrica", "turno", "data_registro"],
             how="left",
+            validate="one_to_one",
         )
 
         # Ajustar desc_min para 0 quando for nulo
@@ -354,6 +355,7 @@ class TimesData:
             df_perf_times_desc,
             on=["maquina_id", "linha", "fabrica", "turno", "data_registro"],
             how="left",
+            validate="one_to_one",
         )
 
         # Ajustar desconto_min para 0 quando for nulo
@@ -467,6 +469,7 @@ class TimesData:
             df_rep_times_desc,
             on=["maquina_id", "linha", "fabrica", "turno", "data_registro"],
             how="left",
+            validate="one_to_one",
         )
 
         # Ajustar desconto_min para 0 quando for nulo
