@@ -11,7 +11,7 @@ import dash_bootstrap_components as dbc
 import pandas as pd
 
 # pylint: disable=E0401
-from components import modal_efficiency, modal_performance
+from components import modal_efficiency, modal_performance, modal_repair
 from dash import callback, dcc, html
 from dash.dependencies import Input, Output, State
 from dash.exceptions import PreventUpdate
@@ -168,9 +168,15 @@ layout = [
                             ),
                             dbc.Col(
                                 [
-                                    dcc.Graph(
-                                        figure={},
-                                        id="reparos-heat-graph",
+                                    dbc.Button(
+                                        id="reparos_heat_btn",
+                                        class_name="w-100 p-0 bg-transparent border-0",
+                                        children=[
+                                            dcc.Graph(
+                                                figure={},
+                                                id="reparos-heat-graph",
+                                            ),
+                                        ],
                                     ),
                                     dcc.Graph(
                                         figure={},
@@ -201,7 +207,7 @@ layout = [
                         id="reparos-row",
                     ),
                     html.Hr(),
-                    html.P("logo"),
+                    html.P("logo", className="text-center"),
                 ],
                 id="main-page",
             )
@@ -218,6 +224,13 @@ layout = [
     dbc.Modal(
         children=modal_performance.layout,
         id="modal_perf",
+        size="xl",
+        scrollable=True,
+        fullscreen=True,
+    ),
+    dbc.Modal(
+        children=modal_repair.layout,
+        id="modal_repair",
         size="xl",
         scrollable=True,
         fullscreen=True,
@@ -530,6 +543,20 @@ def toggle_modal(n1, is_open):
 def toggle_modal_performance(n1, is_open):
     """
     Função que abre o modal com o gráfico de performance.
+    """
+    if n1:
+        return not is_open
+    return is_open
+
+
+@callback(
+    Output("modal_repair", "is_open"),
+    [Input("reparos_heat_btn", "n_clicks")],
+    [State("modal_repair", "is_open")],
+)
+def toggle_modal_repair(n1, is_open):
+    """
+    Função que abre o modal com o gráfico de reparos.
     """
     if n1:
         return not is_open

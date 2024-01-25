@@ -1,9 +1,9 @@
 """
-Modal Module
+Modal de Reparos
 """
+
 from io import StringIO as stringIO
 
-# cSpell: words eficiencia fullscreen
 import dash_bootstrap_components as dbc
 import dash_mantine_components as dmc
 import pandas as pd
@@ -20,15 +20,16 @@ times_data = TimesData()
 indicators = IndicatorsTurn()
 
 # ========================================= Modal Layout ======================================== #
+
 layout = [
-    dbc.ModalHeader("Eficiência por Turno"),
+    dbc.ModalHeader("Reparos por Turno"),
     dbc.ModalBody(
         [
             dbc.Row(
                 [
                     dbc.Col(
                         dcc.RadioItems(
-                            id="radio-items",
+                            id="radio-items-repair",
                             options=[
                                 {"label": "Noturno", "value": "NOT"},
                                 {"label": "Matutino", "value": "MAT"},
@@ -43,7 +44,7 @@ layout = [
                     ),
                     dbc.Col(
                         dmc.Switch(
-                            id="annotations-switch-eficiencia",
+                            id="annotations-switch-repair",
                             label="Anotações",
                             size="sm",
                             radius="lg",
@@ -55,113 +56,105 @@ layout = [
                 ],
                 justify="between",
             ),
-            dcc.Loading(dcc.Graph(id="graph-eficiencia-modal")),
+            dcc.Loading(dcc.Graph(id="graph-repair-modal")),
             html.Hr(),
             dbc.Row(
                 [
-                    dbc.Col(dcc.Graph(id="graph-eficiencia-modal-2"), md=6),
+                    dbc.Col(dcc.Graph(id="graph-repair-modal-2"), md=6),
                     dbc.Col(
                         [
                             dbc.Row(
                                 [
                                     dmc.Switch(
-                                        id="perdas-switch-eficiencia",
+                                        id="perdas-switch-repair",
                                         label="Agrupado",
                                         size="sm",
                                         radius="lg",
                                         className="mb-1",
                                         checked=False,
                                     ),
-                                    dcc.Graph(
-                                        id="graph-eficiencia-modal-perdas"
-                                    ),
+                                    dcc.Graph(id="graph-repair-modal-perdas"),
                                 ]
                             ),
-                            dbc.Row(),  # Input de ações
+                            dbc.Row(),  # Terá um input de ações
                         ],
                         md=6,
                     ),
-                ]
+                ],
             ),
         ]
     ),
-    dbc.ModalFooter("Modal footer"),
+    dbc.ModalFooter("Modal Footer"),
 ]
 
-
-# ======================================= Modal Callbacks ======================================== #
-@callback(
-    Output("graph-eficiencia-modal", "figure"),
-    [
-        Input("radio-items", "value"),
-        Input("store-info", "data"),
-        Input("store-prod", "data"),
-        Input("annotations-switch-eficiencia", "checked"),
-    ],
-)
-def update_graph_eficiencia_modal(value, data_info, data_prod, checked):
-    """
-    Função que atualiza o gráfico de eficiência do modal.
-    """
-    if data_info is None or data_prod is None:
-        raise PreventUpdate
-
-    df_maq_info_cadastro = pd.read_json(stringIO(data_info), orient="split")
-    df_maq_info_prod_cad = pd.read_json(stringIO(data_prod), orient="split")
-
-    df = times_data.get_eff_data(df_maq_info_cadastro, df_maq_info_prod_cad)
-    df = df[df["turno"] == value]
-
-    figure = indicators.get_eff_heat_turn(df, annotations=checked)
-
-    return figure
+# ======================================== Modal Callbacks ======================================= #
 
 
 @callback(
-    Output("graph-eficiencia-modal-2", "figure"),
+    Output("graph-repair-modal", "figure"),
     [
+        Input("radio-items-repair", "value"),
+        Input("annotations-switch-repair", "checked"),
         Input("store-info", "data"),
         Input("store-prod", "data"),
     ],
 )
-def update_graph_eficiencia_modal_2(data_info, data_prod):
-    """
-    Função que atualiza o gráfico de barras de eficiência do modal.
-    """
-    if data_info is None or data_prod is None:
+def update_graph_repair_modal(radio_value, checked, info, prod):
+    if not info or not prod:
         raise PreventUpdate
 
-    df_maq_info_cadastro = pd.read_json(stringIO(data_info), orient="split")
-    df_maq_info_prod_cad = pd.read_json(stringIO(data_prod), orient="split")
+    df_maq_info_cadastro = pd.read_json(stringIO(info), orient="split")
+    df_maq_info_prod_cad = pd.read_json(stringIO(prod), orient="split")
 
-    df = times_data.get_eff_data(df_maq_info_cadastro, df_maq_info_prod_cad)
+    df = times_data.get_repair_data(df_maq_info_cadastro, df_maq_info_prod_cad)
+    df = df[df["turno"] == radio_value]
 
-    figure = indicators.get_eff_bar_turn(df)
-
-    return figure
-
-
-@callback(
-    Output("graph-eficiencia-modal-perdas", "figure"),
-    [
-        Input("store-info", "data"),
-        Input("perdas-switch-eficiencia", "checked"),
-        Input("radio-items", "value"),
-    ],
-)
-def update_graph_eficiencia_modal_perdas(data_info, checked, turn):
-    """
-    Função que atualiza o gráfico de barras de eficiência do modal.
-    """
-    if data_info is None:
-        raise PreventUpdate
-
-    df_maq_info_cadastro = pd.read_json(stringIO(data_info), orient="split")
-
-    df = indicators.get_time_lost(
-        df_maq_info_cadastro, IndicatorType.EFFICIENCY, turn
+    fig = indicators.get_heat_turn(
+        df, IndicatorType.REPAIR, annotations=checked
     )
 
-    figure = indicators.get_eff_bar_lost(df, turn, checked)
+    return fig
 
-    return figure
+
+@callback(
+    Output("graph-repair-modal-2", "figure"),
+    [
+        Input("store-info", "data"),
+        Input("store-prod", "data"),
+    ],
+)
+def update_graph_repair_modal_2(info, prod):
+    if not info or not prod:
+        raise PreventUpdate
+
+    df_maq_info_cadastro = pd.read_json(stringIO(info), orient="split")
+    df_maq_info_prod_cad = pd.read_json(stringIO(prod), orient="split")
+
+    df = times_data.get_repair_data(df_maq_info_cadastro, df_maq_info_prod_cad)
+
+    fig = indicators.get_bar_turn(df, IndicatorType.REPAIR)
+
+    return fig
+
+
+@callback(
+    Output("graph-repair-modal-perdas", "figure"),
+    [
+        Input("store-info", "data"),
+        Input("perdas-switch-repair", "checked"),
+        Input("radio-items-repair", "value"),
+    ],
+)
+def update_graph_repair_modal_perdas(info, checked, turn):
+    if not info:
+        raise PreventUpdate
+
+    df_maq_info_cadastro = pd.read_json(stringIO(info), orient="split")
+
+    df = indicators.get_time_lost(
+        df_maq_info_cadastro, IndicatorType.REPAIR, turn
+    )
+
+    fig = indicators.get_bar_lost(df, turn, IndicatorType.REPAIR, checked)
+
+    return fig

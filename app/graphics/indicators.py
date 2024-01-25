@@ -21,7 +21,7 @@ class Indicators:
 
     def __init__(self):
         self.danger_color = "#dc3545"
-        self.success_color = "#28a745"
+        self.success_color = "#198754"
 
     def efficiency_graphic(
         self, dataframe: pd.DataFrame, meta: int
