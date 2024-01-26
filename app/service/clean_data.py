@@ -59,8 +59,7 @@ class CleanData:
 
         """
 
-        # Remover rows onde a linha é 0
-        df_cadastro = cadastro[cadastro["linha"] != 0]
+        df_cadastro = cadastro.copy()
 
         # Remover linhas duplicadas (erros de cadastro)
         df_cadastro = df_cadastro.drop_duplicates(
@@ -142,10 +141,17 @@ class CleanData:
             + df_info["hora_registro"].astype(str).str.split(".").str[0]
         )
 
-        # Descartar colunas desnecessárias
-        df_info = df_info.drop(
-            columns=["recno", "data_registro", "hora_registro"]
-        )
+        # Reordenar colunas (descarta desnecessárias)
+        df_info = df_info[
+            [
+                "maquina_id",
+                "status",
+                "turno",
+                "data_hora_registro",
+                "contagem_total_ciclos",
+                "contagem_total_produzido",
+            ]
+        ]
 
         # Se for a primeira linha de cada máquina e o turno for VES, alterar para NOT
         df_info.loc[
@@ -153,6 +159,25 @@ class CleanData:
             & (df_info["maquina_id"] != df_info["maquina_id"].shift()),
             "turno",
         ] = "NOT"
+
+        # Se for a primeira linha de cada dia e o turno for VES, ajustar data_hora_registro
+        df_info["data_hora_registro"] = pd.to_datetime(
+            df_info["data_hora_registro"]
+        )
+        df_info.loc[
+            (df_info["turno"] == "VES")
+            & (
+                df_info["data_hora_registro"]
+                != df_info["data_hora_registro"].shift()
+            )
+            & (df_info["data_hora_registro"].dt.time > time(0, 0, 0))
+            & (df_info["data_hora_registro"].dt.time < time(0, 5, 0)),
+            "data_hora_registro",
+        ] = (
+            df_info["data_hora_registro"] - pd.Timedelta(days=1)
+        ).dt.normalize() + pd.Timedelta(
+            hours=23, minutes=59, seconds=59
+        )  # normalize remove a hora(na verdade deixa 00:00:00) e timedelta altera p/ 23:59:59
 
         # Criar nova coluna status_change para identificar mudança de status
         df_info["status_change"] = df_info["status"].ne(
@@ -164,16 +189,15 @@ class CleanData:
             df_info["maquina_id"].shift()
         )
 
-        # criar coluna para consolidar mudança de status e de máquina
-        df_info["change"] = (
-            df_info["status_change"] | df_info["maquina_change"]
-        )
-
         # Criar coluna para identificar a mudança de turno
         df_info["turno_change"] = df_info["turno"].ne(df_info["turno"].shift())
 
         # Atualizar coluna change para incluir mudança de turno
-        df_info["change"] = df_info["change"] | df_info["turno_change"]
+        df_info["change"] = (
+            df_info["status_change"]
+            | df_info["maquina_change"]
+            | df_info["turno_change"]
+        )
 
         # Agrupar por maquina e identificar data e hora da última mudança de status
         df_info["change_time"] = (
@@ -182,8 +206,37 @@ class CleanData:
             .where(df_info["change"])
         )
 
-        # Remover as linhas onde change_time é nulo
-        df_info.dropna(subset=["change_time"], inplace=True)
+        # Feito para agrupar por maquina_id e turno e manter o ultimo registro de cada grupo
+        df_info = (
+            df_info.groupby(["maquina_id", "change_time"])
+            .agg(
+                status_first=("status", "first"),
+                turno_first=("turno", "first"),
+                data_hora_registro_first=("data_hora_registro", "first"),
+                contagem_total_ciclos_last=("contagem_total_ciclos", "last"),
+                contagem_total_produzido_last=(
+                    "contagem_total_produzido",
+                    "last",
+                ),
+                change_first=("change", "first"),
+                maquina_change_first=("maquina_change", "first"),
+            )
+            .reset_index()
+        )
+
+        # Renomear colunas
+        df_info.rename(
+            columns={
+                "status_first": "status",
+                "turno_first": "turno",
+                "data_hora_registro_first": "data_hora_registro",
+                "contagem_total_ciclos_last": "contagem_total_ciclos",
+                "contagem_total_produzido_last": "contagem_total_produzido",
+                "change_first": "change",
+                "maquina_change_first": "maquina_change",
+            },
+            inplace=True,
+        )
 
         # Criar nova coluna com a data_hora_final do status
         df_info["data_hora_final"] = (
@@ -200,9 +253,7 @@ class CleanData:
         # Remover colunas desnecessárias
         df_info.drop(
             columns=[
-                "status_change",
                 "maquina_change",
-                "turno_change",
                 "change",
                 "change_time",
             ],
@@ -240,12 +291,8 @@ class CleanData:
         # Remover colunas desnecessárias
         df_info.drop(
             columns=[
-                "ciclo_1_min",
-                "ciclo_15_min",
                 "contagem_total_ciclos",
                 "contagem_total_produzido",
-                "tempo_parada",
-                "tempo_rodando",
             ],
             inplace=True,
         )

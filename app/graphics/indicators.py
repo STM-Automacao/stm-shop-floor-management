@@ -4,9 +4,12 @@ Gráficos de indicadores
 # cSpell: words mcolors, eficiencia, vmin, vmax, cmap, figsize, linewidths, annot, cbar, xlabel,
 # cSpell: words ylabel, xticks, yticks, colorscale, hoverongaps, zmin, zmax, showscale, xgap, ygap,
 # cSpell: words nticks, tickmode, tickvals, ticktext, tickangle, lightgray, tickfont, showticklabels
+# cSpell: words ndenumerate
 
+import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
+
 # pylint: disable=E0401
 from helpers.types import IndicatorType
 
@@ -17,7 +20,8 @@ class Indicators:
     """
 
     def __init__(self):
-        pass
+        self.danger_color = "#e30613"
+        self.success_color = "#00a13a"
 
     def efficiency_graphic(
         self, dataframe: pd.DataFrame, meta: int
@@ -61,17 +65,14 @@ class Indicators:
 
         # Criar escala de cores personalizada - cores do bootstrap
         colors = [
-            [0, "#dc3545"],  # danger
-            [0.9, "#dc3545"],
-            [0.9, "#28a745"],
-            [1, "#28a745"],  # success
+            [0, self.danger_color],
+            [0.9, self.danger_color],
+            [0.9, self.success_color],
+            [1, self.success_color],
         ]
 
         # Extrair apenas o dia da data
         df_pivot.columns = pd.to_datetime(df_pivot.columns).day
-
-        num_cells = len(df_pivot.index) * len(df_pivot.columns)
-        font_size = 400 / num_cells  # Ajustar o valor 100 conforme necessário
 
         # Criar o gráfico de calor
         fig = go.Figure(
@@ -91,16 +92,14 @@ class Indicators:
         )
 
         # Adicionar anotações com a média da eficiência
-        # pylint: disable=consider-using-enumerate
-        for i in range(len(df_pivot.index)):
-            for j in range(len(df_pivot.columns)):
-                fig.add_annotation(
-                    x=df_pivot.columns[j],
-                    y=df_pivot.index[i],
-                    text=f"{df_pivot.values[i, j]:.1%}",
-                    showarrow=False,
-                    font=dict(color="white", size=font_size),
-                )
+        for (i, j), value in np.ndenumerate(df_pivot.values):
+            fig.add_annotation(
+                x=df_pivot.columns[j],
+                y=df_pivot.index[i],
+                text=f"{value:.1%}",
+                showarrow=False,
+                font=dict(color="white", size=8),
+            )
 
         # Definir o título do gráfico
         fig.update_layout(
@@ -121,6 +120,7 @@ class Indicators:
             ),
             plot_bgcolor="white",
             margin=dict(t=40, b=40, l=40, r=40),
+            font=dict({"family": "Inter"}),
         )
 
         return fig
@@ -167,10 +167,10 @@ class Indicators:
 
         # Criar escala de cores personalizada - cores do bootstrap
         colors = [
-            [0, "#28a745"],  # danger
-            [0.04, "#28a745"],
-            [0.04, "#dc3545"],
-            [1, "#dc3545"],  # success
+            [0, self.success_color],
+            [0.04, self.success_color],
+            [0.04, self.danger_color],
+            [1, self.danger_color],
         ]
 
         # Extrair apenas o dia da data
@@ -194,16 +194,14 @@ class Indicators:
         )
 
         # Adicionar anotações com a média da eficiência
-        # pylint: disable=consider-using-enumerate
-        for i in range(len(df_pivot.index)):
-            for j in range(len(df_pivot.columns)):
-                fig.add_annotation(
-                    x=df_pivot.columns[j],
-                    y=df_pivot.index[i],
-                    text=f"{df_pivot.values[i, j]:.1%}",
-                    showarrow=False,
-                    font=dict(color="white", size=8),
-                )
+        for (i, j), value in np.ndenumerate(df_pivot.values):
+            fig.add_annotation(
+                x=df_pivot.columns[j],
+                y=df_pivot.index[i],
+                text=f"{value:.1%}",
+                showarrow=False,
+                font=dict(color="white", size=8),
+            )
 
         # Definir o título do gráfico
         fig.update_layout(
@@ -224,6 +222,7 @@ class Indicators:
             ),
             plot_bgcolor="white",
             margin=dict(t=40, b=40, l=40, r=40),
+            font=dict({"family": "Inter"}),
         )
 
         return fig
@@ -268,10 +267,10 @@ class Indicators:
 
         # Criar escala de cores personalizada - cores do bootstrap
         colors = [
-            [0, "#28a745"],  # danger
-            [0.04, "#28a745"],
-            [0.04, "#dc3545"],
-            [1, "#dc3545"],  # success
+            [0, self.success_color],
+            [0.04, self.success_color],
+            [0.04, self.danger_color],
+            [1, self.danger_color],
         ]
 
         # Extrair apenas o dia da data
@@ -295,16 +294,14 @@ class Indicators:
         )
 
         # Adicionar anotações com a média da eficiência
-        # pylint: disable=consider-using-enumerate
-        for i in range(len(df_pivot.index)):
-            for j in range(len(df_pivot.columns)):
-                fig.add_annotation(
-                    x=df_pivot.columns[j],
-                    y=df_pivot.index[i],
-                    text=f"{df_pivot.values[i, j]:.1%}",
-                    showarrow=False,
-                    font=dict(color="white", size=8),
-                )
+        for (i, j), value in np.ndenumerate(df_pivot.values):
+            fig.add_annotation(
+                x=df_pivot.columns[j],
+                y=df_pivot.index[i],
+                text=f"{value:.1%}",
+                showarrow=False,
+                font=dict(color="white", size=8),
+            )
 
         # Definir o título do gráfico
         fig.update_layout(
@@ -325,6 +322,7 @@ class Indicators:
             ),
             plot_bgcolor="white",
             margin=dict(t=40, b=40, l=40, r=40),
+            font=dict({"family": "Inter"}),
         )
 
         return fig
@@ -423,9 +421,17 @@ class Indicators:
 
         # Definir a cor de acordo com a porcentagem
         if ind_type == IndicatorType.EFFICIENCY:
-            color = "#28a745" if percentage >= (meta / 100) else "#dc3545"
+            color = (
+                self.success_color
+                if percentage >= (meta / 100)
+                else self.danger_color
+            )
         else:
-            color = "#dc3545" if percentage >= (meta / 100) else "#28a745"
+            color = (
+                self.danger_color
+                if percentage >= (meta / 100)
+                else self.success_color
+            )
 
         # Definir a escala do eixo para "performance" e "reparos"
         axis_range = (
@@ -466,6 +472,7 @@ class Indicators:
             margin=dict(t=30, b=30, l=30, r=30),
             plot_bgcolor="white",
             height=250,
+            font=dict({"family": "Inter"}),
         )
 
         return fig
@@ -518,6 +525,7 @@ class Indicators:
             margin=dict(t=0, b=0, l=0, r=0),
             height=None,
             autosize=True,
+            font=dict({"family": "Inter"}),
         )
 
         return fig

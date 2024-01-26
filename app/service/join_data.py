@@ -273,9 +273,18 @@ class JoinData:
 
         # Ordenar pela maquina e hora
         df_info.sort_values(
-            by=["maquina_id", "data_hora_registro", "turno"],
+            by=["linha", "data_hora_registro", "turno"],
             inplace=True,
         )
+
+        # Remover linhas onde a 'linha' é 0
+        df_info = df_info[df_info["linha"] != 0]
+
+        # Ajuste para dias que falta energia
+        # Se o tempo de registro for maior que 480 minutos, definir como 480 minutos
+        df_info.loc[
+            df_info["tempo_registro_min"] > 480, "tempo_registro_min"
+        ] = 480
 
         # Ajustar o index
         df_info.reset_index(drop=True, inplace=True)
@@ -303,10 +312,9 @@ class JoinData:
         )
 
         # Ordenar pela maquina e hora
-        df_info_cad.sort_values(
-            by=["maquina_id", "data_hora_registro", "turno"],
+        df_info_cad = df_info_cad.sort_values(
+            by=["linha", "data_hora_registro", "turno"],
             ascending=True,
-            inplace=True,
         )
 
         # Renomear usuario id
@@ -328,6 +336,9 @@ class JoinData:
                 "data_hora_registro",
             ]
         ]
+
+        # Remover linhas onde a 'linha' é 0
+        df_info_cad = df_info_cad[df_info_cad["linha"] != 0]
 
         # Ajustar o index
         df_info_cad.reset_index(drop=True, inplace=True)
