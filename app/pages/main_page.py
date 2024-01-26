@@ -8,6 +8,7 @@ from io import StringIO
 
 import dash
 import dash_bootstrap_components as dbc
+import dash_mantine_components as dmc
 import pandas as pd
 
 # pylint: disable=E0401
@@ -20,16 +21,19 @@ from helpers.path_config import EFF_LAST, PERF_LAST, REPAIR_LAST
 from helpers.types import IndicatorType
 from service.times_data import TimesData
 
+from app import app
+
 ind_graphics = Indicators()
 times_data = TimesData()
 
 # ========================================= Layout ========================================= #
 
 layout = [
-    dcc.Loading(
+    dbc.Spinner(
         id="loading",
-        type="circle",
         fullscreen=True,
+        color="danger",
+        size="md",
         children=[
             html.Div(
                 [
@@ -207,7 +211,15 @@ layout = [
                         id="reparos-row",
                     ),
                     html.Hr(),
-                    html.P("logo", className="text-center"),
+                    dmc.Center(
+                        children=dmc.Image(
+                            # pylint: disable=E1101
+                            src=app.get_asset_url("Logo Horizontal.png"),
+                            width="125px",
+                            withPlaceholder=True,
+                        ),
+                        p=2,
+                    ),
                 ],
                 id="main-page",
             )
@@ -220,6 +232,7 @@ layout = [
         size="xl",
         scrollable=True,
         fullscreen=True,
+        modal_class_name="inter",
     ),
     dbc.Modal(
         children=modal_performance.layout,
@@ -227,6 +240,7 @@ layout = [
         size="xl",
         scrollable=True,
         fullscreen=True,
+        modal_class_name="inter",
     ),
     dbc.Modal(
         children=modal_repair.layout,
@@ -234,6 +248,7 @@ layout = [
         size="xl",
         scrollable=True,
         fullscreen=True,
+        modal_class_name="inter",
     ),
 ]
 

@@ -10,6 +10,7 @@ import numpy as np
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
+
 # pylint: disable=E0401
 from helpers.types import IndicatorType
 from service.times_data import TimesData
@@ -21,9 +22,9 @@ class IndicatorsTurn:
     """
 
     def __init__(self):
-        self.danger_color = "#dc3545"
-        self.warning_color = "#ffc107"
-        self.success_color = "#198754"
+        self.danger_color = "#e30613"
+        self.success_color = "#00a13a"
+        self.warning_color = "#ffdd00"
         self.times_data = TimesData()
 
     def get_eff_heat_turn(
@@ -130,6 +131,7 @@ class IndicatorsTurn:
             ),
             plot_bgcolor="white",
             margin=dict({"t": 40, "b": 40, "l": 40, "r": 40}),
+            font=dict({"family": "Inter"}),
         )
 
         return fig
@@ -201,6 +203,7 @@ class IndicatorsTurn:
                 {"title_text": "Turno"},
             ),
             template="plotly_white",
+            font=dict({"family": "Inter"}),
         )
 
         # Ajustar valores de x para porcentagem
@@ -228,7 +231,7 @@ class IndicatorsTurn:
                 y=df_grouped["linha"],
                 mode="lines",
                 name="Meta",
-                line=dict(dash="dash", color="red"),
+                line=dict(dash="dash", color="blue"),
                 hovertemplate="<b>Meta</b>: %{x:.1%}<br>",
             )
         )
@@ -413,6 +416,7 @@ class IndicatorsTurn:
             title_x=0.5,
             margin=dict({"t": 80, "b": 40, "l": 40, "r": 40}),
             template="plotly_white",
+            font=dict({"family": "Inter"}),
         )
 
         return fig
@@ -525,6 +529,7 @@ class IndicatorsTurn:
             ),
             plot_bgcolor="white",
             margin=dict({"t": 40, "b": 40, "l": 40, "r": 40}),
+            font=dict({"family": "Inter"}),
         )
 
         return fig
@@ -593,6 +598,7 @@ class IndicatorsTurn:
                 {"title_text": "Turno"},
             ),
             template="plotly_white",
+            font=dict({"family": "Inter"}),
         )
 
         # Ajustar valores de x para porcentagem
@@ -620,7 +626,7 @@ class IndicatorsTurn:
                 y=df_grouped["linha"],
                 mode="lines",
                 name="Meta",
-                line=dict(dash="dash", color="red"),
+                line=dict(dash="dash", color="blue"),
                 hovertemplate="<b>Meta</b>: %{x:.1%}<br>",
             )
         )
@@ -755,6 +761,7 @@ class IndicatorsTurn:
             title_x=0.5,
             margin=dict({"t": 80, "b": 40, "l": 40, "r": 40}),
             template="plotly_white",
+            font=dict({"family": "Inter"}),
         )
 
         return fig

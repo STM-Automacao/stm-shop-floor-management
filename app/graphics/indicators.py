@@ -20,8 +20,8 @@ class Indicators:
     """
 
     def __init__(self):
-        self.danger_color = "#dc3545"
-        self.success_color = "#198754"
+        self.danger_color = "#e30613"
+        self.success_color = "#00a13a"
 
     def efficiency_graphic(
         self, dataframe: pd.DataFrame, meta: int
@@ -120,6 +120,7 @@ class Indicators:
             ),
             plot_bgcolor="white",
             margin=dict(t=40, b=40, l=40, r=40),
+            font=dict({"family": "Inter"}),
         )
 
         return fig
@@ -221,6 +222,7 @@ class Indicators:
             ),
             plot_bgcolor="white",
             margin=dict(t=40, b=40, l=40, r=40),
+            font=dict({"family": "Inter"}),
         )
 
         return fig
@@ -320,6 +322,7 @@ class Indicators:
             ),
             plot_bgcolor="white",
             margin=dict(t=40, b=40, l=40, r=40),
+            font=dict({"family": "Inter"}),
         )
 
         return fig
@@ -469,6 +472,7 @@ class Indicators:
             margin=dict(t=30, b=30, l=30, r=30),
             plot_bgcolor="white",
             height=250,
+            font=dict({"family": "Inter"}),
         )
 
         return fig
@@ -521,6 +525,7 @@ class Indicators:
             margin=dict(t=0, b=0, l=0, r=0),
             height=None,
             autosize=True,
+            font=dict({"family": "Inter"}),
         )
 
         return fig

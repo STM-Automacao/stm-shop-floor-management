@@ -19,12 +19,14 @@
 
 /* ------------------- Colors ------------------- */
 .root {
-  --danger: #dc3545;
-  --success: #28a745;
-  --warning: #ffc107;
+  --bs-danger: #e30613;
+  --bs-success: #00a13a;
+  --bs-warning: #ffdd00;
 }
 
-
+body {
+  font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif;
+}
 
 /* ------------------- Responsibility ------------------- */
 @media (max-width: 768px) {

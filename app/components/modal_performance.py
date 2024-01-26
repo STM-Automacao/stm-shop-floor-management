@@ -13,31 +13,30 @@ from dash.exceptions import PreventUpdate
 
 # pylint: disable=E0401
 from graphics.indicators_turn import IndicatorsTurn
-from helpers.types import IndicatorType
+from helpers.types import MODAL_RADIO, IndicatorType
 from service.times_data import TimesData
+
+from app import app
 
 times_data = TimesData()
 indicators = IndicatorsTurn()
 
 # ========================================= Modal Layout ======================================== #
 layout = [
-    dbc.ModalHeader("Performance por Turno"),
+    dbc.ModalHeader("Performance por Turno", class_name="inter"),
     dbc.ModalBody(
         [
             dbc.Row(
                 [
                     dbc.Col(
-                        dcc.RadioItems(
-                            id="radio-items-performance",
-                            options=[
-                                {"label": "Noturno", "value": "NOT"},
-                                {"label": "Matutino", "value": "MAT"},
-                                {"label": "Vespertino", "value": "VES"},
+                        dmc.RadioGroup(
+                            [
+                                dmc.Radio(l, value=v, color=c)
+                                for v, l, c in MODAL_RADIO
                             ],
+                            id="radio-items-performance",
                             value="MAT",
-                            inputClassName="form-check-input me-2 mb-1",
-                            labelClassName="form-check-label me-5 mb-1",
-                            inline=True,
+                            className="inter",
                         ),
                         md=4,
                     ),
@@ -47,7 +46,7 @@ layout = [
                             label="Anotações",
                             size="sm",
                             radius="lg",
-                            className="mb-1",
+                            className="mb-1 inter",
                             checked=False,
                         ),
                         md=2,
@@ -55,7 +54,12 @@ layout = [
                 ],
                 justify="between",
             ),
-            dcc.Loading(dcc.Graph(id="graph-performance-modal")),
+            # dcc.Loading(dcc.Graph(id="graph-performance-modal")),
+            dbc.Spinner(
+                children=dcc.Graph(id="graph-performance-modal"),
+                size="lg",
+                color="danger",
+            ),
             html.Hr(),
             dbc.Row(
                 [
@@ -69,7 +73,7 @@ layout = [
                                         label="Agrupado",
                                         size="sm",
                                         radius="lg",
-                                        className="mb-1",
+                                        className="mb-1 inter",
                                         checked=False,
                                     ),
                                     dcc.Graph(
@@ -85,7 +89,14 @@ layout = [
             ),
         ]
     ),
-    dbc.ModalFooter("Modal footer"),
+    dbc.ModalFooter(
+        dmc.Image(
+            # pylint: disable=E1101
+            src=app.get_asset_url("Logo Horizontal_PXB.png"),
+            width="125px",
+            withPlaceholder=True,
+        ),
+    ),
 ]
 
 # ======================================== Modal Callback ======================================= #

@@ -10,3 +10,10 @@ class IndicatorType(Enum):
     PERFORMANCE = "performance"
     REPAIR = "reparos"
     EFFICIENCY = "eficiencia"
+
+
+MODAL_RADIO = [
+    ["NOT", "Noturno", "red"],
+    ["MAT", "Matutino", "green"],
+    ["VES", "Vespertino", "yellow"],
+]
