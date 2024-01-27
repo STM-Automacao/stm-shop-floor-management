@@ -14,6 +14,6 @@ class IndicatorType(Enum):
 
 MODAL_RADIO = [
     ["NOT", "Noturno", "red"],
-    ["MAT", "Matutino", "green"],
-    ["VES", "Vespertino", "yellow"],
+    ["MAT", "Matutino", "yellow"],
+    ["VES", "Vespertino", "green"],
 ]

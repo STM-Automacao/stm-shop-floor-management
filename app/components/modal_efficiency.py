@@ -44,14 +44,24 @@ layout = [
                         md=4,
                     ),
                     dbc.Col(
-                        dmc.Switch(
-                            id="annotations-switch-eficiencia",
-                            label="Anotações",
-                            size="sm",
-                            radius="lg",
-                            className="mb-1 inter",
-                            checked=False,
-                        ),
+                        [
+                            dmc.Switch(
+                                id="annotations-switch-eficiencia",
+                                label="Anotações",
+                                size="sm",
+                                radius="lg",
+                                className="mb-1 inter",
+                                checked=False,
+                            ),
+                            dmc.Switch(
+                                id="colors-switch-eficiencia",
+                                label="Mais Cores",
+                                size="sm",
+                                radius="lg",
+                                className="mb-1 inter",
+                                checked=False,
+                            ),
+                        ],
                         md=2,
                     ),
                 ],
@@ -77,7 +87,7 @@ layout = [
                                         size="sm",
                                         radius="lg",
                                         className="mb-1 inter",
-                                        checked=False,
+                                        checked=True,
                                     ),
                                     dcc.Graph(
                                         id="graph-eficiencia-modal-perdas"
@@ -111,9 +121,12 @@ layout = [
         Input("store-info", "data"),
         Input("store-prod", "data"),
         Input("annotations-switch-eficiencia", "checked"),
+        Input("colors-switch-eficiencia", "checked"),
     ],
 )
-def update_graph_eficiencia_modal(value, data_info, data_prod, checked):
+def update_graph_eficiencia_modal(
+    value, data_info, data_prod, checked, colors
+):
     """
     Função que atualiza o gráfico de eficiência do modal.
     """
@@ -126,7 +139,9 @@ def update_graph_eficiencia_modal(value, data_info, data_prod, checked):
     df = times_data.get_eff_data(df_maq_info_cadastro, df_maq_info_prod_cad)
     df = df[df["turno"] == value]
 
-    figure = indicators.get_eff_heat_turn(df, annotations=checked)
+    figure = indicators.get_eff_heat_turn(
+        df, annotations=checked, more_colors=colors
+    )
 
     return figure
 

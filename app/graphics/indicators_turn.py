@@ -4,12 +4,15 @@ Gráficos de indicadores por turno.
 # cSpell: words mcolors, eficiencia, vmin, vmax, cmap, figsize, linewidths, annot, cbar, xlabel,
 # cSpell: words ylabel, xticks, yticks, colorscale, hoverongaps, zmin, zmax, showscale, xgap, ygap,
 # cSpell: words nticks, tickmode, tickvals, ticktext, tickangle, lightgray, tickfont, showticklabels
-# cSpell: words ndenumerate producao_total customdata xaxes usuario
+# cSpell: words ndenumerate producao_total customdata xaxes usuario traceorder yref bordercolor
+# cSpell: words borderwidth borderpad
 
+import matplotlib.colors as mcolors
 import numpy as np
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
+import seaborn as sns
 
 # pylint: disable=E0401
 from helpers.types import IndicatorType
@@ -32,6 +35,7 @@ class IndicatorsTurn:
         dataframe: pd.DataFrame,
         meta: int = 90,
         annotations: bool = False,
+        more_colors: bool = False,
     ) -> go.Figure:
         """
         Este método é responsável por criar o gráfico de eficiência, por turno.
@@ -74,12 +78,21 @@ class IndicatorsTurn:
         )
 
         # Criar escala de cores personalizada - cores do bootstrap
-        colors = [
-            [0, self.danger_color],
-            [0.9, self.danger_color],
-            [0.9, self.success_color],
-            [1, self.success_color],
-        ]
+        if more_colors:
+            colors = [
+                [0, self.danger_color],
+                [0.75, self.danger_color],
+                [0.9, self.warning_color],
+                [0.9, self.success_color],
+                [1, self.success_color],
+            ]
+        else:
+            colors = [
+                [0, self.danger_color],
+                [0.9, self.danger_color],
+                [0.9, self.success_color],
+                [1, self.success_color],
+            ]
 
         # Extrair apenas o dia da data
         df_pivot.columns = pd.to_datetime(df_pivot.columns).day
@@ -132,6 +145,10 @@ class IndicatorsTurn:
             plot_bgcolor="white",
             margin=dict({"t": 40, "b": 40, "l": 40, "r": 40}),
             font=dict({"family": "Inter"}),
+        )
+
+        fig.update_yaxes(
+            autorange="reversed",
         )
 
         return fig
@@ -209,6 +226,12 @@ class IndicatorsTurn:
         # Ajustar valores de x para porcentagem
         fig.update_xaxes(tickformat=".0%")
 
+        # Ajustar para aparecer todas as linhas
+        fig.update_yaxes(
+            autorange="reversed",
+            tickvals=df_grouped["linha"].unique(),
+        )
+
         # Calcular a média geral de eficiência
         avg_efficiency = df_grouped["eficiencia"].mean()
 
@@ -230,7 +253,7 @@ class IndicatorsTurn:
                 x=[meta / 100] * len(df_grouped["linha"]),
                 y=df_grouped["linha"],
                 mode="lines",
-                name="Meta",
+                name=f"Meta {meta}%",
                 line=dict(dash="dash", color="blue"),
                 hovertemplate="<b>Meta</b>: %{x:.1%}<br>",
             )
@@ -394,12 +417,25 @@ class IndicatorsTurn:
             hovertemplate="<b>Problema</b>: %{x}<br><b>Tempo Perdido</b>: %{y:.0f} min<br>",
         )
 
+        # Cria uma paleta de cores com os valores únicos na coluna 'problema'
+        palette = sns.color_palette("hls", df_grouped["problema"].nunique())
+
+        # Converte as cores RGB para hexadecimal
+        palette_hex = [mcolors.to_hex(color) for color in palette]
+
+        # Cria um dicionário que mapeia cada valor único na coluna 'problema' para uma cor na paleta
+        color_map = dict(zip(df_grouped["problema"].unique(), palette_hex))
+
+        # Mapeia os valores na coluna 'problema' para as cores correspondentes
+        df_grouped["color"] = df_grouped["problema"].map(color_map)
+
         # Group
         group_bar = go.Bar(
             x=df_grouped["motivo_nome"],
             y=df_grouped["excedente"],
             customdata=df_grouped["problema"],
             hovertemplate="<b>Motivo</b>: %{customdata}<br><b>Tempo Perdido</b>: %{y:.0f} min<br>",
+            marker_color=df_grouped["color"],
         )
 
         # Gráfico de barras
@@ -417,7 +453,11 @@ class IndicatorsTurn:
             margin=dict({"t": 80, "b": 40, "l": 40, "r": 40}),
             template="plotly_white",
             font=dict({"family": "Inter"}),
+            showlegend=False,
         )
+
+        if not checked:
+            fig.update_layout(showlegend=True)
 
         return fig
 
@@ -532,6 +572,10 @@ class IndicatorsTurn:
             font=dict({"family": "Inter"}),
         )
 
+        fig.update_yaxes(
+            autorange="reversed",
+        )
+
         return fig
 
     def get_bar_turn(
@@ -595,14 +639,27 @@ class IndicatorsTurn:
             title_x=0.5,
             margin=dict({"t": 80, "b": 40, "l": 40, "r": 40}),
             legend=dict(
-                {"title_text": "Turno"},
+                {
+                    "title_text": "Turno",
+                    "x": 0,
+                    "y": 1,
+                    "traceorder": "normal",
+                    "font": {"family": "Inter", "size": 12},
+                },
             ),
             template="plotly_white",
             font=dict({"family": "Inter"}),
         )
 
-        # Ajustar valores de x para porcentagem
-        fig.update_xaxes(tickformat=".0%")
+        # Ajustar valores de x para porcentagem e inverter o eixo x
+        fig.update_xaxes(tickformat=".0%", autorange="reversed")
+
+        # Ajustar para aparecer todas as linhas e or para a direita
+        fig.update_yaxes(
+            autorange="reversed",
+            tickvals=df_grouped["linha"].unique(),
+            side="right",
+        )
 
         # Calcular a média geral
         avg_efficiency = df_grouped[indicator].mean()
@@ -629,6 +686,25 @@ class IndicatorsTurn:
                 line=dict(dash="dash", color="blue"),
                 hovertemplate="<b>Meta</b>: %{x:.1%}<br>",
             )
+        )
+
+        # Adicionar anotação
+        fig.add_annotation(
+            x=0.15,  # Posição x da anotação
+            y=0.95,  # Posição y da anotação
+            xref="paper",
+            yref="paper",
+            text=f"Meta: Abaixo de {meta}%",  # Texto da anotação
+            showarrow=False,
+            font=dict(size=12, color="black", family="Inter"),
+            align="left",
+            ax=20,
+            ay=-30,
+            bordercolor="#c7c7c7",
+            borderwidth=2,
+            borderpad=4,
+            bgcolor="#ff7f0e",
+            opacity=0.6,
         )
 
         return fig
@@ -739,12 +815,25 @@ class IndicatorsTurn:
             hovertemplate="<b>Problema</b>: %{x}<br><b>Tempo Perdido</b>: %{y:.0f} min<br>",
         )
 
+        # Cria uma paleta de cores com os valores únicos na coluna 'problema'
+        palette = sns.color_palette("hls", df_grouped["problema"].nunique())
+
+        # Converte as cores RGB para hexadecimal
+        palette_hex = [mcolors.to_hex(color) for color in palette]
+
+        # Cria um dicionário que mapeia cada valor único na coluna 'problema' para uma cor na paleta
+        color_map = dict(zip(df_grouped["problema"].unique(), palette_hex))
+
+        # Mapeia os valores na coluna 'problema' para as cores correspondentes
+        df_grouped["color"] = df_grouped["problema"].map(color_map)
+
         # Group
         group_bar = go.Bar(
             x=df_grouped["motivo_nome"],
             y=df_grouped["excedente"],
             customdata=df_grouped["problema"],
             hovertemplate="<b>Motivo</b>: %{customdata}<br><b>Tempo Perdido</b>: %{y:.0f} min<br>",
+            marker_color=df_grouped["color"],
         )
 
         # Gráfico de barras
@@ -762,6 +851,10 @@ class IndicatorsTurn:
             margin=dict({"t": 80, "b": 40, "l": 40, "r": 40}),
             template="plotly_white",
             font=dict({"family": "Inter"}),
+            showlegend=False,
         )
+
+        if not checked:
+            fig.update_layout(showlegend=True)
 
         return fig

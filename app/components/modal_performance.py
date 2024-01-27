@@ -74,7 +74,7 @@ layout = [
                                         size="sm",
                                         radius="lg",
                                         className="mb-1 inter",
-                                        checked=False,
+                                        checked=True,
                                     ),
                                     dcc.Graph(
                                         id="graph-performance-modal-perdas"

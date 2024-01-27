@@ -67,7 +67,7 @@ class GetData:
         # Verificando se os dados foram lidos corretamente
         if df_occ.empty or df_info.empty or df_cadastro.empty:
             print("====== Erro na leitura dos dados ======")
-            return None, None
+            return None, None, None
 
         print("Ok...")
 

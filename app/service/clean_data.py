@@ -525,6 +525,7 @@ class CleanData:
             14: "Linha Cheia",
             15: "Treinamento",
             16: "Limpeza Industrial",
+            17: "Setup de Troca de Filme",
         }
 
         # Modificar coluna motivo_id para int
