@@ -7,6 +7,9 @@ Gráficos de indicadores por turno.
 # cSpell: words ndenumerate producao_total customdata xaxes usuario traceorder yref bordercolor
 # cSpell: words borderwidth borderpad
 
+from datetime import datetime
+from itertools import product
+
 import matplotlib.colors as mcolors
 import numpy as np
 import pandas as pd
@@ -64,6 +67,26 @@ class IndicatorsTurn:
             .mean()
             .reset_index()
         )
+
+        # Encontra a data de hoje e o primeiro e último dia do mês
+        today = datetime.now()
+        start_date = today.replace(day=1).strftime("%Y-%m-%d")
+        end_date = (
+            today.replace(month=today.month % 12 + 1, day=1) - pd.Timedelta(days=1)
+        ).strftime("%Y-%m-%d")
+
+        # Cria um DataFrame com todas as datas possíveis
+        all_dates = pd.date_range(start=start_date, end=end_date).strftime("%Y-%m-%d")
+        all_lines = dataframe["linha"].unique()
+        all_dates_df = pd.DataFrame(
+            list(product(all_dates, all_lines)), columns=["data_turno", "linha"]
+        )
+
+        # Mescla com o DataFrame original
+        df_grouped = df_grouped.merge(all_dates_df, on=["data_turno", "linha"], how="right")
+
+        # Se a data é no futuro, definir a eficiência como NaN
+        df_grouped.loc[df_grouped["data_turno"] > today.strftime("%Y-%m-%d"), "eficiencia"] = np.nan
 
         # Ordenar por linha e data
         df_grouped = df_grouped.sort_values(["linha", "data_turno"], ascending=[True, True])
@@ -462,6 +485,26 @@ class IndicatorsTurn:
 
         # Agrupar por 'data_turno' e 'turno' e calcular a média
         df_grouped = dataframe.groupby(["data_turno", "linha"])[indicator].mean().reset_index()
+
+        # Encontra a data de hoje e o primeiro e último dia do mês
+        today = datetime.now()
+        start_date = today.replace(day=1).strftime("%Y-%m-%d")
+        end_date = (
+            today.replace(month=today.month % 12 + 1, day=1) - pd.Timedelta(days=1)
+        ).strftime("%Y-%m-%d")
+
+        # Cria um DataFrame com todas as datas possíveis
+        all_dates = pd.date_range(start=start_date, end=end_date).strftime("%Y-%m-%d")
+        all_lines = dataframe["linha"].unique()
+        all_dates_df = pd.DataFrame(
+            list(product(all_dates, all_lines)), columns=["data_turno", "linha"]
+        )
+
+        # Mescla com o DataFrame original
+        df_grouped = df_grouped.merge(all_dates_df, on=["data_turno", "linha"], how="right")
+
+        # Se a data é no futuro, definir a eficiência como NaN
+        df_grouped.loc[df_grouped["data_turno"] > today.strftime("%Y-%m-%d"), indicator] = np.nan
 
         # Ordenar por linha e data
         df_grouped = df_grouped.sort_values(["linha", "data_turno"], ascending=[True, True])

@@ -6,12 +6,17 @@ Gráficos de indicadores
 # cSpell: words nticks, tickmode, tickvals, ticktext, tickangle, lightgray, tickfont, showticklabels
 # cSpell: words ndenumerate
 
+from datetime import datetime
+from itertools import product
+
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 
 # pylint: disable=E0401
 from helpers.types import IndicatorType
+
+# from dash_bootstrap_templates import template_from_url
 
 
 class Indicators:
@@ -23,7 +28,7 @@ class Indicators:
         self.danger_color = "#e30613"
         self.success_color = "#00a13a"
 
-    def efficiency_graphic(self, dataframe: pd.DataFrame, meta: int) -> go.Figure:
+    def efficiency_graphic(self, dataframe: pd.DataFrame, meta: int) -> go.Figure:  # theme p/ tema
         """
         Este método é responsável por criar o gráfico de eficiência.
 
@@ -50,6 +55,26 @@ class Indicators:
             .mean()
             .reset_index()
         )
+
+        # Encontra a data de hoje e o primeiro e último dia do mês
+        today = datetime.now()
+        start_date = today.replace(day=1).strftime("%Y-%m-%d")
+        end_date = (
+            today.replace(month=today.month % 12 + 1, day=1) - pd.Timedelta(days=1)
+        ).strftime("%Y-%m-%d")
+
+        # Cria um DataFrame com todas as datas possíveis
+        all_dates = pd.date_range(start=start_date, end=end_date).strftime("%Y-%m-%d")
+        all_turns = dataframe["turno"].unique()
+        all_dates_df = pd.DataFrame(
+            list(product(all_dates, all_turns)), columns=["data_turno", "turno"]
+        )
+
+        # Mescla com o DataFrame original
+        df_grouped = df_grouped.merge(all_dates_df, on=["data_turno", "turno"], how="right")
+
+        # Se a data é no futuro, definir a eficiência como NaN
+        df_grouped.loc[df_grouped["data_turno"] > today.strftime("%Y-%m-%d"), "eficiencia"] = np.nan
 
         # Remodelar os dados para o formato de heatmap
         df_pivot = df_grouped.pivot(index="turno", columns="data_turno", values="eficiencia")
@@ -112,9 +137,10 @@ class Indicators:
                 tickmode="linear",
                 tickangle=45,
             ),
-            plot_bgcolor="white",
             margin=dict(t=40, b=40, l=40, r=40),
             font=dict({"family": "Inter"}),
+            # template=template_from_url(theme), # Adiciona o tema
+            plot_bgcolor="white",
         )
 
         return fig
@@ -146,6 +172,28 @@ class Indicators:
             .mean()
             .reset_index()
         )
+
+        # Encontra a data de hoje e o primeiro e último dia do mês
+        today = datetime.now()
+        start_date = today.replace(day=1).strftime("%Y-%m-%d")
+        end_date = (
+            today.replace(month=today.month % 12 + 1, day=1) - pd.Timedelta(days=1)
+        ).strftime("%Y-%m-%d")
+
+        # Cria um DataFrame com todas as datas possíveis
+        all_dates = pd.date_range(start=start_date, end=end_date).strftime("%Y-%m-%d")
+        all_turns = dataframe["turno"].unique()
+        all_dates_df = pd.DataFrame(
+            list(product(all_dates, all_turns)), columns=["data_turno", "turno"]
+        )
+
+        # Mescla com o DataFrame original
+        df_grouped = df_grouped.merge(all_dates_df, on=["data_turno", "turno"], how="right")
+
+        # Se a data é no futuro, definir a eficiência como NaN
+        df_grouped.loc[
+            df_grouped["data_turno"] > today.strftime("%Y-%m-%d"), "performance"
+        ] = np.nan
 
         # Remodelar os dados para o formato de heatmap
         df_pivot = df_grouped.pivot(index="turno", columns="data_turno", values="performance")
@@ -242,6 +290,26 @@ class Indicators:
             .mean()
             .reset_index()
         )
+
+        # Encontra a data de hoje e o primeiro e último dia do mês
+        today = datetime.now()
+        start_date = today.replace(day=1).strftime("%Y-%m-%d")
+        end_date = (
+            today.replace(month=today.month % 12 + 1, day=1) - pd.Timedelta(days=1)
+        ).strftime("%Y-%m-%d")
+
+        # Cria um DataFrame com todas as datas possíveis
+        all_dates = pd.date_range(start=start_date, end=end_date).strftime("%Y-%m-%d")
+        all_turns = dataframe["turno"].unique()
+        all_dates_df = pd.DataFrame(
+            list(product(all_dates, all_turns)), columns=["data_turno", "turno"]
+        )
+
+        # Mescla com o DataFrame original
+        df_grouped = df_grouped.merge(all_dates_df, on=["data_turno", "turno"], how="right")
+
+        # Se a data é no futuro, definir a eficiência como NaN
+        df_grouped.loc[df_grouped["data_turno"] > today.strftime("%Y-%m-%d"), "reparo"] = np.nan
 
         # Remodelar os dados para o formato de heatmap
         df_pivot = df_grouped.pivot(index="turno", columns="data_turno", values="reparo")

@@ -24,6 +24,9 @@ from pages import main_page
 
 from app import app
 
+# from dash_bootstrap_templates import ThemeChangerAIO
+
+
 lock = Lock()
 get_data = GetData()
 last_month_ind = LastMonthInd()
@@ -65,6 +68,9 @@ scheduler.add_job(func=update_cache, trigger="interval", seconds=120)  # Atualiz
 scheduler.add_job(func=update_last_month_gauge, trigger="cron", hour=1)  # Atualiza a cada 24 horas
 scheduler.start()
 
+# dbc.Nav(
+#    ThemeChangerAIO(aio_id="theme", radio_props={"value": dbc.themes.BOOTSTRAP}),
+# ),
 
 # ========================================= Layout ========================================= #
 content = html.Div(id="page-content")
