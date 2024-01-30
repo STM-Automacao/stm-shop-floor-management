@@ -56,26 +56,20 @@ class IndicatorsTurn:
 
         # Converter 'data_registro' para datetime e criar uma nova coluna 'data_turno'
         dataframe["data_registro"] = pd.to_datetime(dataframe["data_registro"])
-        dataframe["data_turno"] = dataframe["data_registro"].dt.strftime(
-            "%Y-%m-%d"
-        )
+        dataframe["data_turno"] = dataframe["data_registro"].dt.strftime("%Y-%m-%d")
 
         # Agrupar por 'data_turno' e 'turno' e calcular a média da eficiência
         df_grouped = (
-            dataframe.groupby(["data_turno", "linha"])["eficiencia"]
+            dataframe.groupby(["data_turno", "linha"], observed=False)["eficiencia"]
             .mean()
             .reset_index()
         )
 
         # Ordenar por linha e data
-        df_grouped = df_grouped.sort_values(
-            ["linha", "data_turno"], ascending=[True, True]
-        )
+        df_grouped = df_grouped.sort_values(["linha", "data_turno"], ascending=[True, True])
 
         # Remodelar os dados para o formato de heatmap
-        df_pivot = df_grouped.pivot(
-            index="linha", columns="data_turno", values="eficiencia"
-        )
+        df_pivot = df_grouped.pivot(index="linha", columns="data_turno", values="eficiencia")
 
         # Criar escala de cores personalizada - cores do bootstrap
         if more_colors:
@@ -153,9 +147,7 @@ class IndicatorsTurn:
 
         return fig
 
-    def get_eff_bar_turn(
-        self, dataframe: pd.DataFrame, meta: int = 90
-    ) -> go.Figure:
+    def get_eff_bar_turn(self, dataframe: pd.DataFrame, meta: int = 90) -> go.Figure:
         """
         Este método é responsável por criar o gráfico de eficiência, por turno.
 
@@ -171,15 +163,13 @@ class IndicatorsTurn:
 
         # Agrupar por 'turno' e "linha" e calcular a média da eficiência e soma da produção
         df_grouped = (
-            dataframe.groupby(["linha", "turno"])
-            .agg({"eficiencia": "mean", "producao_total": "sum"})
+            dataframe.groupby(["linha", "turno"], observed=False)
+            .agg({"eficiencia": "mean", "total_produzido": "sum"})
             .reset_index()
         )
 
         # Ajustar produção total para caixas, dividindo por 10
-        df_grouped["producao_total"] = (
-            df_grouped["producao_total"] / 10
-        ).round(0)
+        df_grouped["total_produzido"] = (df_grouped["total_produzido"] / 10).round(0)
 
         # Gráfico de barras
         fig = px.bar(
@@ -190,7 +180,7 @@ class IndicatorsTurn:
             color="turno",
             barmode="group",
             hover_data={
-                "producao_total": True,
+                "total_produzido": True,
                 "linha": False,
                 "eficiencia": False,
             },
@@ -284,46 +274,25 @@ class IndicatorsTurn:
         }
 
         # Conseguindo dataframe com tempos ajustados
-        df_info_desc_times = self.times_data.get_times_discount(
-            df_info, ind_type_map[ind_type]
-        )
+        df_info_desc_times = self.times_data.get_times_discount(df_info, ind_type_map[ind_type])
 
         # Filtrar por turno
-        df_info_desc_times = df_info_desc_times[
-            df_info_desc_times["turno"] == turn
-        ]
+        df_info_desc_times = df_info_desc_times[df_info_desc_times["turno"] == turn]
 
         # Se coluna "excedente" for nula, substituir pelo valor de "tempo_registro_min"
         df_info_desc_times.loc[
             df_info_desc_times["excedente"].isnull(), "excedente"
         ] = df_info_desc_times["tempo_registro_min"]
 
-        # Descartar colunas desnecessárias
-        df_info_desc_times.drop(
-            columns=[
-                "tempo_registro_min",
-                "desconto_min",
-                "data_hora_registro",
-                "data_hora_final",
-                "usuario_id_maq_occ",
-                "data_hora_registro_operador",
-                "usuario_id_maq_cadastro",
-            ],
-            inplace=True,
-        )
-
         # Se motivo id for nulo e excedente for menor que 15 substituir motivo_nome por
         # "Não apontado - 15min ou menos"
         df_info_desc_times.loc[
-            (df_info_desc_times["motivo_id"].isnull())
-            & (df_info_desc_times["excedente"] <= 15),
+            (df_info_desc_times["motivo_id"].isnull()) & (df_info_desc_times["excedente"] <= 15),
             ["motivo_nome", "problema"],
         ] = ["Não apontado - 15min ou menos", "Não apontado - 15min ou menos"]
 
         # Preencher onde motivo_nome for nulo
-        df_info_desc_times["motivo_nome"].fillna(
-            "Motivo não informado", inplace=True
-        )
+        df_info_desc_times["motivo_nome"].fillna("Motivo não informado", inplace=True)
 
         df_info_desc_times.loc[
             (df_info_desc_times["motivo_id"] == 12)
@@ -333,9 +302,7 @@ class IndicatorsTurn:
 
         return df_info_desc_times
 
-    def get_eff_bar_lost(
-        self, df: pd.DataFrame, turn: str, checked: bool = False
-    ) -> go.Figure:
+    def get_eff_bar_lost(self, df: pd.DataFrame, turn: str, checked: bool = False) -> go.Figure:
         """
         Retorna um gráfico de barras representando o tempo perdido que mais impacta a eficiência.
 
@@ -368,20 +335,21 @@ class IndicatorsTurn:
             (df["motivo_id"] == 3) & (df["problema"].isnull()),
             "problema",
         ] = "Refeição"
+
+        # Preencher onde problema for nulo e motivo_id for 12
+        df.loc[
+            (df["motivo_id"] == 12) & (df["problema"].isnull()),
+            "problema",
+        ] = "Parada Programada"
+
         # Preencher onde problema for nulo
         df.loc[:, "problema"] = df["problema"].fillna("Problema não informado")
 
         # ---------- df group ---------- #
         # Agrupar por motivo_nome e problema e calcular a soma do excedente
-        df_grouped = (
-            df.groupby(["motivo_nome", "problema"])
-            .agg({"excedente": "sum"})
-            .reset_index()
-        )
+        df_grouped = df.groupby(["motivo_nome", "problema"]).agg({"excedente": "sum"}).reset_index()
         # Ordenar por excedente
-        df_grouped = df_grouped.sort_values("excedente", ascending=False).head(
-            8
-        )
+        df_grouped = df_grouped.sort_values("excedente", ascending=False).head(8)
 
         # ---------- df problema ---------- #
         # Remover linhas onde motivo_nome é igual ao problema
@@ -487,29 +455,19 @@ class IndicatorsTurn:
 
         # Converter 'data_registro' para datetime e criar uma nova coluna 'data_turno'
         dataframe["data_registro"] = pd.to_datetime(dataframe["data_registro"])
-        dataframe["data_turno"] = dataframe["data_registro"].dt.strftime(
-            "%Y-%m-%d"
-        )
+        dataframe["data_turno"] = dataframe["data_registro"].dt.strftime("%Y-%m-%d")
 
         indicator = indicator.value
         ind_capitalized = str(indicator).capitalize()
 
         # Agrupar por 'data_turno' e 'turno' e calcular a média
-        df_grouped = (
-            dataframe.groupby(["data_turno", "linha"])[indicator]
-            .mean()
-            .reset_index()
-        )
+        df_grouped = dataframe.groupby(["data_turno", "linha"])[indicator].mean().reset_index()
 
         # Ordenar por linha e data
-        df_grouped = df_grouped.sort_values(
-            ["linha", "data_turno"], ascending=[True, True]
-        )
+        df_grouped = df_grouped.sort_values(["linha", "data_turno"], ascending=[True, True])
 
         # Remodelar os dados para o formato de heatmap
-        df_pivot = df_grouped.pivot(
-            index="linha", columns="data_turno", values=indicator
-        )
+        df_pivot = df_grouped.pivot(index="linha", columns="data_turno", values=indicator)
 
         # Criar escala de cores personalizada - cores do bootstrap
         colors = [
@@ -709,9 +667,7 @@ class IndicatorsTurn:
 
         return fig
 
-    def adjust_df_for_bar_lost(
-        self, df: pd.DataFrame, indicator: IndicatorType
-    ) -> pd.DataFrame:
+    def adjust_df_for_bar_lost(self, df: pd.DataFrame, indicator: IndicatorType) -> pd.DataFrame:
         """
         Remove as paradas que não afetam o indicador.
 
@@ -756,6 +712,18 @@ class IndicatorsTurn:
 
         df = self.adjust_df_for_bar_lost(df, indicator)
 
+        # Preencher onde motivo_id for 12 e problema for nulo
+        df.loc[
+            (df["motivo_id"] == 12) & (df["problema"].isnull()),
+            "problema",
+        ] = "Parada Programada"
+
+        # Preencher onde problema for nulo e motivo_id for 3
+        df.loc[
+            (df["motivo_id"] == 3) & (df["problema"].isnull()),
+            "problema",
+        ] = "Refeição"
+
         # Preencher onde problema for nulo
         df.loc[:, "problema"] = df["problema"].fillna("Problema não informado")
 
@@ -771,15 +739,9 @@ class IndicatorsTurn:
 
         # ---------- df group ---------- #
         # Agrupar por motivo_nome e problema e calcular a soma do excedente
-        df_grouped = (
-            df.groupby(["motivo_nome", "problema"])
-            .agg({"excedente": "sum"})
-            .reset_index()
-        )
+        df_grouped = df.groupby(["motivo_nome", "problema"]).agg({"excedente": "sum"}).reset_index()
         # Ordenar por excedente
-        df_grouped = df_grouped.sort_values("excedente", ascending=False).head(
-            8
-        )
+        df_grouped = df_grouped.sort_values("excedente", ascending=False).head(8)
 
         # ---------- df problema ---------- #
         # Remover linhas onde motivo_nome é igual ao problema

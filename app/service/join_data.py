@@ -2,345 +2,331 @@
     Módulo para unir os dados de cadastro, info e ocorrência
 """
 
+import numpy as np
 import pandas as pd
+from fuzzywuzzy import process
 
 
-# cSpell: words solucao, usuario
+# cSpell: words solucao, usuario, sabado, idxmin, skipna
 class JoinData:
     """
     Classe para unir os dados de cadastro, info e ocorrência
     """
 
-    def __init__(self):
-        pass
-
-    def join_info_occ(
-        self, occ: pd.DataFrame, info: pd.DataFrame
-    ) -> pd.DataFrame:
+    # Função Auxiliar
+    def move_columns(self, df: pd.DataFrame) -> pd.DataFrame:
         """
-        Une os dados de info e ocorrência
+        Move as colunas para a posição desejada.
+        """
+
+        # Adiciona uma verificação para garantir que não haja valores nulos
+        mask = (
+            df[["data_hora_registro_occ", "data_hora_registro", "data_hora_final"]]
+            .notna()
+            .all(axis=1)
+        )
+
+        df["data_hora_registro_occ"] = df["data_hora_registro_occ"].replace(np.nan, pd.NaT)
+        df = df.astype({"data_hora_registro_occ": "datetime64[ns]"})
+
+        # Calcula a diferença de data_hora_registro_occ e data_hora_registro e data_hora_final
+        df["diff_registro"] = np.where(
+            mask,
+            (df["data_hora_registro_occ"] - df["data_hora_registro"]).dt.total_seconds().abs(),
+            np.nan,
+        )
+        df["diff_final"] = np.where(
+            mask,
+            (df["data_hora_registro_occ"] - df["data_hora_final"]).dt.total_seconds().abs(),
+            np.nan,
+        )
+
+        # Encontra qual das duas diferenças é menor
+        mask_idxmin = df[["diff_registro", "diff_final"]].notna().any(axis=1)
+        df.loc[mask & mask_idxmin, "closest"] = df.loc[
+            mask & mask_idxmin, ["diff_registro", "diff_final"]
+        ].idxmin(
+            axis=1
+        )  # removendo erro:
+        # FutureWarning: The behavior of DataFrame.idxmin with all-NA values,
+        # or any-NA and skipna=False, is deprecated.
+        # In a future version this will raise ValueError
+
+        columns = [
+            "motivo_id",
+            "motivo_nome",
+            "problema",
+            "solucao",
+            "data_hora_registro_occ",
+            "usuario_id_occ",
+        ]
+
+        # Move a ocorrência para a linha anterior se a data_hora_registro for mais próxima
+        mask = (
+            (df["closest"].shift(-1) == "diff_registro")
+            & (df["status"].shift(-1) == "rodando")
+            & df["motivo_id"].isnull()
+        )
+        for column in columns:
+            df[column] = np.where(mask, df[column].shift(-1), df[column])
+            df[column] = np.where(mask.shift(1), pd.NaT, df[column])
+
+        # Move a ocorrência para a linha seguinte se a data_hora_final for mais próxima
+        mask = (
+            (df["closest"].shift(1) == "diff_final")
+            & (df["status"].shift(1) == "rodando")
+            & df["motivo_id"].isnull()
+        )
+        for column in columns:
+            df[column] = np.where(mask, df[column].shift(1), df[column])
+            df[column] = np.where(mask.shift(-1), pd.NaT, df[column])
+
+        return df
+
+    def join_info_occ(self, df_occ: pd.DataFrame, df_info: pd.DataFrame) -> pd.DataFrame:
+        """
+        Junta os dados de ocorrências e paradas.
 
         Args:
-            df_occ (pd.DataFrame): Dataframe com os dados de ocorrência
-            df_info (pd.DataFrame): Dataframe com os dados de info
+            df_occ (pd.DataFrame): DataFrame com os dados de ocorrências.
+            df_info (pd.DataFrame): DataFrame com os dados de paradas.
 
         Returns:
-            pd.DataFrame: Dataframe com os dados de info e ocorrência unidos
-
-        Examples:
-            >>> join_data = JoinData()
-            >>> df_info_occ = join_data.join_info_occ(df_occ, df_info)
+            pd.DataFrame: DataFrame com os dados de ocorrências e paradas juntos.
         """
 
-        df_occ = occ.copy()
-        df_info = info.copy()
-
-        # Garantir que as colunas de data sejam do tipo datetime
-        df_occ["data_hora_registro"] = pd.to_datetime(
-            df_occ["data_hora_registro"]
-        )
-        df_info["data_hora_registro"] = pd.to_datetime(
-            df_info["data_hora_registro"]
-        )
+        # Garantir que as colunas com datas sejam datetime
+        df_occ["data_hora_registro"] = pd.to_datetime(df_occ["data_hora_registro"])
+        df_info["data_hora_registro"] = pd.to_datetime(df_info["data_hora_registro"])
         df_info["data_hora_final"] = pd.to_datetime(df_info["data_hora_final"])
 
-        # Criar uma função para ser usada em cada linha do dataframe
+        # Juntar os dados de ocorrências e paradas
         def merge_rows(row):
-            # Selecionar rows onde a data_hora_registro de occ está entre
-            # data_hora_registro e data_hora_final de info
+            """
+            Função para juntar os dados de ocorrências e paradas.
+            """
             mask = (
-                (df_occ["data_hora_registro"] >= row["data_hora_registro"])
+                (df_occ["maquina_id"] == row["maquina_id"])
+                & (df_occ["data_hora_registro"] >= row["data_hora_registro"])
                 & (df_occ["data_hora_registro"] <= row["data_hora_final"])
-                & (df_occ["maquina_id"] == row["maquina_id"])
-            )
+            )  # mask para identificar as paradas que ocorreram durante a ocorrência
 
-            # Se houver rows selecionadas, retornar uma serie contendo os valores
-            if df_occ.loc[mask].shape[0] > 0:
+            # Criar dataframe com as paradas que ocorreram durante a ocorrência
+            if df_occ[mask].shape[0] > 0:
                 return pd.Series(
                     [
-                        df_occ.loc[mask, "motivo_id"].values[0],
-                        df_occ.loc[mask, "motivo_nome"].values[0],
-                        df_occ.loc[mask, "problema"].values[0],
-                        df_occ.loc[mask, "solucao"].values[0],
-                        df_occ.loc[mask, "data_hora_registro"].values[0],
-                        df_occ.loc[mask, "usuario_id"].values[0],
-                    ]
+                        df_occ[mask]["motivo_id"].values[0],
+                        df_occ[mask]["motivo_nome"].values[0],
+                        df_occ[mask]["problema"].values[0],
+                        df_occ[mask]["solucao"].values[0],
+                        df_occ[mask]["data_hora_registro"].values[0],
+                        df_occ[mask]["usuario_id"].values[0],
+                    ],
                 )
-            else:
-                return pd.Series([None, None, None, None, None, None])
 
-        # Aplicar a função merge_rows em cada linha do dataframe
+            return pd.Series([np.nan, np.nan, np.nan, np.nan, np.nan, np.nan])
+
+        # Aplicar a função merge_rows
         df_info[
             [
                 "motivo_id",
                 "motivo_nome",
                 "problema",
                 "solucao",
-                "data_hora_registro_operador",
-                "usuario_id",
+                "data_hora_registro_occ",
+                "usuario_id_occ",
             ]
         ] = df_info.apply(merge_rows, axis=1)
 
-        # Ajustar para sempre que estiver parada por motivo
-        # 3, 4, 5, 12, 15, 16, o status será rodando
-        df_info.loc[
-            (df_info["status"] == "in_test")
-            & (df_info["motivo_id"].shift(1).isin([3, 4, 5, 12, 15, 16])),
-            "status",
-        ] = "rodando"
-
-        # Definir o status como 12, motivo_nome "Parada Programada" e problema "Domingo/Feriado"
-        # para os domingos e feriados onde o motivo_nome é nulo
-        df_info.loc[
-            (df_info["domingo_feriado_emenda"])
-            & (df_info["tempo_registro_min"] >= 478),
-            ["status", "motivo_id", "motivo_nome", "problema"],
-        ] = ["parada", 12, "Parada Programada", "Domingo/Feriado"]
-
-        # Definir como motivo_id 12 e motivo_nome "Parada Programada"
-        # se o problema for "Parada Programada"
-        df_info.loc[
-            df_info["problema"] == "Parada Programada",
-            ["motivo_id", "motivo_nome"],
-        ] = [12, "Parada Programada"]
-
-        # Reordenar as colunas
-        df_info = df_info[
-            [
-                "maquina_id",
-                "turno",
-                "status",
-                "motivo_id",
-                "motivo_nome",
-                "problema",
-                "solucao",
-                "tempo_registro_min",
-                "data_hora_registro",
-                "data_hora_final",
-                "usuario_id",
-                "data_hora_registro_operador",
-                "domingo_feriado_emenda",
-            ]
-        ]
-
-        # Ajustar o index
-        df_info.reset_index(drop=True, inplace=True)
-
-        return df_info
-
-    def adjust_position(self, info: pd.DataFrame) -> pd.DataFrame:
-        """
-        Ajusta a posição das colunas
-
-        Args:
-            df (pd.DataFrame): Dataframe com os dados
-
-        Returns:
-            pd.DataFrame: Dataframe com os dados ajustados
-
-        Examples:
-            >>> join_data = JoinData()
-            >>> df = join_data.adjust_position(df)
-        """
-
-        df = info.copy()
-
-        # Listar paradas que podem ter sido lançadas adiantadas
-        paradas_adiantadas = [2, 3, 4, 5, 6, 10, 11, 13, 15, 17]
-
-        # Se na linha anterior o motivo_id for uma parada adiantada,
-        # e o status for rodando, copiar o motivo_id
-        # e motivo_nome para a linha atual
-        df.loc[
-            (df["motivo_id"].shift(1).isin(paradas_adiantadas))
-            & (df["status"].shift(1) == "rodando"),
-            [
-                "motivo_id",
-                "motivo_nome",
-                "problema",
-                "solucao",
-                "data_hora_registro_operador",
-                "usuario_id",
-            ],
-        ] = df[
-            [
-                "motivo_id",
-                "motivo_nome",
-                "problema",
-                "solucao",
-                "data_hora_registro_operador",
-                "usuario_id",
-            ]
-        ].shift(
-            1
-        )
-
-        # Definir paradas marcadas atrasadas
-        paradas_atrasadas = [1, 7, 8]
-
-        # Corrigir paradas atrasadas
-        df.loc[
-            (df["motivo_id"].shift(-1).isin(paradas_atrasadas))
-            & (df["status"].shift(-1) == "rodando")
-            & (df["motivo_id"]),
-            [
-                "motivo_id",
-                "motivo_nome",
-                "problema",
-                "solucao",
-                "data_hora_registro_operador",
-                "usuario_id",
-            ],
-        ] = df[
-            [
-                "motivo_id",
-                "motivo_nome",
-                "problema",
-                "solucao",
-                "data_hora_registro_operador",
-                "usuario_id",
-            ]
-        ].shift(
-            -1
-        )
-
-        # Remover as linhas com status rodando
-        df = df[df["status"] != "rodando"]
-
-        # Ajustar o index
-        df.reset_index(drop=True, inplace=True)
-
-        return df
-
-    def info_cadastro_combine(
-        self, info: pd.DataFrame, cadastro: pd.DataFrame
-    ) -> pd.DataFrame:
-        """
-        Une os dados de info e cadastro
-
-        Args:
-        -----
-            df_info (pd.DataFrame): Dataframe com os dados de info
-            df_cadastro (pd.DataFrame): Dataframe com os dados de cadastro
-
-        Retorna:
-        --------
-            pd.DataFrame: Dataframe com os dados combinados
-        """
-
-        # Ordenar os dataframes
-        df_info = info.sort_values(by=["data_hora_registro"])
-        df_cadastro = cadastro.sort_values(by=["data_hora_registro"])
-
-        # Renomear usuario id
-        df_cadastro.rename(
-            columns={"usuario_id": "usuario_id_maq_cadastro"}, inplace=True
-        )
-        df_info.rename(
-            columns={"usuario_id": "usuario_id_maq_occ"}, inplace=True
-        )
-
-        # Merge asof para unir os dataframes baseado na coluna data_hora_registro
-        df_info = pd.merge_asof(
-            df_info,
-            df_cadastro,
-            on="data_hora_registro",
-            by="maquina_id",
-            direction="backward",
-        )
-
-        # Reordenar as colunas
-        df_info = df_info[
-            [
+        # Reordenar colunas
+        df_info = df_info.reindex(
+            columns=[
                 "maquina_id",
                 "linha",
                 "fabrica",
                 "turno",
+                "data_hora_registro",
+                "tempo_registro_min",
+                "data_hora_final",
                 "status",
                 "motivo_id",
+                "data_hora_registro_occ",
                 "motivo_nome",
                 "problema",
                 "solucao",
-                "tempo_registro_min",
-                "data_hora_registro",
-                "data_hora_final",
-                "usuario_id_maq_occ",
-                "data_hora_registro_operador",
-                "usuario_id_maq_cadastro",
-                "domingo_feriado_emenda",
+                "usuario_id_occ",
+                "contagem_total_ciclos",
+                "contagem_total_produzido",
+                "sabado",
+                "domingo",
+                "feriado",
             ]
-        ]
+        )
 
-        # Ordenar pela maquina e hora
-        df_info.sort_values(
-            by=["linha", "data_hora_registro", "turno"],
+        # Ajustar problema e solução caso seja "nan"
+        df_info["problema"] = np.where(df_info["problema"] == "nan", np.nan, df_info["problema"])
+        df_info["solucao"] = np.where(df_info["solucao"] == "nan", np.nan, df_info["solucao"])
+
+        # Remove a linha com tempo_registro_min negativo ou 0
+        df_info = df_info[df_info["tempo_registro_min"] > 0]
+
+        df_info = self.move_columns(df_info)
+
+        # Remove colunas desnecessárias
+        df_info.drop(
+            columns=[
+                "diff_registro",
+                "diff_final",
+                "closest",
+            ],
             inplace=True,
         )
 
-        # Remover linhas onde a 'linha' é 0
+        # Ajustar motivo id
+        df_info["motivo_id"] = df_info["motivo_id"].fillna(np.nan).round(0).astype(float)
+
+        # Ajustar em problema, solucao, usuario_id_occ e motivo_nome
+        df_info["problema"] = df_info["problema"].fillna("")
+        df_info["solucao"] = df_info["solucao"].fillna("")
+        df_info["usuario_id_occ"] = np.where(
+            df_info["usuario_id_occ"] == pd.NaT, np.nan, df_info["usuario_id_occ"]
+        )
+        df_info["motivo_nome"] = np.where(
+            df_info["motivo_nome"] == pd.NaT, np.nan, df_info["motivo_nome"]
+        )
+        # Mudar de np.nan para pd.NaT em data_hora_registro_occ
+        df_info["data_hora_registro_occ"] = np.where(
+            df_info["data_hora_registro_occ"].isnull(), pd.NaT, df_info["data_hora_registro_occ"]
+        )
+
+        # Corrigir os formatos das colunas
+        df_info = df_info.astype(
+            {
+                "data_hora_registro_occ": "datetime64[ns]",
+                "motivo_nome": "category",
+                "problema": str,
+                "solucao": str,
+                "usuario_id_occ": "category",
+            }
+        )
+
+        # Ajustar problema para Domingo, Sábado e Feriado se motivo_id for 12
+        df_info["problema"] = np.where(
+            (df_info["motivo_id"] == 12) & (df_info["domingo"] == 1),
+            "Domingo",
+            df_info["problema"],
+        )
+        df_info["problema"] = np.where(
+            (df_info["motivo_id"] == 12) & (df_info["sabado"] == 1),
+            "Sábado",
+            df_info["problema"],
+        )
+        df_info["problema"] = np.where(
+            (df_info["motivo_id"] == 12) & (df_info["feriado"] == 1),
+            "Feriado",
+            df_info["problema"],
+        )
+
+        # Ajustar motivo 12 para Sábado, Domingo e Feriado
+        condition = (
+            (df_info["motivo_id"].isnull())
+            & (df_info["status"] == "parada")
+            & (df_info["tempo_registro_min"] > 475)
+        )
+        condition_sabado = condition & (df_info["sabado"] == 1)
+        df_info["motivo_id"] = np.where(condition_sabado, 12, df_info["motivo_id"])
+        df_info["motivo_nome"] = np.where(
+            condition_sabado, "Parada Programada", df_info["motivo_nome"]
+        )
+        df_info["problema"] = np.where(condition_sabado, "Sábado", df_info["problema"])
+
+        condition_domingo = condition & (df_info["domingo"] == 1)
+        df_info["motivo_id"] = np.where(condition_domingo, 12, df_info["motivo_id"])
+        df_info["motivo_nome"] = np.where(
+            condition_domingo, "Parada Programada", df_info["motivo_nome"]
+        )
+        df_info["problema"] = np.where(condition_domingo, "Domingo", df_info["problema"])
+
+        condition_feriado = condition & (df_info["feriado"] == 1)
+        df_info["motivo_id"] = np.where(condition_feriado, 12, df_info["motivo_id"])
+        df_info["motivo_nome"] = np.where(
+            condition_feriado, "Parada Programada", df_info["motivo_nome"]
+        )
+        df_info["problema"] = np.where(condition_feriado, "Feriado", df_info["problema"])
+
+        # Cria a máscara para as linhas que atendem às condições
+        mask = (df_info["tempo_registro_min"] > 475) & df_info["motivo_id"].isnull()
+
+        # Cria colunas temporárias com os valores preenchidos
+        df_info["motivo_id_filled"] = df_info["motivo_id"].ffill()
+        df_info["motivo_nome_filled"] = df_info["motivo_nome"].ffill()
+        df_info["problema_filled"] = df_info["problema"].ffill()
+        df_info["solucao_filled"] = df_info["solucao"].ffill()
+
+        # Aplica a máscara e substitui os valores nas colunas originais
+        df_info.loc[mask, "motivo_id"] = df_info.loc[mask, "motivo_id_filled"]
+        df_info.loc[mask, "motivo_nome"] = df_info.loc[mask, "motivo_nome_filled"]
+        df_info.loc[mask, "problema"] = df_info.loc[mask, "problema_filled"]
+        df_info.loc[mask, "solucao"] = df_info.loc[mask, "solucao_filled"]
+
+        # Remove as colunas temporárias
+        df_info = df_info.drop(
+            columns=["motivo_id_filled", "motivo_nome_filled", "problema_filled", "solucao_filled"]
+        )
+
+        # Se o tempo de registro for maior que 480 mudar para 480
+        df_info["tempo_registro_min"] = np.where(
+            df_info["tempo_registro_min"] > 480, 480, df_info["tempo_registro_min"]
+        )
+
+        # Remover as linhas onde a linha é 0
         df_info = df_info[df_info["linha"] != 0]
 
-        # Ajuste para dias que falta energia
-        # Se o tempo de registro for maior que 480 minutos, definir como 480 minutos
-        df_info.loc[
-            df_info["tempo_registro_min"] > 480, "tempo_registro_min"
-        ] = 480
+        # Remover as linhas onde status é rodando
+        df_info = df_info[df_info["status"] != "rodando"]
 
         # Ajustar o index
         df_info.reset_index(drop=True, inplace=True)
 
         return df_info
 
-    def join_info_prod_cad(
-        self, info: pd.DataFrame, cad: pd.DataFrame
-    ) -> pd.DataFrame:
+    def problems_adjust(self, df: pd.DataFrame, threshold=88) -> pd.DataFrame:
         """
-        Une os dados de info e prod
+        Ajusta os problemas no DataFrame fornecido,
+        mapeando problemas semelhantes para um nome comum.
+
+        Args:
+            df (pd.DataFrame): O DataFrame contendo os problemas a serem ajustados.
+            threshold (int, opcional): O limite de similaridade para combinar problemas.
+            Por padrão é 88.
+
+        Returns:
+            pd.DataFrame: O DataFrame com problemas ajustados.
         """
+        # Encontrar problemas únicos
+        unique_problems = df["problema"].unique()
+        problem_mapping = {}
 
-        # Ordenar os dataframes
-        df_info = info.sort_values(by=["data_hora_registro"])
-        df_cad = cad.sort_values(by=["data_hora_registro"])
+        # Criar um dicionário para mapear os problemas
+        for problem in unique_problems:
+            if problem and problem not in problem_mapping:
+                problem = str(problem).capitalize()
 
-        # Unir baseado na coluna data_hora_registro
-        df_info_cad = pd.merge_asof(
-            df_info,
-            df_cad,
-            on="data_hora_registro",
-            by="maquina_id",
-            direction="backward",
-        )
+                # Corrigir erros básicos de digitação
+                problem = problem.replace("Beckup", "Backup")
+                problem = problem.replace("Becukp", "Backup")
+                problem = problem.replace("Stm", "Atm")
 
-        # Ordenar pela maquina e hora
-        df_info_cad = df_info_cad.sort_values(
-            by=["linha", "data_hora_registro", "turno"],
-            ascending=True,
-        )
+                matches = process.extract(problem, unique_problems, limit=len(unique_problems))
 
-        # Renomear usuario id
-        df_info_cad.rename(
-            columns={"usuario_id": "usuario_id_maq_cadastro"}, inplace=True
-        )
+                # Encontrar os problemas com maior similaridade
+                similar_problems = [match[0] for match in matches if match[1] >= threshold]
 
-        # Reordenar as colunas
-        df_info_cad = df_info_cad[
-            [
-                "maquina_id",
-                "linha",
-                "fabrica",
-                "turno",
-                "contagem_total_ciclos",
-                "contagem_total_produzido",
-                "data_registro",
-                "usuario_id_maq_cadastro",
-                "data_hora_registro",
-            ]
-        ]
+                # Criar um dicionário com os problemas similares
+                for similar_problem in similar_problems:
+                    problem_mapping[similar_problem] = problem
 
-        # Remover linhas onde a 'linha' é 0
-        df_info_cad = df_info_cad[df_info_cad["linha"] != 0]
+        # Mapear os problemas
+        df["problema"] = df["problema"].map(problem_mapping)
 
-        # Ajustar o index
-        df_info_cad.reset_index(drop=True, inplace=True)
-
-        return df_info_cad
+        return df

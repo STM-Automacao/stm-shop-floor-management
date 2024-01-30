@@ -30,10 +30,7 @@ layout = [
                 [
                     dbc.Col(
                         dmc.RadioGroup(
-                            [
-                                dmc.Radio(l, value=v, color=c)
-                                for v, l, c in MODAL_RADIO
-                            ],
+                            [dmc.Radio(l, value=v, color=c) for v, l, c in MODAL_RADIO],
                             id="radio-items-performance",
                             value="MAT",
                             className="inter",
@@ -76,9 +73,7 @@ layout = [
                                         className="mb-1 inter",
                                         checked=True,
                                     ),
-                                    dcc.Graph(
-                                        id="graph-performance-modal-perdas"
-                                    ),
+                                    dcc.Graph(id="graph-performance-modal-perdas"),
                                 ]
                             ),
                             dbc.Row(),  # Terá um input de ações aqui
@@ -111,9 +106,7 @@ layout = [
         Input("store-prod", "data"),
     ],
 )
-def update_graph_performance_modal(
-    radio_items_value, checked, store_info, store_prod
-):
+def update_graph_performance_modal(radio_items_value, checked, store_info, store_prod):
     """
     Callback do gráfico de performance do modal
     """
@@ -126,9 +119,7 @@ def update_graph_performance_modal(
     df = times_data.get_perf_data(df_maq_info_cadastro, df_maq_info_prod_cad)
     df = df[df["turno"] == radio_items_value]
 
-    fig = indicators.get_heat_turn(
-        df, IndicatorType.PERFORMANCE, annotations=checked
-    )
+    fig = indicators.get_heat_turn(df, IndicatorType.PERFORMANCE, annotations=checked)
 
     return fig
 
@@ -174,9 +165,7 @@ def update_graph_performance_modal_perdas(store_info, checked, turn):
 
     df_maq_info_cadastro = pd.read_json(stringIO(store_info), orient="split")
 
-    df = indicators.get_time_lost(
-        df_maq_info_cadastro, IndicatorType.PERFORMANCE, turn
-    )
+    df = indicators.get_time_lost(df_maq_info_cadastro, IndicatorType.PERFORMANCE, turn)
 
     fig = indicators.get_bar_lost(df, turn, IndicatorType.PERFORMANCE, checked)
 

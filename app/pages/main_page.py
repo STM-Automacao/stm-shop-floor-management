@@ -107,6 +107,9 @@ layout = [
                                         figure={},
                                         id="performance-gauge-graph_last",
                                     ),
+                                    html.H1(
+                                        "D", className="text-center", style={"font-size": "4rem"}
+                                    ),
                                 ],
                                 sm={"size": 4, "order": 2, "offset": 1},
                                 md={"size": 2, "order": 1, "offset": 0},
@@ -522,15 +525,9 @@ def update_last_month_gauge_graphs(info, prod):
     df_perf = pd.read_csv((PERF_LAST))
     df_repair = pd.read_csv((REPAIR_LAST))
 
-    fig_eff = ind_graphics.draw_gauge_graphic(
-        df_eff, IndicatorType.EFFICIENCY, 90
-    )
-    fig_perf = ind_graphics.draw_gauge_graphic(
-        df_perf, IndicatorType.PERFORMANCE, 4
-    )
-    fig_repair = ind_graphics.draw_gauge_graphic(
-        df_repair, IndicatorType.REPAIR, 4
-    )
+    fig_eff = ind_graphics.draw_gauge_graphic(df_eff, IndicatorType.EFFICIENCY, 90)
+    fig_perf = ind_graphics.draw_gauge_graphic(df_perf, IndicatorType.PERFORMANCE, 4)
+    fig_repair = ind_graphics.draw_gauge_graphic(df_repair, IndicatorType.REPAIR, 4)
 
     return fig_eff, fig_perf, fig_repair
 

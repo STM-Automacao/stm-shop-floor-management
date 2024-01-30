@@ -46,9 +46,7 @@ class TimesData:
         # Lista com os motivos de parada que são considerados para Reparos
         self.af_rep = [7, 8, 11]
 
-    def get_times_discount(
-        self, info: pd.DataFrame, desc_pcp: dict[int, int]
-    ) -> pd.DataFrame:
+    def get_times_discount(self, info: pd.DataFrame, desc_pcp: dict[int, int]) -> pd.DataFrame:
         """
         Método para calcular o tempo de eficiência e desconto.
 
@@ -56,115 +54,87 @@ class TimesData:
         outro com os descontos de parada
         e retorna um DataFrame com informações de tempo de eficiência e desconto.
 
-        ### Parâmetros:
-        info (pd.DataFrame): DataFrame contendo informações de tempo.
+        Args:
+            info (pd.DataFrame): DataFrame com os dados de parada
+            desc_pcp (dict[int, int]): Dicionário com os descontos de parada
 
-        ### Retorna:
-        pd.DataFrame: DataFrame com informações de tempo de eficiência e desconto.
+        Returns:
+            pd.DataFrame: DataFrame com os descontos de parada
 
-        ### Exemplo de uso:
+
+        Exemplo:
         ```
         times_data = TimesData()
         df_info = pd.dataframe()
-        df_result = times_data.get_times_eff_disc(df_info)
+        df_result = get_times_data.get_times_discount(df_times_desc, desc_pcp)
         ```
         """
 
         info_stops = info.copy()
 
-        # Certificar que data_hora_registro é do tipo datetime
-        info_stops["data_hora_registro"] = pd.to_datetime(
-            info_stops["data_hora_registro"]
-        )
-
         # Adicionar coluna com descontos de parada
         info_stops["desconto_min"] = info_stops["motivo_id"].map(desc_pcp)
 
-        # Se houver desconto, subtrair do tempo de parada e arredondar para baixo
+        # Se houver desconto, subtrair e arredondar em uma nova coluna chamada excedente
         info_stops["excedente"] = (
             info_stops["tempo_registro_min"] - info_stops["desconto_min"]
         ).clip(lower=0)
 
-        # Se o desconto for maior que o tempo de parada, deve ser igual ao tempo de parada
+        # Se o desconto for maior que tempo de parada, o desconto deve ser igual ao tempo de parada
         info_stops.loc[
             info_stops["desconto_min"] > info_stops["tempo_registro_min"],
             "desconto_min",
         ] = info_stops["tempo_registro_min"]
 
+        # Ajustar data_hora_registro para datetime
+        info_stops["data_hora_registro"] = pd.to_datetime(info_stops["data_hora_registro"])
+
         # Criar coluna data_registro para agrupar por dia
         info_stops["data_registro"] = info_stops["data_hora_registro"].dt.date
-
         # Ordenar por maquina_id, data_hora_registro, turno
-        info_stops.sort_values(
-            by=["maquina_id", "data_hora_registro", "turno"], inplace=True
-        )
-
-        # Manter somente colunas necessárias
-        info_stops = info_stops[
-            [
-                "maquina_id",
-                "linha",
-                "fabrica",
-                "turno",
-                "motivo_id",
-                "motivo_nome",
-                "problema",
-                "solucao",
-                "tempo_registro_min",
-                "desconto_min",
-                "excedente",
-                "data_hora_registro",
-                "data_hora_final",
-                "usuario_id_maq_occ",
-                "data_hora_registro_operador",
-                "usuario_id_maq_cadastro",
-                "data_registro",
-                "domingo_feriado_emenda",
-            ]
-        ]
-
-        # ----- Corrigindo erros da tabela de motivos ----- #
-        # Substituir "Nan" por np.nan
-        info_stops["problema"].replace("Nan", np.nan, inplace=True)
-
-        # Ajuste para paradas programadas
-        info_stops.loc[
-            (info_stops["domingo_feriado_emenda"] is True)
-            & (info_stops["motivo_id"].isnull())
-            & (info_stops["tempo_registro_min"] > 200),
-            ["motivo_nome", "motivo_id", "problema"],
-        ] = ["Parada Programada", 12, "Domingo/feriado"]
+        info_stops.sort_values(by=["maquina_id", "data_hora_registro", "turno"], inplace=True)
 
         return info_stops
 
     def get_elapsed_time(self, turno):
         """
-        Função para obter o tempo decorrido desde o início do turno atual.
+        Método para calcular o tempo decorrido no turno atual.
+
+        Este método recebe o turno atual e retorna o tempo decorrido em minutos.
+
+        Args:
+            turno (str): Turno atual
+
+        Returns:
+            float: Tempo decorrido em minutos
+
+
+        Exemplo:
+            >>> from app.service.get_times_data import GetTimesData
+            >>> import pandas as pd
+            >>> get_times_data = GetTimesData()
+            >>> turno = 'MAT'
+            >>> tempo_decorrido = get_times_data.get_elapsed_time(turno)
         """
         now = datetime.now()
+
         if turno == "MAT" and 8 <= now.hour < 16:
-            shift_start = now.replace(
-                hour=8, minute=0, second=0, microsecond=0
-            )
+            shift_start = now.replace(hour=8, minute=0, second=0, microsecond=0)
+
         elif turno == "VES" and 16 <= now.hour < 24:
-            shift_start = now.replace(
-                hour=16, minute=0, second=0, microsecond=0
-            )
+            shift_start = now.replace(hour=16, minute=0, second=0, microsecond=0)
+
         elif turno == "NOT" and (now.hour < 8 or now.hour >= 24):
-            shift_start = now.replace(
-                hour=0, minute=0, second=0, microsecond=0
-            )
+            shift_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+
         else:
             return 480  # retorna o tempo padrão se não estiver no turno atual
 
         elapsed_time = now - shift_start
-        return (
-            elapsed_time.total_seconds() / 60
-        )  # retorna o tempo decorrido em minutos
 
-    def get_eff_data(
-        self, df_info: pd.DataFrame, df_prod: pd.DataFrame
-    ) -> pd.DataFrame:
+        return elapsed_time.total_seconds() / 60  # retorna o tempo decorrido em minutos
+
+    def get_eff_data(self, df_info: pd.DataFrame, df_prod: pd.DataFrame) -> pd.DataFrame:
         """
         Método para calcular os dados de eficiência.
 
@@ -193,28 +163,13 @@ class TimesData:
         df_prod_total = df_prod.copy()
         ciclo_ideal = 10.6
 
-        # Descartar colunas desnecessárias de df_prod -> 'contagem_total_ciclos',
-        # 'usuario_id_maq_cadastro', 'data_hora_registro'
-        df_prod_total.drop(
-            columns=[
-                "contagem_total_ciclos",
-                "data_hora_registro",
-                "usuario_id_maq_cadastro",
-            ],
-            inplace=True,
-        )
+        # Descartar colunas desnecessárias de df_prod
+        df_prod_total.drop(columns=["total_ciclos"], inplace=True)
 
-        # Renomear coluna contagem_total_produzido para producao_total
-        df_prod_total.rename(
-            columns={"contagem_total_produzido": "producao_total"},
-            inplace=True,
-        )
-
-        # Agrupar por maquina_id, data_registro e turno e somar o tempo de parada,
-        # o desconto e o excedente
+        # Agrupar por maquina_id, data_registro e turno e somar o desconto
         df_eff_times_desc = (
             df_eff_times_desc.groupby(
-                ["maquina_id", "linha", "fabrica", "data_registro", "turno"]
+                ["maquina_id", "linha", "data_registro", "turno"], observed=False
             )
             .agg(
                 {
@@ -224,33 +179,28 @@ class TimesData:
             .reset_index()
         )
 
-        # Converta a coluna "data_registro" para data em ambos os dataframes
+        # Garantir que a coluna data_registro é datetime em ambos os dataframes
         df_eff_times_desc["data_registro"] = pd.to_datetime(
             df_eff_times_desc["data_registro"]
         ).dt.date
-        df_prod_total["data_registro"] = pd.to_datetime(
-            df_prod_total["data_registro"]
-        ).dt.date
+
+        df_prod_total["data_registro"] = pd.to_datetime(df_prod_total["data_registro"]).dt.date
 
         # Fazer merge com df_prod_total
         df_eff_times_desc = pd.merge(
             df_prod_total,
             df_eff_times_desc,
-            on=["maquina_id", "linha", "fabrica", "turno", "data_registro"],
+            on=["maquina_id", "linha", "turno", "data_registro"],
             how="left",
             validate="one_to_one",
         )
 
         # Ajustar desc_min para 0 quando for nulo
-        df_eff_times_desc.loc[
-            df_eff_times_desc["desconto_min"].isnull(), "desconto_min"
-        ] = 0
+        df_eff_times_desc.loc[df_eff_times_desc["desconto_min"].isnull(), "desconto_min"] = 0
 
         # Criar coluna com tempo esperado de produção
         df_eff_times_desc["tempo_esperado_min"] = df_eff_times_desc.apply(
-            lambda row: np.floor(
-                self.get_elapsed_time(row["turno"]) - row["desconto_min"]
-            )
+            lambda row: np.floor(self.get_elapsed_time(row["turno"]) - row["desconto_min"])
             if row["data_registro"] == datetime.now().date()
             else 480 - row["desconto_min"],
             axis=1,
@@ -263,18 +213,23 @@ class TimesData:
 
         # Calcular a eficiência
         df_eff_times_desc["eficiencia"] = (
-            df_eff_times_desc["producao_total"]
-            / df_eff_times_desc["producao_esperada"]
+            df_eff_times_desc["total_produzido"] / df_eff_times_desc["producao_esperada"]
         )
+
+        # Ordenar pela linha e data_registro
+        df_eff_times_desc = df_eff_times_desc.sort_values(
+            by=["linha", "data_registro"], ascending=True
+        )
+
+        # Remover as linhas onde a linha é 0
+        df_eff_times_desc = df_eff_times_desc[df_eff_times_desc["linha"] != 0]
 
         # Ajustar o index
         df_eff_times_desc.reset_index(drop=True, inplace=True)
 
         return df_eff_times_desc
 
-    def get_perf_data(
-        self, df_info: pd.DataFrame, df_prod: pd.DataFrame
-    ) -> pd.DataFrame:
+    def get_perf_data(self, df_info: pd.DataFrame, df_prod: pd.DataFrame) -> pd.DataFrame:
         """
         Método para calcular os dados de performance.
 
@@ -305,10 +260,8 @@ class TimesData:
         # Descartar colunas desnecessárias de df_prod
         df_prod_total.drop(
             columns=[
-                "contagem_total_ciclos",
-                "contagem_total_produzido",
-                "data_hora_registro",
-                "usuario_id_maq_cadastro",
+                "total_ciclos",
+                "total_produzido",
             ],
             inplace=True,
         )
@@ -330,7 +283,7 @@ class TimesData:
         # desconto e o afeta
         df_perf_times_desc = (
             df_perf_times_desc.groupby(
-                ["maquina_id", "linha", "fabrica", "data_registro", "turno"]
+                ["maquina_id", "linha", "data_registro", "turno"], observed=False
             )
             .agg(
                 {
@@ -341,38 +294,31 @@ class TimesData:
             .reset_index()
         )
 
-        # Converta a coluna "data_registro" para data em ambos os dataframes
+        # Garantir que a coluna data_registro é datetime em ambos os dataframes
         df_perf_times_desc["data_registro"] = pd.to_datetime(
             df_perf_times_desc["data_registro"]
         ).dt.date
-        df_prod_total["data_registro"] = pd.to_datetime(
-            df_prod_total["data_registro"]
-        ).dt.date
 
+        df_prod_total["data_registro"] = pd.to_datetime(df_prod_total["data_registro"]).dt.date
         # Fazer merge com df_prod_total
+
         df_perf_times_desc = pd.merge(
             df_prod_total,
             df_perf_times_desc,
-            on=["maquina_id", "linha", "fabrica", "turno", "data_registro"],
+            on=["maquina_id", "linha", "turno", "data_registro"],
             how="left",
             validate="one_to_one",
         )
 
         # Ajustar desconto_min para 0 quando for nulo
-        df_perf_times_desc.loc[
-            df_perf_times_desc["desconto_min"].isnull(), "desconto_min"
-        ] = 0
+        df_perf_times_desc.loc[df_perf_times_desc["desconto_min"].isnull(), "desconto_min"] = 0
 
         # Ajustar afeta para 0 quando for nulo
-        df_perf_times_desc.loc[
-            df_perf_times_desc["afeta"].isnull(), "afeta"
-        ] = 0
+        df_perf_times_desc.loc[df_perf_times_desc["afeta"].isnull(), "afeta"] = 0
 
         # Criar coluna com tempo esperado de produção
         df_perf_times_desc["tempo_esperado_min"] = df_perf_times_desc.apply(
-            lambda row: np.floor(
-                self.get_elapsed_time(row["turno"]) - row["desconto_min"]
-            )
+            lambda row: np.floor(self.get_elapsed_time(row["turno"]) - row["desconto_min"])
             if row["data_registro"] == datetime.now().date()
             else 480 - row["desconto_min"],
             axis=1,
@@ -380,15 +326,23 @@ class TimesData:
 
         # Calcular a performance
         df_perf_times_desc["performance"] = (
-            df_perf_times_desc["afeta"]
-            / df_perf_times_desc["tempo_esperado_min"]
+            df_perf_times_desc["afeta"] / df_perf_times_desc["tempo_esperado_min"]
         )
+
+        # Ordenar pela linha e data_registro
+        df_perf_times_desc = df_perf_times_desc.sort_values(
+            by=["linha", "data_registro"], ascending=True
+        )
+
+        # Remover as linhas onde a linha é 0
+        df_perf_times_desc = df_perf_times_desc[df_perf_times_desc["linha"] != 0]
+
+        # Ajustar o index
+        df_perf_times_desc.reset_index(drop=True, inplace=True)
 
         return df_perf_times_desc
 
-    def get_repair_data(
-        self, df_info: pd.DataFrame, df_prod: pd.DataFrame
-    ) -> pd.DataFrame:
+    def get_repair_data(self, df_info: pd.DataFrame, df_prod: pd.DataFrame) -> pd.DataFrame:
         """
         Método para calcular os dados de reparos.
 
@@ -419,18 +373,14 @@ class TimesData:
         # Descartar colunas desnecessárias de df_prod
         df_prod_total.drop(
             columns=[
-                "contagem_total_ciclos",
-                "contagem_total_produzido",
-                "data_hora_registro",
-                "usuario_id_maq_cadastro",
+                "total_ciclos",
+                "total_produzido",
             ],
             inplace=True,
         )
 
         # Remover as linhas que não afetam o reparo
-        df_rep_times_desc = df_rep_times_desc[
-            df_rep_times_desc["motivo_id"].isin(self.af_rep)
-        ]
+        df_rep_times_desc = df_rep_times_desc[df_rep_times_desc["motivo_id"].isin(self.af_rep)]
 
         # Criar coluna 'afeta' para identificar as paradas que afetam o reparo
         df_rep_times_desc["afeta"] = df_rep_times_desc["excedente"]
@@ -444,7 +394,7 @@ class TimesData:
         # desconto e o afeta
         df_rep_times_desc = (
             df_rep_times_desc.groupby(
-                ["maquina_id", "linha", "fabrica", "data_registro", "turno"]
+                ["maquina_id", "linha", "data_registro", "turno"], observed=False
             )
             .agg(
                 {
@@ -455,45 +405,49 @@ class TimesData:
             .reset_index()
         )
 
-        # Converta a coluna "data_registro" para data em ambos os dataframes
+        # Garantir que a coluna data_registro é datetime em ambos os dataframes
         df_rep_times_desc["data_registro"] = pd.to_datetime(
             df_rep_times_desc["data_registro"]
         ).dt.date
-        df_prod_total["data_registro"] = pd.to_datetime(
-            df_prod_total["data_registro"]
-        ).dt.date
+        df_prod_total["data_registro"] = pd.to_datetime(df_prod_total["data_registro"]).dt.date
 
         # Fazer merge com df_prod_total
         df_rep_times_desc = pd.merge(
             df_prod_total,
             df_rep_times_desc,
-            on=["maquina_id", "linha", "fabrica", "turno", "data_registro"],
+            on=["maquina_id", "linha", "turno", "data_registro"],
             how="left",
             validate="one_to_one",
         )
 
         # Ajustar desconto_min para 0 quando for nulo
-        df_rep_times_desc.loc[
-            df_rep_times_desc["desconto_min"].isnull(), "desconto_min"
-        ] = 0
+        df_rep_times_desc.loc[df_rep_times_desc["desconto_min"].isnull(), "desconto_min"] = 0
 
         # Ajustar afeta para 0 quando for nulo
         df_rep_times_desc.loc[df_rep_times_desc["afeta"].isnull(), "afeta"] = 0
 
         # Criar coluna com tempo esperado de produção
         df_rep_times_desc["tempo_esperado_min"] = df_rep_times_desc.apply(
-            lambda row: np.floor(
-                self.get_elapsed_time(row["turno"]) - row["desconto_min"]
-            )
+            lambda row: np.floor(self.get_elapsed_time(row["turno"]) - row["desconto_min"])
             if row["data_registro"] == datetime.now().date()
             else 480 - row["desconto_min"],
             axis=1,
         )
 
         # Calcular o reparo
-        df_rep_times_desc["reparos"] = (
-            df_rep_times_desc["afeta"]
-            / df_rep_times_desc["tempo_esperado_min"]
+        df_rep_times_desc["reparo"] = (
+            df_rep_times_desc["afeta"] / df_rep_times_desc["tempo_esperado_min"]
         )
+
+        # Ordenar pela linha e data_registro
+        df_rep_times_desc = df_rep_times_desc.sort_values(
+            by=["linha", "data_registro"], ascending=True
+        )
+
+        # Remover as linhas onde a linha é 0
+        df_rep_times_desc = df_rep_times_desc[df_rep_times_desc["linha"] != 0]
+
+        # Ajustar o index
+        df_rep_times_desc.reset_index(drop=True, inplace=True)
 
         return df_rep_times_desc

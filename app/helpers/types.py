@@ -8,7 +8,7 @@ class IndicatorType(Enum):
     """Indicator types"""
 
     PERFORMANCE = "performance"
-    REPAIR = "reparos"
+    REPAIR = "reparo"
     EFFICIENCY = "eficiencia"
 
 

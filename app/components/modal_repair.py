@@ -31,10 +31,7 @@ layout = [
                 [
                     dbc.Col(
                         dmc.RadioGroup(
-                            [
-                                dmc.Radio(l, value=v, color=c)
-                                for v, l, c in MODAL_RADIO
-                            ],
+                            [dmc.Radio(l, value=v, color=c) for v, l, c in MODAL_RADIO],
                             id="radio-items-repair",
                             value="MAT",
                             className="inter",
@@ -111,6 +108,9 @@ layout = [
     ],
 )
 def update_graph_repair_modal(radio_value, checked, info, prod):
+    """
+    Função que atualiza o gráfico de reparos por turno.
+    """
     if not info or not prod:
         raise PreventUpdate
 
@@ -120,9 +120,7 @@ def update_graph_repair_modal(radio_value, checked, info, prod):
     df = times_data.get_repair_data(df_maq_info_cadastro, df_maq_info_prod_cad)
     df = df[df["turno"] == radio_value]
 
-    fig = indicators.get_heat_turn(
-        df, IndicatorType.REPAIR, annotations=checked
-    )
+    fig = indicators.get_heat_turn(df, IndicatorType.REPAIR, annotations=checked)
 
     return fig
 
@@ -135,6 +133,9 @@ def update_graph_repair_modal(radio_value, checked, info, prod):
     ],
 )
 def update_graph_repair_modal_2(info, prod):
+    """
+    Função que atualiza o gráfico de reparos por turno.
+    """
     if not info or not prod:
         raise PreventUpdate
 
@@ -157,14 +158,15 @@ def update_graph_repair_modal_2(info, prod):
     ],
 )
 def update_graph_repair_modal_perdas(info, checked, turn):
+    """
+    Função que atualiza o gráfico de perdas por turno.
+    """
     if not info:
         raise PreventUpdate
 
     df_maq_info_cadastro = pd.read_json(stringIO(info), orient="split")
 
-    df = indicators.get_time_lost(
-        df_maq_info_cadastro, IndicatorType.REPAIR, turn
-    )
+    df = indicators.get_time_lost(df_maq_info_cadastro, IndicatorType.REPAIR, turn)
 
     fig = indicators.get_bar_lost(df, turn, IndicatorType.REPAIR, checked)
 

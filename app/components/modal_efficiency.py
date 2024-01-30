@@ -33,10 +33,7 @@ layout = [
                 [
                     dbc.Col(
                         dmc.RadioGroup(
-                            [
-                                dmc.Radio(l, value=v, color=c)
-                                for v, l, c in MODAL_RADIO
-                            ],
+                            [dmc.Radio(l, value=v, color=c) for v, l, c in MODAL_RADIO],
                             id="radio-items",
                             value="MAT",
                             className="inter",
@@ -89,9 +86,7 @@ layout = [
                                         className="mb-1 inter",
                                         checked=True,
                                     ),
-                                    dcc.Graph(
-                                        id="graph-eficiencia-modal-perdas"
-                                    ),
+                                    dcc.Graph(id="graph-eficiencia-modal-perdas"),
                                 ]
                             ),
                             dbc.Row(),  # Input de ações
@@ -124,9 +119,7 @@ layout = [
         Input("colors-switch-eficiencia", "checked"),
     ],
 )
-def update_graph_eficiencia_modal(
-    value, data_info, data_prod, checked, colors
-):
+def update_graph_eficiencia_modal(value, data_info, data_prod, checked, colors):
     """
     Função que atualiza o gráfico de eficiência do modal.
     """
@@ -139,9 +132,7 @@ def update_graph_eficiencia_modal(
     df = times_data.get_eff_data(df_maq_info_cadastro, df_maq_info_prod_cad)
     df = df[df["turno"] == value]
 
-    figure = indicators.get_eff_heat_turn(
-        df, annotations=checked, more_colors=colors
-    )
+    figure = indicators.get_eff_heat_turn(df, annotations=checked, more_colors=colors)
 
     return figure
 
@@ -187,9 +178,7 @@ def update_graph_eficiencia_modal_perdas(data_info, checked, turn):
 
     df_maq_info_cadastro = pd.read_json(stringIO(data_info), orient="split")
 
-    df = indicators.get_time_lost(
-        df_maq_info_cadastro, IndicatorType.EFFICIENCY, turn
-    )
+    df = indicators.get_time_lost(df_maq_info_cadastro, IndicatorType.EFFICIENCY, turn)
 
     figure = indicators.get_eff_bar_lost(df, turn, checked)
 

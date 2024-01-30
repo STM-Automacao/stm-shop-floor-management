@@ -59,9 +59,7 @@ class Connection:
                 f"PWD={self.__password};"
             )
             # pylint: disable=consider-using-f-string
-            conexao_automacao = create_engine(
-                "mssql+pyodbc:///?odbc_connect=%s" % params
-            )
+            conexao_automacao = create_engine("mssql+pyodbc:///?odbc_connect=%s" % params)
             return conexao_automacao
         # pylint: disable=broad-except
         except Exception as error:

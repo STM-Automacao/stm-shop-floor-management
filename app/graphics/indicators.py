@@ -23,9 +23,7 @@ class Indicators:
         self.danger_color = "#e30613"
         self.success_color = "#00a13a"
 
-    def efficiency_graphic(
-        self, dataframe: pd.DataFrame, meta: int
-    ) -> go.Figure:
+    def efficiency_graphic(self, dataframe: pd.DataFrame, meta: int) -> go.Figure:
         """
         Este método é responsável por criar o gráfico de eficiência.
 
@@ -44,21 +42,17 @@ class Indicators:
 
         # Converter 'data_registro' para datetime e criar uma nova coluna 'data_turno'
         dataframe["data_registro"] = pd.to_datetime(dataframe["data_registro"])
-        dataframe["data_turno"] = dataframe["data_registro"].dt.strftime(
-            "%Y-%m-%d"
-        )
+        dataframe["data_turno"] = dataframe["data_registro"].dt.strftime("%Y-%m-%d")
 
         # Agrupar por 'data_turno' e 'turno' e calcular a média da eficiência
         df_grouped = (
-            dataframe.groupby(["data_turno", "turno"])["eficiencia"]
+            dataframe.groupby(["data_turno", "turno"], observed=False)["eficiencia"]
             .mean()
             .reset_index()
         )
 
         # Remodelar os dados para o formato de heatmap
-        df_pivot = df_grouped.pivot(
-            index="turno", columns="data_turno", values="eficiencia"
-        )
+        df_pivot = df_grouped.pivot(index="turno", columns="data_turno", values="eficiencia")
 
         # Reordenar o índice do DataFrame
         df_pivot = df_pivot.reindex(["VES", "MAT", "NOT"])
@@ -125,9 +119,7 @@ class Indicators:
 
         return fig
 
-    def performance_graphic(
-        self, dataframe: pd.DataFrame, meta: int
-    ) -> go.Figure:
+    def performance_graphic(self, dataframe: pd.DataFrame, meta: int) -> go.Figure:
         """
         Este método é responsável por criar o gráfico de performance.
 
@@ -146,21 +138,17 @@ class Indicators:
 
         # Converter 'data_registro' para datetime e criar uma nova coluna 'data_turno'
         dataframe["data_registro"] = pd.to_datetime(dataframe["data_registro"])
-        dataframe["data_turno"] = dataframe["data_registro"].dt.strftime(
-            "%Y-%m-%d"
-        )
+        dataframe["data_turno"] = dataframe["data_registro"].dt.strftime("%Y-%m-%d")
 
         # Agrupar por 'data_turno' e 'turno' e calcular a média da eficiência
         df_grouped = (
-            dataframe.groupby(["data_turno", "turno"])["performance"]
+            dataframe.groupby(["data_turno", "turno"], observed=False)["performance"]
             .mean()
             .reset_index()
         )
 
         # Remodelar os dados para o formato de heatmap
-        df_pivot = df_grouped.pivot(
-            index="turno", columns="data_turno", values="performance"
-        )
+        df_pivot = df_grouped.pivot(index="turno", columns="data_turno", values="performance")
 
         # Reordenar o índice do DataFrame
         df_pivot = df_pivot.reindex(["VES", "MAT", "NOT"])
@@ -246,21 +234,17 @@ class Indicators:
 
         # Converter 'data_registro' para datetime e criar uma nova coluna 'data_turno'
         dataframe["data_registro"] = pd.to_datetime(dataframe["data_registro"])
-        dataframe["data_turno"] = dataframe["data_registro"].dt.strftime(
-            "%Y-%m-%d"
-        )
+        dataframe["data_turno"] = dataframe["data_registro"].dt.strftime("%Y-%m-%d")
 
         # Agrupar por 'data_turno' e 'turno' e calcular a média da eficiência
         df_grouped = (
-            dataframe.groupby(["data_turno", "turno"])["reparos"]
+            dataframe.groupby(["data_turno", "turno"], observed=False)["reparo"]
             .mean()
             .reset_index()
         )
 
         # Remodelar os dados para o formato de heatmap
-        df_pivot = df_grouped.pivot(
-            index="turno", columns="data_turno", values="reparos"
-        )
+        df_pivot = df_grouped.pivot(index="turno", columns="data_turno", values="reparo")
 
         # Reordenar o índice do DataFrame
         df_pivot = df_pivot.reindex(["VES", "MAT", "NOT"])
@@ -371,13 +355,11 @@ class Indicators:
         repair (float): Reparos calculados.
         """
 
-        repair = df["reparos"].mean()
+        repair = df["reparo"].mean()
 
         return repair
 
-    def draw_gauge_graphic(
-        self, df: pd.DataFrame, ind_type: IndicatorType, meta: int
-    ) -> go.Figure:
+    def draw_gauge_graphic(self, df: pd.DataFrame, ind_type: IndicatorType, meta: int) -> go.Figure:
         """
         Este método é responsável por criar o gráfico de indicadores.
 
@@ -405,9 +387,7 @@ class Indicators:
         df["data_registro"] = pd.to_datetime(df["data_registro"])
 
         # Verificar a primeira data_registro do dataframe para saber se os dados são do mês atual
-        this_month = (
-            df["data_registro"].iloc[0].month == pd.Timestamp.now().month
-        )
+        this_month = df["data_registro"].iloc[0].month == pd.Timestamp.now().month
         month = "Atual" if this_month else "Anterior"
 
         # Obter a função de acordo com o tipo de indicador
@@ -421,22 +401,12 @@ class Indicators:
 
         # Definir a cor de acordo com a porcentagem
         if ind_type == IndicatorType.EFFICIENCY:
-            color = (
-                self.success_color
-                if percentage >= (meta / 100)
-                else self.danger_color
-            )
+            color = self.success_color if percentage >= (meta / 100) else self.danger_color
         else:
-            color = (
-                self.danger_color
-                if percentage >= (meta / 100)
-                else self.success_color
-            )
+            color = self.danger_color if percentage > (meta / 100) else self.success_color
 
         # Definir a escala do eixo para "performance" e "reparos"
-        axis_range = (
-            [0, 100] if ind_type == IndicatorType.EFFICIENCY else [40, 0]
-        )
+        axis_range = [0, 100] if ind_type == IndicatorType.EFFICIENCY else [40, 0]
 
         # Criar o gráfico
         fig = go.Figure(
@@ -477,9 +447,7 @@ class Indicators:
 
         return fig
 
-    def plot_daily_efficiency(
-        self, df: pd.DataFrame, indicator: IndicatorType
-    ) -> go.Figure:
+    def plot_daily_efficiency(self, df: pd.DataFrame, indicator: IndicatorType) -> go.Figure:
         """
         Este método é responsável por criar o gráfico de linhas diária.
 
@@ -511,8 +479,7 @@ class Indicators:
                 mode="lines+markers",
                 line=dict(color="blue"),
                 marker=dict(color="blue"),
-                hovertemplate="<i>Dia</i>: %{x}"
-                + "<br><b>Porcentagem</b>: %{y:.1f}<br>",
+                hovertemplate="<i>Dia</i>: %{x}" + "<br><b>Porcentagem</b>: %{y:.1f}<br>",
                 hoverinfo="skip",
             )
         )

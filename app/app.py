@@ -12,6 +12,6 @@ DBC_CSS = "https://cdn.jsdelivr.net/gh/AnnMarieW/dash-bootstrap-templates@V1.0.4
 app = dash.Dash(__name__, external_stylesheets=ESTILOS + [DBC_CSS])
 
 app.config.suppress_callback_exceptions = True
-app.title = "Dashboard"
+app.title = "Shop Floor Management - Automação"
 app.scripts.config.serve_locally = True
 server = app.server
