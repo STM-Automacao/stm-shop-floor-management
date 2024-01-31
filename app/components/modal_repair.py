@@ -1,5 +1,7 @@
 """
-Modal de Reparos
+Autor: Bruno Tomaz
+Data: 25/01/2024
+Módulo que contém o layout e as funções de callback do Modal de Reparos.
 """
 
 from io import StringIO as stringIO

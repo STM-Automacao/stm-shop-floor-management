@@ -503,6 +503,25 @@ dash = ">=2.0.0"
 pandas = ["numpy", "pandas"]
 
 [[package]]
+name = "dash-bootstrap-templates"
+version = "1.1.2"
+description = "A collection of Plotly figure templates with a Bootstrap theme"
+optional = false
+python-versions = "*"
+files = [
+    {file = "dash-bootstrap-templates-1.1.2.tar.gz", hash = "sha256:ad09b6d22500b7de3fd6cfe4886389de653ef16320969915f728b4bac5a7ba30"},
+    {file = "dash_bootstrap_templates-1.1.2-py3-none-any.whl", hash = "sha256:87bb1e9dd7ac475f07d1237159091b9d154aa80fdae5fe579fb868e87343dfcd"},
+]
+
+[package.dependencies]
+dash = "*"
+dash-bootstrap-components = ">=1.0.0"
+numpy = "*"
+
+[package.extras]
+dev = ["spectra", "tinycss2"]
+
+[[package]]
 name = "dash-core-components"
 version = "2.0.0"
 description = "Core component suite for Dash"
@@ -2699,4 +2718,4 @@ testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "p
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "d810c4e92c4c828829b5d374171760b56b9f571c623ffe283b444fb6e6d9bb8a"
+content-hash = "cbac50f7250b33b1dc27776d8462600a0ecc0530dcb4030760a792f74adc3413"

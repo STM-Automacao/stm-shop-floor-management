@@ -1,5 +1,7 @@
 """
 Modal de Performance
+Criado por: Bruno Tomaz
+Data: 25/01/2024
 """
 
 from io import StringIO as stringIO
@@ -51,7 +53,6 @@ layout = [
                 ],
                 justify="between",
             ),
-            # dcc.Loading(dcc.Graph(id="graph-performance-modal")),
             dbc.Spinner(
                 children=dcc.Graph(id="graph-performance-modal"),
                 size="lg",

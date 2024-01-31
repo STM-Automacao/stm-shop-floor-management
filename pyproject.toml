@@ -33,6 +33,7 @@ python-dotenv = "^1.0.0"
 sqlalchemy = "^2.0.25"
 kaleido = {version = "0.2.1", optional = true}
 waitress = "^2.1.2"
+dash-bootstrap-templates = "^1.1.2"
 
 
 [build-system]

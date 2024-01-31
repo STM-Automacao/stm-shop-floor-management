@@ -1,4 +1,6 @@
 """
+Autor: Bruno Tomaz
+Data: 11/01/2024
 Módulo que prepara dados para os indicadores
 """
 from datetime import datetime

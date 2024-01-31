@@ -1,5 +1,8 @@
 """
-Class to read data from the database
+Author: Bruno Tomaz
+Date: 06/01/2024
+Módulo que contém a classe Read.
+Responsável por ler os dados do banco de dados e retornar um dataframe pandas.
 """
 
 # cSpell: words automacao

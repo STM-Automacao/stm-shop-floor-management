@@ -1,4 +1,6 @@
 """
+    Autor: Bruno Tomaz
+    Data: 06/01/2024
     Módulo para limpeza dos dados
 """
 

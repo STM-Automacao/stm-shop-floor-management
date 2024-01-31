@@ -1,4 +1,6 @@
 """
+    Autor: Bruno Tomaz
+    Data: 15/01/2024
     Esse módulo é responsável por realizar a leitura dos dados do banco de dados.
     É utilizada para fazer a leitura em segundo plano, sem que o usuário perceba.
 """

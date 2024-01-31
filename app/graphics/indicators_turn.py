@@ -1,5 +1,7 @@
 """
-Gráficos de indicadores por turno.
+Autor: Bruno Tomaz
+Data: 23/01/2024
+Módulo responsável por criar os gráficos de indicadores por turno.
 """
 # cSpell: words mcolors, eficiencia, vmin, vmax, cmap, figsize, linewidths, annot, cbar, xlabel,
 # cSpell: words ylabel, xticks, yticks, colorscale, hoverongaps, zmin, zmax, showscale, xgap, ygap,

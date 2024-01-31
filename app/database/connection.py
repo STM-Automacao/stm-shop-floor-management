@@ -1,5 +1,7 @@
 """
-Class Connection
+Autor: Bruno Tomaz
+Data: 06/01/2024
+Módulo que contém a classe Connection. Responsável por criar a conexão com o banco de dados.
 """
 # cSpell: words automacao, conexao
 import urllib

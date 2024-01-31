@@ -1,4 +1,6 @@
 """
+    Autor: Bruno Tomaz
+    Data: 08/01/2024
     Módulo para unir os dados de cadastro, info e ocorrência
 """
 

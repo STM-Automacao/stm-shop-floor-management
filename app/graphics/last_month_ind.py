@@ -1,5 +1,7 @@
 """
-Este módulo salva imagens de gauge do mês anterior.
+Autor: Bruno Tomaz
+Data: 17/01/2024
+Este módulo cria gauge do mês anterior.
 """
 # pylint: disable=E0401
 from database.get_data import GetData

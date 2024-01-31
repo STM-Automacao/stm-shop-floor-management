@@ -1,6 +1,6 @@
 """
     Autor: Bruno Tomaz
-    Data: 15/01/2023
+    Data: 15/01/2024
     Este módulo é o responsável por iniciar a aplicação Dash.
     A aplicação Dash é uma aplicação web que permite a criação de dashboards interativos.
     A aplicação Dash é baseada em Flask e React.
@@ -88,7 +88,7 @@ app.layout = dbc.Container(
     ],
     fluid=True,
     style={"width": "100%"},
-    className="dbc",
+    className="dbc dbc-ag-grid",
 )
 
 

@@ -1,5 +1,7 @@
 """
-Gráficos de indicadores
+Autor: Bruno Tomaz
+Data: 15/01/2024
+Este módulo é responsável por criar os gráficos de indicadores.
 """
 # cSpell: words mcolors, eficiencia, vmin, vmax, cmap, figsize, linewidths, annot, cbar, xlabel,
 # cSpell: words ylabel, xticks, yticks, colorscale, hoverongaps, zmin, zmax, showscale, xgap, ygap,

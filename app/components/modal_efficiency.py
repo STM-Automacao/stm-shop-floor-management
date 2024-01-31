@@ -1,5 +1,7 @@
 """
 Modal Module
+Criado por: Bruno Tomaz
+Data: 23/01/2024
 """
 from io import StringIO as stringIO
 
