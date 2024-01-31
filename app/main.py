@@ -7,10 +7,13 @@
     Para mais informações, acesse: https://dash.plotly.com/
 """
 
+import json
+
 # cSpell: words apscheduler,
 from threading import Lock
 
 import dash_bootstrap_components as dbc
+import numpy as np
 from apscheduler.schedulers.background import BackgroundScheduler
 from dash import callback, dcc, html
 from dash.dependencies import Input, Output
@@ -28,9 +31,21 @@ from app import app
 # from dash_bootstrap_templates import ThemeChangerAIO
 
 
+class MyEncoder(json.JSONEncoder):
+    """
+    Classe que codifica objetos para JSON.
+    """
+
+    def default(self, o):
+        if isinstance(o, np.int64) or isinstance(o, np.int32):
+            return int(o)
+        return super(MyEncoder, self).default(o)
+
+
 lock = Lock()
 get_data = GetData()
 last_month_ind = LastMonthInd()
+
 
 # ========================================= Cache ========================================= #
 
@@ -54,11 +69,23 @@ def update_cache():
         df_ind = DFIndicators(df1, df2)
         df_eff = df_ind.get_eff_data()
         df_eff_heatmap = df_ind.get_eff_data_heatmap()
+        df_eff_heatmap_tuple = df_ind.get_eff_data_heatmap_turn()
+        annotations_list_tuple = df_ind.get_eff_annotations_turn()
 
         cache.set("df1", df1.to_json(date_format="iso", orient="split"))
         cache.set("df2", df2.to_json(date_format="iso", orient="split"))
         cache.set("df_eff", df_eff.to_json(date_format="iso", orient="split"))
         cache.set("df_eff_heatmap", df_eff_heatmap.to_json(date_format="iso", orient="split"))
+        cache.set(
+            "df_eff_heatmap_tuple",
+            json.dumps(
+                [df.to_json(date_format="iso", orient="split") for df in df_eff_heatmap_tuple]
+            ),
+        )
+        cache.set(
+            "annotations_list_tuple",
+            json.dumps([json.dumps(lst, cls=MyEncoder) for lst in annotations_list_tuple]),
+        )
 
 
 def update_last_month_gauge():
@@ -87,6 +114,8 @@ app.layout = dbc.Container(
         dcc.Store(id="store-prod"),
         dcc.Store(id="store-df-eff"),
         dcc.Store(id="store-df-eff-heatmap"),
+        dcc.Store(id="store-df-eff-heatmap-tuple"),
+        dcc.Store(id="store-df-eff-annotations-tuple"),
         dcc.Store(id="is-data-store", storage_type="session", data=False),
         html.H1("Shop Floor Management", className="text-center"),
         html.Hr(),
@@ -107,6 +136,8 @@ app.layout = dbc.Container(
         Output("store-prod", "data"),
         Output("store-df-eff", "data"),
         Output("store-df-eff-heatmap", "data"),
+        Output("store-df-eff-heatmap-tuple", "data"),
+        Output("store-df-eff-annotations-tuple", "data"),
     ],
     Input("store-info", "data"),
 )
@@ -122,9 +153,18 @@ def update_store(_data):
     df_maq_info_prod_cad = cache.get("df2")
     df_eff = cache.get("df_eff")
     df_eff_heatmap = cache.get("df_eff_heatmap")
-    print("========== Atualizando store ==========")
+    df_eff_heatmap_tuple = cache.get("df_eff_heatmap_tuple")
+    annotations_list_tuple = cache.get("annotations_list_tuple")
 
-    return df_maq_info_cadastro, df_maq_info_prod_cad, df_eff, df_eff_heatmap
+    print("========== Store atualizado ==========")
+    return (
+        df_maq_info_cadastro,
+        df_maq_info_prod_cad,
+        df_eff,
+        df_eff_heatmap,
+        df_eff_heatmap_tuple,
+        annotations_list_tuple,
+    )
 
 
 @callback(

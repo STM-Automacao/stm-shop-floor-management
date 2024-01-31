@@ -3,6 +3,8 @@ Modal Module
 Criado por: Bruno Tomaz
 Data: 23/01/2024
 """
+import ast
+import json
 from io import StringIO as stringIO
 
 # cSpell: words eficiencia fullscreen
@@ -115,22 +117,42 @@ layout = [
     Output("graph-eficiencia-modal", "figure"),
     [
         Input("radio-items", "value"),
-        Input("store-df-eff", "data"),
+        Input("store-df-eff-heatmap-tuple", "data"),
+        Input("store-df-eff-annotations-tuple", "data"),
         Input("annotations-switch-eficiencia", "checked"),
         Input("colors-switch-eficiencia", "checked"),
     ],
 )
-def update_graph_eficiencia_modal(value, df, checked, colors):
+def update_graph_eficiencia_modal(value, df_tuple, ann_tuple, checked, colors):
     """
     Função que atualiza o gráfico de eficiência do modal.
     """
-    if df is None:
+    if df_tuple is None:
         raise PreventUpdate
 
-    df_eff = pd.read_json(stringIO(df), orient="split")
-    df = df_eff[df_eff["turno"] == value]
+    # Carregue a string JSON em uma lista
+    df_list_json = json.loads(df_tuple)
+    ann_tuple_json = json.loads(ann_tuple)
 
-    figure = indicators.get_eff_heat_turn(df, annotations=checked, more_colors=colors)
+    # Converta cada elemento da lista de volta em um DataFrame
+    df_list = [pd.read_json(stringIO(df_json), orient="split") for df_json in df_list_json]
+    annotations_list_tuple = [json.loads(lst_json) for lst_json in ann_tuple_json]
+
+    # Converta a lista em uma tupla e desempacote
+    noturno, matutino, vespertino = tuple(df_list)
+    ann_not, ann_mat, ann_ves = tuple(annotations_list_tuple)
+
+    # Criar um dicionário com os DataFrames
+    df_dict = {"NOT": noturno, "MAT": matutino, "VES": vespertino}
+    list_dict = {"NOT": ann_not, "MAT": ann_mat, "VES": ann_ves}
+
+    # Selecionar o DataFrame correto
+    df = df_dict[value]
+    annotations = list_dict[value]
+
+    figure = indicators.get_eff_heat_turn(
+        df, annotations, annotations_check=checked, more_colors=colors
+    )
 
     return figure
 

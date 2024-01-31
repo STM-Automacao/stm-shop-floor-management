@@ -18,7 +18,6 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import seaborn as sns
-
 # pylint: disable=E0401
 from helpers.types import IndicatorType
 from service.times_data import TimesData
@@ -37,9 +36,10 @@ class IndicatorsTurn:
 
     def get_eff_heat_turn(
         self,
-        dataframe: pd.DataFrame,
+        df_pivot: pd.DataFrame,
+        annotations: list,
         meta: int = 90,
-        annotations: bool = False,
+        annotations_check: bool = False,
         more_colors: bool = False,
     ) -> go.Figure:
         """
@@ -58,43 +58,6 @@ class IndicatorsTurn:
         A eficiência é colorida de vermelho se estiver abaixo de 90% e
         de verde se estiver acima de 90%.
         """
-
-        # Converter 'data_registro' para datetime e criar uma nova coluna 'data_turno'
-        dataframe.loc[:, "data_registro"] = pd.to_datetime(dataframe["data_registro"])
-        dataframe.loc[:, "data_turno"] = dataframe["data_registro"].dt.strftime("%Y-%m-%d")
-
-        # Agrupar por 'data_turno' e 'turno' e calcular a média da eficiência
-        df_grouped = (
-            dataframe.groupby(["data_turno", "linha"], observed=False)["eficiencia"]
-            .mean()
-            .reset_index()
-        )
-
-        # Encontra a data de hoje e o primeiro e último dia do mês
-        today = datetime.now()
-        start_date = today.replace(day=1).strftime("%Y-%m-%d")
-        end_date = (
-            today.replace(month=today.month % 12 + 1, day=1) - pd.Timedelta(days=1)
-        ).strftime("%Y-%m-%d")
-
-        # Cria um DataFrame com todas as datas possíveis
-        all_dates = pd.date_range(start=start_date, end=end_date).strftime("%Y-%m-%d")
-        all_lines = dataframe["linha"].unique()
-        all_dates_df = pd.DataFrame(
-            list(product(all_dates, all_lines)), columns=["data_turno", "linha"]
-        )
-
-        # Mescla com o DataFrame original
-        df_grouped = df_grouped.merge(all_dates_df, on=["data_turno", "linha"], how="right")
-
-        # Se a data é no futuro, definir a eficiência como NaN
-        df_grouped.loc[df_grouped["data_turno"] > today.strftime("%Y-%m-%d"), "eficiencia"] = np.nan
-
-        # Ordenar por linha e data
-        df_grouped = df_grouped.sort_values(["linha", "data_turno"], ascending=[True, True])
-
-        # Remodelar os dados para o formato de heatmap
-        df_pivot = df_grouped.pivot(index="linha", columns="data_turno", values="eficiencia")
 
         # Criar escala de cores personalizada - cores do bootstrap
         if more_colors:
@@ -133,16 +96,9 @@ class IndicatorsTurn:
             )
         )
 
-        # Adicionar anotações com a média da eficiência
-        if annotations:
-            for (i, j), value in np.ndenumerate(df_pivot.values):
-                fig.add_annotation(
-                    x=df_pivot.columns[j],
-                    y=df_pivot.index[i],
-                    text=f"{value:.1%}",
-                    showarrow=False,
-                    font=dict(color="white", size=8),
-                )
+        # Adicionar anotações com a média
+        if annotations_check:
+            fig.update_layout(annotations=annotations)
 
         # Definir o título do gráfico
         fig.update_layout(
