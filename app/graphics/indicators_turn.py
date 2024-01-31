@@ -60,8 +60,8 @@ class IndicatorsTurn:
         """
 
         # Converter 'data_registro' para datetime e criar uma nova coluna 'data_turno'
-        dataframe["data_registro"] = pd.to_datetime(dataframe["data_registro"])
-        dataframe["data_turno"] = dataframe["data_registro"].dt.strftime("%Y-%m-%d")
+        dataframe.loc[:, "data_registro"] = pd.to_datetime(dataframe["data_registro"])
+        dataframe.loc[:, "data_turno"] = dataframe["data_registro"].dt.strftime("%Y-%m-%d")
 
         # Agrupar por 'data_turno' e 'turno' e calcular a média da eficiência
         df_grouped = (

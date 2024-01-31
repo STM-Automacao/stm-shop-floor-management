@@ -10,13 +10,11 @@ import dash
 import dash_bootstrap_components as dbc
 import dash_mantine_components as dmc
 import pandas as pd
-
 # pylint: disable=E0401
 from components import modal_efficiency, modal_performance, modal_repair
 from dash import callback, dcc, html
 from dash.dependencies import Input, Output, State
 from dash.exceptions import PreventUpdate
-
 # from dash_bootstrap_templates import ThemeChangerAIO
 from graphics.indicators import Indicators
 from helpers.path_config import EFF_LAST, PERF_LAST, REPAIR_LAST
@@ -340,12 +338,11 @@ layout = [
 @callback(
     Output("eficiencia-heat-graph", "figure"),
     [
-        Input("store-info", "data"),
-        Input("store-prod", "data"),
+        Input("store-df-eff-heatmap", "data"),
         # Input(ThemeChangerAIO.ids.radio("theme"), "value"),
     ],
 )
-def update_eficiencia_graph(info, prod):  # theme se quiser mudar o tema
+def update_eficiencia_graph(df):  # theme se quiser mudar o tema
     """
     Função que atualiza o gráfico de eficiência.
     """
@@ -353,13 +350,12 @@ def update_eficiencia_graph(info, prod):  # theme se quiser mudar o tema
     if not ctx.triggered:
         raise PreventUpdate
 
-    if info is None:
+    if df is None:
         raise PreventUpdate
-    df_maq_info_cadastro = pd.read_json(StringIO(info), orient="split")
-    df_maq_info_prod_cad = pd.read_json(StringIO(prod), orient="split")
 
-    df = times_data.get_eff_data(df_maq_info_cadastro, df_maq_info_prod_cad)
-    fig = ind_graphics.efficiency_graphic(df, 90)  # theme se quiser mudar o tema
+    df_eff = pd.read_json(StringIO(df), orient="split")
+
+    fig = ind_graphics.efficiency_graphic(df_eff, 90)  # theme se quiser mudar o tema
 
     return fig
 
@@ -499,11 +495,12 @@ def update_reparos_gauge_graph_actual(info, prod):
 @callback(
     Output("eficiencia-line-graph", "figure"),
     [
-        Input("store-info", "data"),
-        Input("store-prod", "data"),
+        # Input("store-info", "data"),
+        # Input("store-prod", "data"),
+        Input("store-df-eff", "data"),
     ],
 )
-def update_eficiencia_line_graph(info, prod):
+def update_eficiencia_line_graph(df):
     """
     Função que atualiza o gráfico de eficiência.
     """
@@ -511,13 +508,14 @@ def update_eficiencia_line_graph(info, prod):
     if not ctx.triggered:
         raise PreventUpdate
 
-    if info is None:
+    if df is None:
         raise PreventUpdate
-    df_maq_info_cadastro = pd.read_json(StringIO(info), orient="split")
-    df_maq_info_prod_cad = pd.read_json(StringIO(prod), orient="split")
+    # df_maq_info_cadastro = pd.read_json(StringIO(info), orient="split")
+    # df_maq_info_prod_cad = pd.read_json(StringIO(prod), orient="split")
+    df_eff_line = pd.read_json(StringIO(df), orient="split")
 
-    df = times_data.get_eff_data(df_maq_info_cadastro, df_maq_info_prod_cad)
-    fig = ind_graphics.plot_daily_efficiency(df, IndicatorType.EFFICIENCY)
+    # df = times_data.get_eff_data(df_maq_info_cadastro, df_maq_info_prod_cad)
+    fig = ind_graphics.plot_daily_efficiency(df_eff_line, IndicatorType.EFFICIENCY)
 
     return fig
 

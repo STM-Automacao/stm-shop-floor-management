@@ -115,24 +115,20 @@ layout = [
     Output("graph-eficiencia-modal", "figure"),
     [
         Input("radio-items", "value"),
-        Input("store-info", "data"),
-        Input("store-prod", "data"),
+        Input("store-df-eff", "data"),
         Input("annotations-switch-eficiencia", "checked"),
         Input("colors-switch-eficiencia", "checked"),
     ],
 )
-def update_graph_eficiencia_modal(value, data_info, data_prod, checked, colors):
+def update_graph_eficiencia_modal(value, df, checked, colors):
     """
     Função que atualiza o gráfico de eficiência do modal.
     """
-    if data_info is None or data_prod is None:
+    if df is None:
         raise PreventUpdate
 
-    df_maq_info_cadastro = pd.read_json(stringIO(data_info), orient="split")
-    df_maq_info_prod_cad = pd.read_json(stringIO(data_prod), orient="split")
-
-    df = times_data.get_eff_data(df_maq_info_cadastro, df_maq_info_prod_cad)
-    df = df[df["turno"] == value]
+    df_eff = pd.read_json(stringIO(df), orient="split")
+    df = df_eff[df_eff["turno"] == value]
 
     figure = indicators.get_eff_heat_turn(df, annotations=checked, more_colors=colors)
 

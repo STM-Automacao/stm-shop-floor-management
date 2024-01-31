@@ -21,6 +21,7 @@ from database.get_data import GetData
 from flask_caching import Cache
 from graphics.last_month_ind import LastMonthInd
 from pages import main_page
+from service.df_for_indicators import DFIndicators
 
 from app import app
 
@@ -50,9 +51,14 @@ def update_cache():
     """
     with lock:
         df1, df2 = get_data.get_cleaned_data()
+        df_ind = DFIndicators(df1, df2)
+        df_eff = df_ind.get_eff_data()
+        df_eff_heatmap = df_ind.get_eff_data_heatmap()
 
         cache.set("df1", df1.to_json(date_format="iso", orient="split"))
         cache.set("df2", df2.to_json(date_format="iso", orient="split"))
+        cache.set("df_eff", df_eff.to_json(date_format="iso", orient="split"))
+        cache.set("df_eff_heatmap", df_eff_heatmap.to_json(date_format="iso", orient="split"))
 
 
 def update_last_month_gauge():
@@ -79,6 +85,8 @@ app.layout = dbc.Container(
     children=[
         dcc.Store(id="store-info"),
         dcc.Store(id="store-prod"),
+        dcc.Store(id="store-df-eff"),
+        dcc.Store(id="store-df-eff-heatmap"),
         dcc.Store(id="is-data-store", storage_type="session", data=False),
         html.H1("Shop Floor Management", className="text-center"),
         html.Hr(),
@@ -97,6 +105,8 @@ app.layout = dbc.Container(
     [
         Output("store-info", "data"),
         Output("store-prod", "data"),
+        Output("store-df-eff", "data"),
+        Output("store-df-eff-heatmap", "data"),
     ],
     Input("store-info", "data"),
 )
@@ -110,9 +120,11 @@ def update_store(_data):
 
     df_maq_info_cadastro = cache.get("df1")
     df_maq_info_prod_cad = cache.get("df2")
+    df_eff = cache.get("df_eff")
+    df_eff_heatmap = cache.get("df_eff_heatmap")
     print("========== Atualizando store ==========")
 
-    return df_maq_info_cadastro, df_maq_info_prod_cad
+    return df_maq_info_cadastro, df_maq_info_prod_cad, df_eff, df_eff_heatmap
 
 
 @callback(
