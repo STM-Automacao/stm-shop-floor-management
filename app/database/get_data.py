@@ -119,7 +119,7 @@ class GetData:
         # Junção dos dados
         df_info_occ = self.join_df.join_info_occ(df_occ_cleaned, df_info_cleaned)
         df_maq_info_cadastro = self.join_df.problems_adjust(df_info_occ)
-        print(f"Ok ás {pd.to_datetime('today')}")
+        print("Ok...")
         # Retorno dos dados
         return df_maq_info_cadastro, df_maq_info_prod_cad_cleaned
 

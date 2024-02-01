@@ -6,17 +6,14 @@ Este módulo é responsável por criar os gráficos de indicadores.
 # cSpell: words mcolors, eficiencia, vmin, vmax, cmap, figsize, linewidths, annot, cbar, xlabel,
 # cSpell: words ylabel, xticks, yticks, colorscale, hoverongaps, zmin, zmax, showscale, xgap, ygap,
 # cSpell: words nticks, tickmode, tickvals, ticktext, tickangle, lightgray, tickfont, showticklabels
-# cSpell: words ndenumerate
+# cSpell: words ndenumerate tseries
 
-from datetime import datetime
-from itertools import product
-
-import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 
 # pylint: disable=E0401
 from helpers.types import IndicatorType
+from pandas.tseries.offsets import MonthEnd
 
 # from dash_bootstrap_templates import template_from_url
 
@@ -30,7 +27,9 @@ class Indicators:
         self.danger_color = "#e30613"
         self.success_color = "#00a13a"
 
-    def efficiency_graphic(self, df_pivot: pd.DataFrame, meta: int) -> go.Figure:  # theme p/ tema
+    def efficiency_graphic(
+        self, df_pivot: pd.DataFrame, annotations, meta: int
+    ) -> go.Figure:  # theme p/ tema
         """
         Este método é responsável por criar o gráfico de eficiência.
 
@@ -75,22 +74,12 @@ class Indicators:
             )
         )
 
-        # Adicionar anotações com a média da eficiência
-        for (i, j), value in np.ndenumerate(df_pivot.values):
-            fig.add_annotation(
-                x=df_pivot.columns[j],
-                y=df_pivot.index[i],
-                text=f"{value:.1%}",
-                showarrow=False,
-                font=dict(color="white", size=8),
-            )
-
         # Definir o título do gráfico
         fig.update_layout(
             title=f"Eficiência - Meta {meta}%",
-            xaxis_title="Dia",
-            yaxis_title="Turno",
             title_x=0.5,  # Centralizar o título
+            annotations=annotations,
+            xaxis_title="Dia",
             xaxis_nticks=31,  # Definir o número de dias
             xaxis=dict(
                 tickmode="linear",
@@ -98,6 +87,7 @@ class Indicators:
                 ticktext=list(range(1, 32)),  # Definir os dias
                 tickangle=45,  # Rotacionar os dias
             ),
+            yaxis_title="Turno",
             yaxis=dict(
                 tickmode="linear",
                 tickangle=45,
@@ -110,7 +100,7 @@ class Indicators:
 
         return fig
 
-    def performance_graphic(self, dataframe: pd.DataFrame, meta: int) -> go.Figure:
+    def performance_graphic(self, df_pivot: pd.DataFrame, annotations, meta: int) -> go.Figure:
         """
         Este método é responsável por criar o gráfico de performance.
 
@@ -127,45 +117,6 @@ class Indicators:
         de verde se estiver abaixo de 4%.
         """
 
-        # Converter 'data_registro' para datetime e criar uma nova coluna 'data_turno'
-        dataframe["data_registro"] = pd.to_datetime(dataframe["data_registro"])
-        dataframe["data_turno"] = dataframe["data_registro"].dt.strftime("%Y-%m-%d")
-
-        # Agrupar por 'data_turno' e 'turno' e calcular a média da eficiência
-        df_grouped = (
-            dataframe.groupby(["data_turno", "turno"], observed=False)["performance"]
-            .mean()
-            .reset_index()
-        )
-
-        # Encontra a data de hoje e o primeiro e último dia do mês
-        today = datetime.now()
-        start_date = today.replace(day=1).strftime("%Y-%m-%d")
-        end_date = (
-            today.replace(month=today.month % 12 + 1, day=1) - pd.Timedelta(days=1)
-        ).strftime("%Y-%m-%d")
-
-        # Cria um DataFrame com todas as datas possíveis
-        all_dates = pd.date_range(start=start_date, end=end_date).strftime("%Y-%m-%d")
-        all_turns = dataframe["turno"].unique()
-        all_dates_df = pd.DataFrame(
-            list(product(all_dates, all_turns)), columns=["data_turno", "turno"]
-        )
-
-        # Mescla com o DataFrame original
-        df_grouped = df_grouped.merge(all_dates_df, on=["data_turno", "turno"], how="right")
-
-        # Se a data é no futuro, definir a eficiência como NaN
-        df_grouped.loc[
-            df_grouped["data_turno"] > today.strftime("%Y-%m-%d"), "performance"
-        ] = np.nan
-
-        # Remodelar os dados para o formato de heatmap
-        df_pivot = df_grouped.pivot(index="turno", columns="data_turno", values="performance")
-
-        # Reordenar o índice do DataFrame
-        df_pivot = df_pivot.reindex(["VES", "MAT", "NOT"])
-
         # Criar escala de cores personalizada - cores do bootstrap
         colors = [
             [0, self.success_color],
@@ -194,21 +145,12 @@ class Indicators:
             )
         )
 
-        # Adicionar anotações com a média da eficiência
-        for (i, j), value in np.ndenumerate(df_pivot.values):
-            fig.add_annotation(
-                x=df_pivot.columns[j],
-                y=df_pivot.index[i],
-                text=f"{value:.1%}",
-                showarrow=False,
-                font=dict(color="white", size=8),
-            )
-
         # Definir o título do gráfico
         fig.update_layout(
             title=f"Performance - Meta {meta}%",
             xaxis_title="Dia",
             yaxis_title="Turno",
+            annotations=annotations,
             title_x=0.5,  # Centralizar o título
             xaxis_nticks=31,  # Definir o número de dias
             xaxis=dict(
@@ -228,7 +170,7 @@ class Indicators:
 
         return fig
 
-    def repair_graphic(self, dataframe: pd.DataFrame, meta: int) -> go.Figure:
+    def repair_graphic(self, df_pivot: pd.DataFrame, annotations, meta: int) -> go.Figure:
         """
         Este método é responsável por criar o gráfico de reparos.
 
@@ -244,43 +186,6 @@ class Indicators:
         A performance é colorida de vermelho se estiver acima de 4% e
         de verde se estiver abaixo de 4%.
         """
-
-        # Converter 'data_registro' para datetime e criar uma nova coluna 'data_turno'
-        dataframe["data_registro"] = pd.to_datetime(dataframe["data_registro"])
-        dataframe["data_turno"] = dataframe["data_registro"].dt.strftime("%Y-%m-%d")
-
-        # Agrupar por 'data_turno' e 'turno' e calcular a média da eficiência
-        df_grouped = (
-            dataframe.groupby(["data_turno", "turno"], observed=False)["reparo"]
-            .mean()
-            .reset_index()
-        )
-
-        # Encontra a data de hoje e o primeiro e último dia do mês
-        today = datetime.now()
-        start_date = today.replace(day=1).strftime("%Y-%m-%d")
-        end_date = (
-            today.replace(month=today.month % 12 + 1, day=1) - pd.Timedelta(days=1)
-        ).strftime("%Y-%m-%d")
-
-        # Cria um DataFrame com todas as datas possíveis
-        all_dates = pd.date_range(start=start_date, end=end_date).strftime("%Y-%m-%d")
-        all_turns = dataframe["turno"].unique()
-        all_dates_df = pd.DataFrame(
-            list(product(all_dates, all_turns)), columns=["data_turno", "turno"]
-        )
-
-        # Mescla com o DataFrame original
-        df_grouped = df_grouped.merge(all_dates_df, on=["data_turno", "turno"], how="right")
-
-        # Se a data é no futuro, definir a eficiência como NaN
-        df_grouped.loc[df_grouped["data_turno"] > today.strftime("%Y-%m-%d"), "reparo"] = np.nan
-
-        # Remodelar os dados para o formato de heatmap
-        df_pivot = df_grouped.pivot(index="turno", columns="data_turno", values="reparo")
-
-        # Reordenar o índice do DataFrame
-        df_pivot = df_pivot.reindex(["VES", "MAT", "NOT"])
 
         # Criar escala de cores personalizada - cores do bootstrap
         colors = [
@@ -310,21 +215,12 @@ class Indicators:
             )
         )
 
-        # Adicionar anotações com a média da eficiência
-        for (i, j), value in np.ndenumerate(df_pivot.values):
-            fig.add_annotation(
-                x=df_pivot.columns[j],
-                y=df_pivot.index[i],
-                text=f"{value:.1%}",
-                showarrow=False,
-                font=dict(color="white", size=8),
-            )
-
         # Definir o título do gráfico
         fig.update_layout(
             title=f"Reparos - Meta {meta}%",
             xaxis_title="Dia",
             yaxis_title="Turno",
+            annotations=annotations,
             title_x=0.5,  # Centralizar o título
             xaxis_nticks=31,  # Definir o número de dias
             xaxis=dict(
@@ -503,6 +399,18 @@ class Indicators:
 
         # Multiplicar por 100 para converter para porcentagem
         df_grouped[indicator] = df_grouped[indicator] * 100
+
+        # Crie um DataFrame com todas as datas do mês atual
+        start_date = df["data_registro"].min()
+        end_date = start_date + MonthEnd(1)  # O último dia do mês atual
+        all_dates = pd.date_range(start_date, end_date).strftime("%Y-%m-%d")
+        df_all_dates = pd.DataFrame(all_dates, columns=["data_turno"])
+
+        # Mesclar o DataFrame original com o DataFrame de todas as datas
+        df_grouped = pd.merge(df_all_dates, df_grouped, on="data_turno", how="left")
+
+        # Substituir NaNs por 0
+        df_grouped[indicator].fillna(0, inplace=True)
 
         # Criar o gráfico
         fig = go.Figure(

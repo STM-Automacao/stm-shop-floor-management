@@ -4,6 +4,7 @@ Criado por: Bruno Tomaz
 Data: 25/01/2024
 """
 
+import json
 from io import StringIO as stringIO
 
 import dash_bootstrap_components as dbc
@@ -46,7 +47,7 @@ layout = [
                             size="sm",
                             radius="lg",
                             className="mb-1 inter",
-                            checked=False,
+                            checked=True,
                         ),
                         md=2,
                     ),
@@ -103,24 +104,45 @@ layout = [
     [
         Input("radio-items-performance", "value"),
         Input("annotations-switch-performance", "checked"),
-        Input("store-info", "data"),
-        Input("store-prod", "data"),
+        Input("store-df_perf_heat_turn_tuple", "data"),
+        Input("store-annotations_perf_turn_list_tuple", "data"),
     ],
 )
-def update_graph_performance_modal(radio_items_value, checked, store_info, store_prod):
+def update_graph_performance_modal(
+    radio_items_value,
+    checked,
+    df_tuple,
+    ann_tuple,
+):
     """
     Callback do gráfico de performance do modal
     """
-    if not store_info or not store_prod:
+    if not df_tuple:
         raise PreventUpdate
 
-    df_maq_info_cadastro = pd.read_json(stringIO(store_info), orient="split")
-    df_maq_info_prod_cad = pd.read_json(stringIO(store_prod), orient="split")
+    # Carregue a string JSON em uma lista
+    df_list_json = json.loads(df_tuple)
+    ann_tuple_json = json.loads(ann_tuple)
 
-    df = times_data.get_perf_data(df_maq_info_cadastro, df_maq_info_prod_cad)
-    df = df[df["turno"] == radio_items_value]
+    # Converta cada elemento da lista de volta em um DataFrame
+    df_list = [pd.read_json(stringIO(df_json), orient="split") for df_json in df_list_json]
+    annotations_list_tuple = [json.loads(lst_json) for lst_json in ann_tuple_json]
 
-    fig = indicators.get_heat_turn(df, IndicatorType.PERFORMANCE, annotations=checked)
+    # Converta a lista em uma tupla e desempacote
+    noturno, matutino, vespertino = tuple(df_list)
+    ann_not, ann_mat, ann_ves = tuple(annotations_list_tuple)
+
+    # Criar um dicionário com os DataFrames
+    df_dict = {"NOT": noturno, "MAT": matutino, "VES": vespertino}
+    list_dict = {"NOT": ann_not, "MAT": ann_mat, "VES": ann_ves}
+
+    # Selecionar o DataFrame correto
+    df = df_dict[radio_items_value]
+    annotations = list_dict[radio_items_value]
+
+    fig = indicators.get_heat_turn(
+        df, IndicatorType.PERFORMANCE, annotations, annotations_check=checked
+    )
 
     return fig
 

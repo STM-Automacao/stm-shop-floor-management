@@ -7,17 +7,15 @@ Módulo responsável por criar os gráficos de indicadores por turno.
 # cSpell: words ylabel, xticks, yticks, colorscale, hoverongaps, zmin, zmax, showscale, xgap, ygap,
 # cSpell: words nticks, tickmode, tickvals, ticktext, tickangle, lightgray, tickfont, showticklabels
 # cSpell: words ndenumerate producao_total customdata xaxes usuario traceorder yref bordercolor
-# cSpell: words borderwidth borderpad
+# cSpell: words borderwidth borderpad ticksuffix
 
-from datetime import datetime
-from itertools import product
 
 import matplotlib.colors as mcolors
-import numpy as np
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import seaborn as sns
+
 # pylint: disable=E0401
 from helpers.types import IndicatorType
 from service.times_data import TimesData
@@ -32,6 +30,11 @@ class IndicatorsTurn:
         self.danger_color = "#e30613"
         self.success_color = "#00a13a"
         self.warning_color = "#ffdd00"
+        self.grey_500_color = "#adb5bd"
+        self.grey_600_color = "#6c757d"
+        self.grey_700_color = "#495057"
+        self.grey_800_color = "#343a40"
+        self.grey_900_color = "#212529"
         self.times_data = TimesData()
 
     def get_eff_heat_turn(
@@ -40,7 +43,6 @@ class IndicatorsTurn:
         annotations: list,
         meta: int = 90,
         annotations_check: bool = False,
-        more_colors: bool = False,
     ) -> go.Figure:
         """
         Este método é responsável por criar o gráfico de eficiência, por turno.
@@ -60,21 +62,12 @@ class IndicatorsTurn:
         """
 
         # Criar escala de cores personalizada - cores do bootstrap
-        if more_colors:
-            colors = [
-                [0, self.danger_color],
-                [0.75, self.danger_color],
-                [0.9, self.warning_color],
-                [0.9, self.success_color],
-                [1, self.success_color],
-            ]
-        else:
-            colors = [
-                [0, self.danger_color],
-                [0.9, self.danger_color],
-                [0.9, self.success_color],
-                [1, self.success_color],
-            ]
+        colors = [
+            [0, self.danger_color],
+            [0.9, self.danger_color],
+            [0.9, self.success_color],
+            [1, self.success_color],
+        ]
 
         # Extrair apenas o dia da data
         df_pivot.columns = pd.to_datetime(df_pivot.columns).day
@@ -115,7 +108,7 @@ class IndicatorsTurn:
             ),
             yaxis=dict(
                 tickmode="linear",
-                tickangle=45,
+                ticksuffix=" ",  # Adicionar um espaço no final
             ),
             plot_bgcolor="white",
             margin=dict({"t": 40, "b": 40, "l": 40, "r": 40}),
@@ -143,11 +136,23 @@ class IndicatorsTurn:
         """
 
         # Agrupar por 'turno' e "linha" e calcular a média da eficiência e soma da produção
+        # Definir a ordem desejada para 'turno'
+        turno_order = ["NOT", "MAT", "VES"]
+
+        # Converter 'turno' para uma variável categórica com a ordem desejada
+        dataframe["turno"] = pd.Categorical(
+            dataframe["turno"], categories=turno_order, ordered=True
+        )
+
+        # Agrupar, agregar e redefinir o índice
         df_grouped = (
-            dataframe.groupby(["linha", "turno"], observed=False)
+            dataframe.groupby(["linha", "turno"], observed=True)
             .agg({"eficiencia": "mean", "total_produzido": "sum"})
             .reset_index()
         )
+
+        # Ordenar o DataFrame por 'linha' e 'turno'
+        df_grouped = df_grouped.sort_values(["linha", "turno"])
 
         # Ajustar produção total para caixas, dividindo por 10
         df_grouped["total_produzido"] = (df_grouped["total_produzido"] / 10).round(0)
@@ -166,9 +171,9 @@ class IndicatorsTurn:
                 "eficiencia": False,
             },
             color_discrete_map={
-                "NOT": self.danger_color,
-                "MAT": self.warning_color,
-                "VES": self.success_color,
+                "NOT": self.grey_500_color,
+                "MAT": self.grey_600_color,
+                "VES": self.grey_900_color,
             },
             labels={"eficiencia": "Eficiência"},
         )
@@ -188,7 +193,10 @@ class IndicatorsTurn:
             title_x=0.5,
             margin=dict({"t": 80, "b": 40, "l": 40, "r": 40}),
             legend=dict(
-                {"title_text": "Turno"},
+                {
+                    "title_text": "Turno",
+                    "traceorder": "normal",
+                },
             ),
             template="plotly_white",
             font=dict({"family": "Inter"}),
@@ -349,6 +357,7 @@ class IndicatorsTurn:
             name="Motivo",
             x=df_motivo["motivo_nome"],
             y=df_motivo["excedente"],
+            marker_color=self.grey_500_color,
         )
 
         motive_bar.update(
@@ -356,18 +365,9 @@ class IndicatorsTurn:
         )
 
         # Problema
-        problem_bar = go.Bar(
-            name="Problema",
-            x=df_problema["problema"],
-            y=df_problema["excedente"],
-        )
-
-        problem_bar.update(
-            hovertemplate="<b>Problema</b>: %{x}<br><b>Tempo Perdido</b>: %{y:.0f} min<br>",
-        )
 
         # Cria uma paleta de cores com os valores únicos na coluna 'problema'
-        palette = sns.color_palette("hls", df_grouped["problema"].nunique())
+        palette = sns.dark_palette("lightgray", df_grouped["problema"].nunique())
 
         # Converte as cores RGB para hexadecimal
         palette_hex = [mcolors.to_hex(color) for color in palette]
@@ -377,6 +377,14 @@ class IndicatorsTurn:
 
         # Mapeia os valores na coluna 'problema' para as cores correspondentes
         df_grouped["color"] = df_grouped["problema"].map(color_map)
+
+        problem_bar = go.Bar(
+            name="Problema",
+            x=df_problema["problema"],
+            y=df_problema["excedente"],
+            marker_color=df_grouped["color"],
+            hovertemplate="<b>Problema</b>: %{x}<br><b>Tempo Perdido</b>: %{y:.0f} min<br>",
+        )
 
         # Group
         group_bar = go.Bar(
@@ -412,10 +420,11 @@ class IndicatorsTurn:
 
     def get_heat_turn(
         self,
-        dataframe: pd.DataFrame,
+        df_pivot: pd.DataFrame,
         indicator: IndicatorType,
+        annotations: list,
         meta: int = 4,
-        annotations: bool = False,
+        annotations_check: bool = True,
     ) -> go.Figure:
         """
         Este método é responsável por criar o gráfico de reparos e performance, por turno.
@@ -434,41 +443,8 @@ class IndicatorsTurn:
         de vermelho se estiver acima de 4%.
         """
 
-        # Converter 'data_registro' para datetime e criar uma nova coluna 'data_turno'
-        dataframe["data_registro"] = pd.to_datetime(dataframe["data_registro"])
-        dataframe["data_turno"] = dataframe["data_registro"].dt.strftime("%Y-%m-%d")
-
         indicator = indicator.value
         ind_capitalized = str(indicator).capitalize()
-
-        # Agrupar por 'data_turno' e 'turno' e calcular a média
-        df_grouped = dataframe.groupby(["data_turno", "linha"])[indicator].mean().reset_index()
-
-        # Encontra a data de hoje e o primeiro e último dia do mês
-        today = datetime.now()
-        start_date = today.replace(day=1).strftime("%Y-%m-%d")
-        end_date = (
-            today.replace(month=today.month % 12 + 1, day=1) - pd.Timedelta(days=1)
-        ).strftime("%Y-%m-%d")
-
-        # Cria um DataFrame com todas as datas possíveis
-        all_dates = pd.date_range(start=start_date, end=end_date).strftime("%Y-%m-%d")
-        all_lines = dataframe["linha"].unique()
-        all_dates_df = pd.DataFrame(
-            list(product(all_dates, all_lines)), columns=["data_turno", "linha"]
-        )
-
-        # Mescla com o DataFrame original
-        df_grouped = df_grouped.merge(all_dates_df, on=["data_turno", "linha"], how="right")
-
-        # Se a data é no futuro, definir a eficiência como NaN
-        df_grouped.loc[df_grouped["data_turno"] > today.strftime("%Y-%m-%d"), indicator] = np.nan
-
-        # Ordenar por linha e data
-        df_grouped = df_grouped.sort_values(["linha", "data_turno"], ascending=[True, True])
-
-        # Remodelar os dados para o formato de heatmap
-        df_pivot = df_grouped.pivot(index="linha", columns="data_turno", values=indicator)
 
         # Criar escala de cores personalizada - cores do bootstrap
         colors = [
@@ -499,15 +475,8 @@ class IndicatorsTurn:
         )
 
         # Adicionar anotações com a média
-        if annotations:
-            for (i, j), value in np.ndenumerate(df_pivot.values):
-                fig.add_annotation(
-                    x=df_pivot.columns[j],
-                    y=df_pivot.index[i],
-                    text=f"{value:.1%}",
-                    showarrow=False,
-                    font=dict(color="white", size=8),
-                )
+        if annotations_check:
+            fig.update_layout(annotations=annotations)
 
         # Definir o título do gráfico
         fig.update_layout(
@@ -524,7 +493,7 @@ class IndicatorsTurn:
             ),
             yaxis=dict(
                 tickmode="linear",
-                tickangle=45,
+                ticksuffix=" ",  # Adicionar um espaço no final
             ),
             plot_bgcolor="white",
             margin=dict({"t": 40, "b": 40, "l": 40, "r": 40}),
@@ -555,12 +524,23 @@ class IndicatorsTurn:
 
         indicator = indicator.value
 
-        # Agrupar e calcular a média
+        # Definir a ordem desejada para 'turno'
+        turno_order = ["NOT", "MAT", "VES"]
+
+        # Converter 'turno' para uma variável categórica com a ordem desejada
+        dataframe["turno"] = pd.Categorical(
+            dataframe["turno"], categories=turno_order, ordered=True
+        )
+
+        # Agrupar, agregar e redefinir o índice
         df_grouped = (
-            dataframe.groupby(["linha", "turno"])
+            dataframe.groupby(["linha", "turno"], observed=True)
             .agg({indicator: "mean", "afeta": "sum"})
             .reset_index()
         )
+
+        # Ordenar o DataFrame por 'linha' e 'turno'
+        df_grouped = df_grouped.sort_values(["linha", "turno"])
 
         # Gráfico de barras
         fig = px.bar(
@@ -576,9 +556,9 @@ class IndicatorsTurn:
                 indicator: False,
             },
             color_discrete_map={
-                "NOT": self.danger_color,
-                "MAT": self.warning_color,
-                "VES": self.success_color,
+                "NOT": self.grey_500_color,
+                "MAT": self.grey_600_color,
+                "VES": self.grey_900_color,
             },
             labels={indicator: f"{indicator.capitalize()}"},
         )
@@ -761,25 +741,15 @@ class IndicatorsTurn:
             name="Motivo",
             x=df_motivo["motivo_nome"],
             y=df_motivo["excedente"],
+            marker_color=self.grey_500_color,
         )
 
         motive_bar.update(
             hovertemplate="<b>Motivo</b>: %{x}<br><b>Tempo Perdido</b>: %{y:.0f} min<br>",
         )
 
-        # Problema
-        problem_bar = go.Bar(
-            name="Problema",
-            x=df_problema["problema"],
-            y=df_problema["excedente"],
-        )
-
-        problem_bar.update(
-            hovertemplate="<b>Problema</b>: %{x}<br><b>Tempo Perdido</b>: %{y:.0f} min<br>",
-        )
-
         # Cria uma paleta de cores com os valores únicos na coluna 'problema'
-        palette = sns.color_palette("hls", df_grouped["problema"].nunique())
+        palette = sns.dark_palette("lightgray", df_grouped["problema"].nunique())
 
         # Converte as cores RGB para hexadecimal
         palette_hex = [mcolors.to_hex(color) for color in palette]
@@ -789,6 +759,15 @@ class IndicatorsTurn:
 
         # Mapeia os valores na coluna 'problema' para as cores correspondentes
         df_grouped["color"] = df_grouped["problema"].map(color_map)
+
+        # Problema
+        problem_bar = go.Bar(
+            name="Problema",
+            x=df_problema["problema"],
+            y=df_problema["excedente"],
+            marker_color=df_grouped["color"],
+            hovertemplate="<b>Problema</b>: %{x}<br><b>Tempo Perdido</b>: %{y:.0f} min<br>",
+        )
 
         # Group
         group_bar = go.Bar(

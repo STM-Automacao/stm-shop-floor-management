@@ -256,14 +256,21 @@ class JoinData:
         )
         df_info["problema"] = np.where(condition_feriado, "Feriado", df_info["problema"])
 
-        # Cria a máscara para as linhas que atendem às condições
+        # Traz a última parada caso mude o turno e não seja informado o motivo de estar parada.
+        # Cria a máscara para as linhas que atendem às condições.
         mask = (df_info["tempo_registro_min"] > 475) & df_info["motivo_id"].isnull()
 
-        # Cria colunas temporárias com os valores preenchidos
-        df_info["motivo_id_filled"] = df_info["motivo_id"].ffill()
-        df_info["motivo_nome_filled"] = df_info["motivo_nome"].ffill()
-        df_info["problema_filled"] = df_info["problema"].ffill()
-        df_info["solucao_filled"] = df_info["solucao"].ffill()
+        # Cria colunas temporárias com os valores preenchidos. Agrupa por 'maquina_id'.
+        df_info["motivo_id_filled"] = df_info.groupby("maquina_id", observed=False)[
+            "motivo_id"
+        ].ffill()
+        df_info["motivo_nome_filled"] = df_info.groupby("maquina_id", observed=False)[
+            "motivo_nome"
+        ].ffill()
+        df_info["problema_filled"] = df_info.groupby("maquina_id", observed=False)[
+            "problema"
+        ].ffill()
+        df_info["solucao_filled"] = df_info.groupby("maquina_id", observed=False)["solucao"].ffill()
 
         # Aplica a máscara e substitui os valores nas colunas originais
         df_info.loc[mask, "motivo_id"] = df_info.loc[mask, "motivo_id_filled"]
@@ -280,6 +287,17 @@ class JoinData:
         df_info["tempo_registro_min"] = np.where(
             df_info["tempo_registro_min"] > 480, 480, df_info["tempo_registro_min"]
         )
+
+        # Se o turno for NOT e for o primeiro dia do mês e o motivo_id for nulo e
+        # tempo de registro for = 480, então o motivo_id é 12 e o motivo_nome é "Parada Programada"
+        mask = (
+            (df_info["turno"] == "NOT")
+            & (df_info["data_hora_registro"].dt.day == 1)
+            & (df_info["motivo_id"].isnull())
+            & (df_info["tempo_registro_min"] == 480)
+        )
+        df_info["motivo_id"] = np.where(mask, 12, df_info["motivo_id"])
+        df_info["motivo_nome"] = np.where(mask, "Parada Programada", df_info["motivo_nome"])
 
         # Remover as linhas onde a linha é 0
         df_info = df_info[df_info["linha"] != 0]

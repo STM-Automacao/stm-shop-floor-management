@@ -3,6 +3,8 @@
     Criada por: Bruno Tomaz
     Data: 15/01/2024
 """
+import json
+
 # cSpell: words eficiencia fullscreen
 from io import StringIO
 
@@ -10,11 +12,13 @@ import dash
 import dash_bootstrap_components as dbc
 import dash_mantine_components as dmc
 import pandas as pd
+
 # pylint: disable=E0401
 from components import modal_efficiency, modal_performance, modal_repair
 from dash import callback, dcc, html
 from dash.dependencies import Input, Output, State
 from dash.exceptions import PreventUpdate
+
 # from dash_bootstrap_templates import ThemeChangerAIO
 from graphics.indicators import Indicators
 from helpers.path_config import EFF_LAST, PERF_LAST, REPAIR_LAST
@@ -31,39 +35,31 @@ times_data = TimesData()
 layout = [
     html.Div(
         [
-            dbc.Row(
-                [
-                    dbc.Col(
+            dbc.Spinner(
+                id="loading-eff-1",
+                # fullscreen=True,
+                color="primary",
+                size="md",
+                children=[
+                    dbc.Row(
                         [
-                            dbc.Spinner(
-                                id="loading-eff-1",
-                                # fullscreen=True,
-                                color="primary",
-                                size="md",
-                                children=[
+                            dbc.Col(
+                                [
                                     dcc.Graph(
                                         figure={},
                                         id="eficiencia-gauge-graph_last",
                                     ),
                                 ],
+                                xs={"size": 6, "order": 2, "offset": 0},
+                                sm={"size": 4, "order": 2, "offset": 1},
+                                md={"size": 2, "order": 1, "offset": 0},
+                                xl={"size": 2, "order": 1, "offset": 0},
+                                xxl={"size": 1, "order": 1, "offset": 0},
+                                id="last-eficiencia-col",
+                                class_name="p-1",
                             ),
-                        ],
-                        xs={"size": 6, "order": 2, "offset": 0},
-                        sm={"size": 4, "order": 2, "offset": 1},
-                        md={"size": 2, "order": 1, "offset": 0},
-                        xl={"size": 2, "order": 1, "offset": 0},
-                        xxl={"size": 1, "order": 1, "offset": 0},
-                        id="last-eficiencia-col",
-                        class_name="p-1",
-                    ),
-                    dbc.Col(
-                        [
-                            dbc.Spinner(
-                                id="loading-eff-2",
-                                # fullscreen=True,
-                                color="primary",
-                                size="md",
-                                children=[
+                            dbc.Col(
+                                [
                                     dbc.Button(
                                         id="eff_heat_btn",
                                         class_name="w-100 p-0 bg-transparent border-0",
@@ -80,53 +76,45 @@ layout = [
                                         style={"height": "80px"},
                                     ),
                                 ],
+                                xs={"size": 12, "order": 1},
+                                sm={"size": 12, "order": 1},
+                                md={"size": 8, "order": 2},
+                                xl={"size": 8, "order": 2},
+                                xxl={"size": 10, "order": 2},
+                                id="eficiencia-col",
+                                class_name="p-1",
                             ),
-                        ],
-                        xs={"size": 12, "order": 1},
-                        sm={"size": 12, "order": 1},
-                        md={"size": 8, "order": 2},
-                        xl={"size": 8, "order": 2},
-                        xxl={"size": 10, "order": 2},
-                        id="eficiencia-col",
-                        class_name="p-1",
-                    ),
-                    dbc.Col(
-                        [
-                            dbc.Spinner(
-                                id="loading-eff-3",
-                                # fullscreen=True,
-                                color="primary",
-                                size="md",
-                                children=[
+                            dbc.Col(
+                                [
                                     dcc.Graph(
                                         figure={},
                                         id="eficiencia-gauge-graph_actual",
                                     ),
                                 ],
+                                xs={"size": 6, "order": 2, "offset": 0},
+                                sm={"size": 4, "order": 2, "offset": 2},
+                                md={"size": 2, "order": 3, "offset": 0},
+                                xl={"size": 2, "order": 3, "offset": 0},
+                                xxl={"size": 1, "order": 3, "offset": 0},
+                                id="current-eficiencia-col",
+                                class_name="p-1",
                             ),
                         ],
-                        xs={"size": 6, "order": 2, "offset": 0},
-                        sm={"size": 4, "order": 2, "offset": 2},
-                        md={"size": 2, "order": 3, "offset": 0},
-                        xl={"size": 2, "order": 3, "offset": 0},
-                        xxl={"size": 1, "order": 3, "offset": 0},
-                        id="current-eficiencia-col",
-                        class_name="p-1",
+                        id="eficiencia-row",
                     ),
                 ],
-                id="eficiencia-row",
             ),
             html.Hr(),
-            dbc.Row(
-                [
-                    dbc.Col(
+            dbc.Spinner(
+                id="loading-perf-1",
+                # fullscreen=True,
+                color="secondary",
+                size="md",
+                children=[
+                    dbc.Row(
                         [
-                            dbc.Spinner(
-                                id="loading-perf-1",
-                                # fullscreen=True,
-                                color="secondary",
-                                size="md",
-                                children=[
+                            dbc.Col(
+                                [
                                     dcc.Graph(
                                         figure={},
                                         id="performance-gauge-graph_last",
@@ -135,24 +123,16 @@ layout = [
                                         "D", className="text-center", style={"font-size": "4rem"}
                                     ),
                                 ],
+                                xs={"size": 6, "order": 2, "offset": 0},
+                                sm={"size": 4, "order": 2, "offset": 1},
+                                md={"size": 2, "order": 1, "offset": 0},
+                                xl={"size": 2, "order": 1, "offset": 0},
+                                xxl={"size": 1, "order": 1, "offset": 0},
+                                id="last-performance-col",
+                                class_name="p-1",
                             ),
-                        ],
-                        xs={"size": 6, "order": 2, "offset": 0},
-                        sm={"size": 4, "order": 2, "offset": 1},
-                        md={"size": 2, "order": 1, "offset": 0},
-                        xl={"size": 2, "order": 1, "offset": 0},
-                        xxl={"size": 1, "order": 1, "offset": 0},
-                        id="last-performance-col",
-                        class_name="p-1",
-                    ),
-                    dbc.Col(
-                        [
-                            dbc.Spinner(
-                                id="loading-perf-2",
-                                # fullscreen=True,
-                                color="secondary",
-                                size="md",
-                                children=[
+                            dbc.Col(
+                                [
                                     dbc.Button(
                                         id="perf_heat_btn",
                                         class_name="w-100 p-0 bg-transparent border-0",
@@ -169,76 +149,60 @@ layout = [
                                         style={"height": "80px"},
                                     ),
                                 ],
+                                xs={"size": 12, "order": 1},
+                                sm={"size": 12, "order": 1},
+                                md={"size": 8, "order": 2},
+                                xl={"size": 8, "order": 2},
+                                xxl={"size": 10, "order": 2},
+                                id="performance-col",
+                                class_name="p-1",
                             ),
-                        ],
-                        xs={"size": 12, "order": 1},
-                        sm={"size": 12, "order": 1},
-                        md={"size": 8, "order": 2},
-                        xl={"size": 8, "order": 2},
-                        xxl={"size": 10, "order": 2},
-                        id="performance-col",
-                        class_name="p-1",
-                    ),
-                    dbc.Col(
-                        [
-                            dbc.Spinner(
-                                id="loading-perf-3",
-                                # fullscreen=True,
-                                color="secondary",
-                                size="md",
-                                children=[
+                            dbc.Col(
+                                [
                                     dcc.Graph(
                                         figure={},
                                         id="performance-gauge-graph_actual",
                                     ),
                                 ],
+                                xs={"size": 6, "order": 2, "offset": 0},
+                                sm={"size": 4, "order": 2, "offset": 2},
+                                md={"size": 2, "order": 3, "offset": 0},
+                                xl={"size": 2, "order": 3, "offset": 0},
+                                xxl={"size": 1, "order": 3, "offset": 0},
+                                id="current-performance-col",
+                                class_name="p-1",
                             ),
                         ],
-                        xs={"size": 6, "order": 2, "offset": 0},
-                        sm={"size": 4, "order": 2, "offset": 2},
-                        md={"size": 2, "order": 3, "offset": 0},
-                        xl={"size": 2, "order": 3, "offset": 0},
-                        xxl={"size": 1, "order": 3, "offset": 0},
-                        id="current-performance-col",
-                        class_name="p-1",
+                        id="performance-row",
                     ),
                 ],
-                id="performance-row",
             ),
             html.Hr(),
-            dbc.Row(
-                [
-                    dbc.Col(
+            dbc.Spinner(
+                id="loading-rep-1",
+                # fullscreen=True,
+                color="info",
+                size="md",
+                children=[
+                    dbc.Row(
                         [
-                            dbc.Spinner(
-                                id="loading-rep-1",
-                                # fullscreen=True,
-                                color="info",
-                                size="md",
-                                children=[
+                            dbc.Col(
+                                [
                                     dcc.Graph(
                                         figure={},
                                         id="reparos-gauge-graph_last",
                                     ),
                                 ],
+                                xs={"size": 6, "order": 2, "offset": 0},
+                                sm={"size": 4, "order": 2, "offset": 1},
+                                md={"size": 2, "order": 1, "offset": 0},
+                                xl={"size": 2, "order": 1, "offset": 0},
+                                xxl={"size": 1, "order": 1, "offset": 0},
+                                id="last-reparos-col",
+                                class_name="p-1",
                             ),
-                        ],
-                        xs={"size": 6, "order": 2, "offset": 0},
-                        sm={"size": 4, "order": 2, "offset": 1},
-                        md={"size": 2, "order": 1, "offset": 0},
-                        xl={"size": 2, "order": 1, "offset": 0},
-                        xxl={"size": 1, "order": 1, "offset": 0},
-                        id="last-reparos-col",
-                        class_name="p-1",
-                    ),
-                    dbc.Col(
-                        [
-                            dbc.Spinner(
-                                id="loading-rep-2",
-                                # fullscreen=True,
-                                color="info",
-                                size="md",
-                                children=[
+                            dbc.Col(
+                                [
                                     dbc.Button(
                                         id="reparos_heat_btn",
                                         class_name="w-100 p-0 bg-transparent border-0",
@@ -255,41 +219,33 @@ layout = [
                                         style={"height": "80px"},
                                     ),
                                 ],
+                                xs={"size": 12, "order": 1},
+                                sm={"size": 12, "order": 1},
+                                md={"size": 8, "order": 2},
+                                xl={"size": 8, "order": 2},
+                                xxl={"size": 10, "order": 2},
+                                id="reparos-col",
+                                class_name="p-1",
                             ),
-                        ],
-                        xs={"size": 12, "order": 1},
-                        sm={"size": 12, "order": 1},
-                        md={"size": 8, "order": 2},
-                        xl={"size": 8, "order": 2},
-                        xxl={"size": 10, "order": 2},
-                        id="reparos-col",
-                        class_name="p-1",
-                    ),
-                    dbc.Col(
-                        [
-                            dbc.Spinner(
-                                id="loading-rep-3",
-                                # fullscreen=True,
-                                color="info",
-                                size="md",
-                                children=[
+                            dbc.Col(
+                                [
                                     dcc.Graph(
                                         figure={},
                                         id="reparos-gauge-graph_actual",
                                     ),
                                 ],
+                                xs={"size": 6, "order": 2, "offset": 0},
+                                sm={"size": 4, "order": 2, "offset": 2},
+                                md={"size": 2, "order": 3, "offset": 0},
+                                xl={"size": 2, "order": 3, "offset": 0},
+                                xxl={"size": 1, "order": 3, "offset": 0},
+                                id="current-reparos-col",
+                                class_name="p-1",
                             ),
                         ],
-                        xs={"size": 6, "order": 2, "offset": 0},
-                        sm={"size": 4, "order": 2, "offset": 2},
-                        md={"size": 2, "order": 3, "offset": 0},
-                        xl={"size": 2, "order": 3, "offset": 0},
-                        xxl={"size": 1, "order": 3, "offset": 0},
-                        id="current-reparos-col",
-                        class_name="p-1",
+                        id="reparos-row",
                     ),
                 ],
-                id="reparos-row",
             ),
             html.Hr(),
             dmc.Center(
@@ -339,10 +295,11 @@ layout = [
     Output("eficiencia-heat-graph", "figure"),
     [
         Input("store-df-eff-heatmap", "data"),
+        Input("store-annotations_list_tuple", "data"),
         # Input(ThemeChangerAIO.ids.radio("theme"), "value"),
     ],
 )
-def update_eficiencia_graph(df):  # theme se quiser mudar o tema
+def update_eficiencia_graph(df, ann_tuple):  # theme se quiser mudar o tema
     """
     Função que atualiza o gráfico de eficiência.
     """
@@ -353,9 +310,14 @@ def update_eficiencia_graph(df):  # theme se quiser mudar o tema
     if df is None:
         raise PreventUpdate
 
-    df_eff = pd.read_json(StringIO(df), orient="split")
+    ann_tuple_json = json.loads(ann_tuple)
 
-    fig = ind_graphics.efficiency_graphic(df_eff, 90)  # theme se quiser mudar o tema
+    df_eff = pd.read_json(StringIO(df), orient="split")
+    annotations_list_tuple = [json.loads(lst_json) for lst_json in ann_tuple_json]
+
+    ann_eff = annotations_list_tuple[0]
+
+    fig = ind_graphics.efficiency_graphic(df_eff, ann_eff, 90)  # theme se quiser mudar o tema
 
     return fig
 
@@ -363,11 +325,11 @@ def update_eficiencia_graph(df):  # theme se quiser mudar o tema
 @callback(
     Output("performance-heat-graph", "figure"),
     [
-        Input("store-info", "data"),
-        Input("store-prod", "data"),
+        Input("store-df-perf_repair_heat_tuple", "data"),
+        Input("store-annotations_list_tuple", "data"),
     ],
 )
-def update_performance_graph(info, prod):
+def update_performance_graph(df_perf, ann_tuple):
     """
     Função que atualiza o gráfico de eficiência.
     """
@@ -375,13 +337,19 @@ def update_performance_graph(info, prod):
     if not ctx.triggered:
         raise PreventUpdate
 
-    if info is None:
+    if df_perf is None:
         raise PreventUpdate
-    df_maq_info_cadastro = pd.read_json(StringIO(info), orient="split")
-    df_maq_info_prod_cad = pd.read_json(StringIO(prod), orient="split")
 
-    df = times_data.get_perf_data(df_maq_info_cadastro, df_maq_info_prod_cad)
-    fig = ind_graphics.performance_graphic(df, 4)
+    df_perf_json = json.loads(df_perf)
+    ann_tuple_json = json.loads(ann_tuple)
+
+    df_tuple = [pd.read_json(StringIO(lst_json), orient="split") for lst_json in df_perf_json]
+    annotations_list_tuple = [json.loads(lst_json) for lst_json in ann_tuple_json]
+
+    ann_perf = annotations_list_tuple[1]
+    df = df_tuple[0]
+
+    fig = ind_graphics.performance_graphic(df, ann_perf, 4)
 
     return fig
 
@@ -389,11 +357,11 @@ def update_performance_graph(info, prod):
 @callback(
     Output("reparos-heat-graph", "figure"),
     [
-        Input("store-info", "data"),
-        Input("store-prod", "data"),
+        Input("store-df-perf_repair_heat_tuple", "data"),
+        Input("store-annotations_list_tuple", "data"),
     ],
 )
-def update_reparos_graph(info, prod):
+def update_reparos_graph(df_repair, ann_tuple):
     """
     Função que atualiza o gráfico de eficiência.
     """
@@ -401,13 +369,19 @@ def update_reparos_graph(info, prod):
     if not ctx.triggered:
         raise PreventUpdate
 
-    if info is None:
+    if df_repair is None:
         raise PreventUpdate
-    df_maq_info_cadastro = pd.read_json(StringIO(info), orient="split")
-    df_maq_info_prod_cad = pd.read_json(StringIO(prod), orient="split")
 
-    df = times_data.get_repair_data(df_maq_info_cadastro, df_maq_info_prod_cad)
-    fig = ind_graphics.repair_graphic(df, 4)
+    df_repair_json = json.loads(df_repair)
+    ann_tuple_json = json.loads(ann_tuple)
+
+    annotations_list_tuple = [json.loads(lst_json) for lst_json in ann_tuple_json]
+    df_tuple = [pd.read_json(StringIO(lst_json), orient="split") for lst_json in df_repair_json]
+
+    ann_repair = annotations_list_tuple[2]
+    df = df_tuple[1]
+
+    fig = ind_graphics.repair_graphic(df, ann_repair, 4)
 
     return fig
 
