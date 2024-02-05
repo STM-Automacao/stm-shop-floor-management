@@ -863,7 +863,7 @@ class IndicatorsTurn:
         )
 
         # Adicionar título e labels
-        layout_1 = fig.update_layout(
+        layout_1 = dict(
             title_x=0.5,
             xaxis_title="Linha",
             yaxis_title="Tempo de Parada (min)",
@@ -875,8 +875,8 @@ class IndicatorsTurn:
             ),
         )
 
-        layout_2 = fig.update_layout(xaxis_title="", yaxis_title="")
+        layout_2 = dict(xaxis_title="", yaxis_title="")
 
-        layout_1 if df is not None else layout_2
+        fig.update_layout(layout_1 if df is not None else layout_2)
 
         return fig
