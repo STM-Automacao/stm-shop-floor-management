@@ -13,7 +13,7 @@ import pandas as pd
 from helpers.types import IndicatorType
 from service.times_data import TimesData
 
-# cSpell: words eficiencia ndenumerate
+# cSpell: words eficiencia ndenumerate producao
 
 
 class DFIndicators:

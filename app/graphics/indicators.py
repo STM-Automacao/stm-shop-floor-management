@@ -374,7 +374,9 @@ class Indicators:
 
         return fig
 
-    def plot_daily_efficiency(self, df: pd.DataFrame, indicator: IndicatorType) -> go.Figure:
+    def plot_daily_efficiency(
+        self, df: pd.DataFrame, indicator: IndicatorType, meta: int
+    ) -> go.Figure:
         """
         Este método é responsável por criar o gráfico de linhas diária.
 
@@ -423,11 +425,29 @@ class Indicators:
             )
         )
 
+        # Linha de meta
+        fig.add_trace(
+            go.Scatter(
+                x=df_grouped["data_turno"],
+                y=[meta] * len(df_grouped),
+                mode="lines",
+                name="Meta",
+                line=dict(color="red", dash="dash"),
+                hovertemplate="<b>Meta</b>: %{y:.0f}%<extra></extra>",
+            )
+        )
+
+        # Verificar se a meta é menor que 50%
+        if meta < 50:
+            yaxis_autorange = "reversed"
+        else:
+            yaxis_autorange = True
+
         fig.update_layout(
             showlegend=False,
             plot_bgcolor="white",
             xaxis=dict(showticklabels=False),  # Esconde os valores dos eixos
-            yaxis=dict(showticklabels=False),
+            yaxis=dict(showticklabels=False, autorange=yaxis_autorange),
             margin=dict(t=0, b=0, l=0, r=0),
             height=None,
             autosize=True,

@@ -3,6 +3,7 @@
     Criada por: Bruno Tomaz
     Data: 15/01/2024
 """
+
 import json
 
 # cSpell: words eficiencia fullscreen
@@ -489,7 +490,7 @@ def update_eficiencia_line_graph(df):
     df_eff_line = pd.read_json(StringIO(df), orient="split")
 
     # df = times_data.get_eff_data(df_maq_info_cadastro, df_maq_info_prod_cad)
-    fig = ind_graphics.plot_daily_efficiency(df_eff_line, IndicatorType.EFFICIENCY)
+    fig = ind_graphics.plot_daily_efficiency(df_eff_line, IndicatorType.EFFICIENCY, 90)
 
     return fig
 
@@ -515,7 +516,7 @@ def update_performance_line_graph(info, prod):
     df_maq_info_prod_cad = pd.read_json(StringIO(prod), orient="split")
 
     df = times_data.get_perf_data(df_maq_info_cadastro, df_maq_info_prod_cad)
-    fig = ind_graphics.plot_daily_efficiency(df, IndicatorType.PERFORMANCE)
+    fig = ind_graphics.plot_daily_efficiency(df, IndicatorType.PERFORMANCE, 4)
 
     return fig
 
@@ -541,7 +542,7 @@ def update_reparos_line_graph(info, prod):
     df_maq_info_prod_cad = pd.read_json(StringIO(prod), orient="split")
 
     df = times_data.get_repair_data(df_maq_info_cadastro, df_maq_info_prod_cad)
-    fig = ind_graphics.plot_daily_efficiency(df, IndicatorType.REPAIR)
+    fig = ind_graphics.plot_daily_efficiency(df, IndicatorType.REPAIR, 4)
 
     return fig
 

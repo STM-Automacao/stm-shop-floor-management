@@ -7,7 +7,6 @@
     Para mais informações, acesse: https://dash.plotly.com/
 """
 
-
 # cSpell: words apscheduler,
 from threading import Lock
 
