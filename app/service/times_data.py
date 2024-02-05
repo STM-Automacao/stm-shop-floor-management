@@ -3,6 +3,7 @@ Autor: Bruno Tomaz
 Data: 11/01/2024
 Módulo que prepara dados para os indicadores
 """
+
 from datetime import datetime
 
 import numpy as np
@@ -47,6 +48,10 @@ class TimesData:
         self.desc_rep = {11: 35}
         # Lista com os motivos de parada que são considerados para Reparos
         self.af_rep = [7, 8, 11]
+        # Lista de Motivos que não afetam a eficiência
+        self.not_af_eff = [12]
+        # Lista de Motivos que não afetam a eficiência, performance e reparos
+        self.not_af_all = [12]
 
     def get_times_discount(self, info: pd.DataFrame, desc_pcp: dict[int, int]) -> pd.DataFrame:
         """
@@ -76,6 +81,11 @@ class TimesData:
 
         # Adicionar coluna com descontos de parada
         info_stops["desconto_min"] = info_stops["motivo_id"].map(desc_pcp)
+
+        # Se o motivo_id não afetar ninguém, desconto_min deve ser igual ao tempo_registro_min
+        info_stops.loc[info_stops["motivo_id"].isin(self.not_af_all), "desconto_min"] = info_stops[
+            "tempo_registro_min"
+        ]
 
         # Se houver desconto, subtrair e arredondar em uma nova coluna chamada excedente
         info_stops["excedente"] = (
@@ -168,6 +178,11 @@ class TimesData:
         # Descartar colunas desnecessárias de df_prod
         df_prod_total.drop(columns=["total_ciclos"], inplace=True)
 
+        # Se o motivo id não afeta a eficiência, desconto_min deve ser igual ao tempo_registro_min
+        df_eff_times_desc.loc[
+            df_eff_times_desc["motivo_id"].isin(self.not_af_eff), "desconto_min"
+        ] = df_eff_times_desc["tempo_registro_min"]
+
         # Agrupar por maquina_id, data_registro e turno e somar o desconto
         df_eff_times_desc = (
             df_eff_times_desc.groupby(
@@ -202,9 +217,11 @@ class TimesData:
 
         # Criar coluna com tempo esperado de produção
         df_eff_times_desc["tempo_esperado_min"] = df_eff_times_desc.apply(
-            lambda row: np.floor(self.get_elapsed_time(row["turno"]) - row["desconto_min"])
-            if row["data_registro"] == datetime.now().date()
-            else 480 - row["desconto_min"],
+            lambda row: (
+                np.floor(self.get_elapsed_time(row["turno"]) - row["desconto_min"])
+                if row["data_registro"] == datetime.now().date()
+                else 480 - row["desconto_min"]
+            ),
             axis=1,
         )
 
@@ -225,6 +242,15 @@ class TimesData:
 
         # Remover as linhas onde a linha é 0
         df_eff_times_desc = df_eff_times_desc[df_eff_times_desc["linha"] != 0]
+
+        # Se eficiencia for nula, substituir por 0
+        df_eff_times_desc.loc[df_eff_times_desc["eficiencia"].isnull(), "eficiencia"] = 0
+
+        # Se a produção esperada for 0 e a eficiência for 0, substituir por 1
+        df_eff_times_desc.loc[
+            (df_eff_times_desc["producao_esperada"] == 0),
+            "eficiencia",
+        ] = 1
 
         # Ajustar o index
         df_eff_times_desc.reset_index(drop=True, inplace=True)
@@ -277,9 +303,9 @@ class TimesData:
         df_perf_times_desc["afeta"] = df_perf_times_desc["excedente"]
 
         # Se desconto for nulo, substituir afeta pelo valor de tempo_registro_min
-        df_perf_times_desc.loc[
-            df_perf_times_desc["desconto_min"].isnull(), "afeta"
-        ] = df_perf_times_desc["tempo_registro_min"]
+        df_perf_times_desc.loc[df_perf_times_desc["desconto_min"].isnull(), "afeta"] = (
+            df_perf_times_desc["tempo_registro_min"]
+        )
 
         # Agrupar por maquina_id, data_registro e turno e somar o tempo de
         # desconto e o afeta
@@ -320,9 +346,11 @@ class TimesData:
 
         # Criar coluna com tempo esperado de produção
         df_perf_times_desc["tempo_esperado_min"] = df_perf_times_desc.apply(
-            lambda row: np.floor(self.get_elapsed_time(row["turno"]) - row["desconto_min"])
-            if row["data_registro"] == datetime.now().date()
-            else 480 - row["desconto_min"],
+            lambda row: (
+                np.floor(self.get_elapsed_time(row["turno"]) - row["desconto_min"])
+                if row["data_registro"] == datetime.now().date()
+                else 480 - row["desconto_min"]
+            ),
             axis=1,
         )
 
@@ -388,9 +416,9 @@ class TimesData:
         df_rep_times_desc["afeta"] = df_rep_times_desc["excedente"]
 
         # Se desconto for nulo, substituir afeta pelo valor de tempo_registro_min
-        df_rep_times_desc.loc[
-            df_rep_times_desc["desconto_min"].isnull(), "afeta"
-        ] = df_rep_times_desc["tempo_registro_min"]
+        df_rep_times_desc.loc[df_rep_times_desc["desconto_min"].isnull(), "afeta"] = (
+            df_rep_times_desc["tempo_registro_min"]
+        )
 
         # Agrupar por maquina_id, data_registro e turno e somar o tempo de
         # desconto e o afeta
@@ -430,9 +458,11 @@ class TimesData:
 
         # Criar coluna com tempo esperado de produção
         df_rep_times_desc["tempo_esperado_min"] = df_rep_times_desc.apply(
-            lambda row: np.floor(self.get_elapsed_time(row["turno"]) - row["desconto_min"])
-            if row["data_registro"] == datetime.now().date()
-            else 480 - row["desconto_min"],
+            lambda row: (
+                np.floor(self.get_elapsed_time(row["turno"]) - row["desconto_min"])
+                if row["data_registro"] == datetime.now().date()
+                else 480 - row["desconto_min"]
+            ),
             axis=1,
         )
 

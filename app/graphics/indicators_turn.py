@@ -3,11 +3,12 @@ Autor: Bruno Tomaz
 Data: 23/01/2024
 Módulo responsável por criar os gráficos de indicadores por turno.
 """
+
 # cSpell: words mcolors, eficiencia, vmin, vmax, cmap, figsize, linewidths, annot, cbar, xlabel,
 # cSpell: words ylabel, xticks, yticks, colorscale, hoverongaps, zmin, zmax, showscale, xgap, ygap,
 # cSpell: words nticks, tickmode, tickvals, ticktext, tickangle, lightgray, tickfont, showticklabels
 # cSpell: words ndenumerate producao_total customdata xaxes usuario traceorder yref bordercolor
-# cSpell: words borderwidth borderpad ticksuffix
+# cSpell: words borderwidth borderpad ticksuffix sabado solucao viridis categoryorder
 
 
 import matplotlib.colors as mcolors
@@ -104,7 +105,6 @@ class IndicatorsTurn:
                 tickmode="linear",
                 tickvals=list(range(1, 32)),  # Definir os dias
                 ticktext=list(range(1, 32)),  # Definir os dias
-                tickangle=45,  # Rotacionar os dias
             ),
             yaxis=dict(
                 tickmode="linear",
@@ -269,16 +269,16 @@ class IndicatorsTurn:
         df_info_desc_times = df_info_desc_times[df_info_desc_times["turno"] == turn]
 
         # Se coluna "excedente" for nula, substituir pelo valor de "tempo_registro_min"
-        df_info_desc_times.loc[
-            df_info_desc_times["excedente"].isnull(), "excedente"
-        ] = df_info_desc_times["tempo_registro_min"]
+        df_info_desc_times.loc[df_info_desc_times["excedente"].isnull(), "excedente"] = (
+            df_info_desc_times["tempo_registro_min"]
+        )
 
-        # Se motivo id for nulo e excedente for menor que 15 substituir motivo_nome por
-        # "Não apontado - 15min ou menos"
+        # Se motivo id for nulo e excedente for menor que 5 substituir motivo_nome por
+        # "5min ou menos"
         df_info_desc_times.loc[
-            (df_info_desc_times["motivo_id"].isnull()) & (df_info_desc_times["excedente"] <= 15),
+            (df_info_desc_times["motivo_id"].isnull()) & (df_info_desc_times["excedente"] <= 5),
             ["motivo_nome", "problema"],
-        ] = ["Não apontado - 15min ou menos", "Não apontado - 15min ou menos"]
+        ] = ["5min ou menos", "Não apontado - 5min ou menos"]
 
         # Preencher onde motivo_nome for nulo
         df_info_desc_times["motivo_nome"].fillna("Motivo não informado", inplace=True)
@@ -289,7 +289,39 @@ class IndicatorsTurn:
             "problema",
         ] = "Parada Programada"
 
+        # data_hora_final para datetime
+        df_info_desc_times["data_hora_final"] = pd.to_datetime(
+            df_info_desc_times["data_hora_final"]
+        )
+
         return df_info_desc_times
+
+    def adjust_df_for_bar_lost(self, df: pd.DataFrame, indicator: IndicatorType) -> pd.DataFrame:
+        """
+        Remove as paradas que não afetam o indicador.
+
+        Parâmetros:
+        - df: Dataframe contendo os dados
+        - indicator: Define se é performance ou repair
+
+        Retorno:
+        - df: Dataframe contendo só as paradas que afetam.
+        """
+
+        indicator_actions = {
+            IndicatorType.PERFORMANCE: lambda df: df[
+                ~df["motivo_id"].isin(self.times_data.not_af_perf)
+            ],
+            IndicatorType.REPAIR: lambda df: df[df["motivo_id"].isin(self.times_data.af_rep)],
+            IndicatorType.EFFICIENCY: lambda df: df[
+                ~df["motivo_id"].isin(self.times_data.not_af_eff)
+            ],
+        }
+
+        if indicator in indicator_actions:
+            df = indicator_actions[indicator](df)
+
+        return df
 
     def get_eff_bar_lost(self, df: pd.DataFrame, turn: str, checked: bool = False) -> go.Figure:
         """
@@ -309,6 +341,9 @@ class IndicatorsTurn:
             "VES": "Vespertino",
         }
 
+        # Remover linhas que não afetam a eficiência
+        df = self.adjust_df_for_bar_lost(df, IndicatorType.EFFICIENCY)
+
         # ---------- df motivo ---------- #
         # Agrupar motivo_nome
         df_motivo = (
@@ -324,12 +359,6 @@ class IndicatorsTurn:
             (df["motivo_id"] == 3) & (df["problema"].isnull()),
             "problema",
         ] = "Refeição"
-
-        # Preencher onde problema for nulo e motivo_id for 12
-        df.loc[
-            (df["motivo_id"] == 12) & (df["problema"].isnull()),
-            "problema",
-        ] = "Parada Programada"
 
         # Preencher onde problema for nulo
         df.loc[:, "problema"] = df["problema"].fillna("Problema não informado")
@@ -357,7 +386,7 @@ class IndicatorsTurn:
             name="Motivo",
             x=df_motivo["motivo_nome"],
             y=df_motivo["excedente"],
-            marker_color=self.grey_500_color,
+            marker_color=self.grey_600_color,
         )
 
         motive_bar.update(
@@ -382,7 +411,7 @@ class IndicatorsTurn:
             name="Problema",
             x=df_problema["problema"],
             y=df_problema["excedente"],
-            marker_color=df_grouped["color"],
+            marker_color=self.grey_500_color,
             hovertemplate="<b>Problema</b>: %{x}<br><b>Tempo Perdido</b>: %{y:.0f} min<br>",
         )
 
@@ -392,7 +421,7 @@ class IndicatorsTurn:
             y=df_grouped["excedente"],
             customdata=df_grouped["problema"],
             hovertemplate="<b>Motivo</b>: %{customdata}<br><b>Tempo Perdido</b>: %{y:.0f} min<br>",
-            marker_color=df_grouped["color"],
+            marker_color=self.grey_500_color,
         )
 
         # Gráfico de barras
@@ -489,7 +518,6 @@ class IndicatorsTurn:
                 tickmode="linear",
                 tickvals=list(range(1, 32)),
                 ticktext=list(range(1, 32)),
-                tickangle=45,
             ),
             yaxis=dict(
                 tickmode="linear",
@@ -648,25 +676,6 @@ class IndicatorsTurn:
 
         return fig
 
-    def adjust_df_for_bar_lost(self, df: pd.DataFrame, indicator: IndicatorType) -> pd.DataFrame:
-        """
-        Remove as paradas que não afetam o indicador.
-
-        Parâmetros:
-        - df: Dataframe contendo os dados
-        - indicator: Define se é performance ou repair
-
-        Retorno:
-        - df: Dataframe contendo só as paradas que afetam.
-        """
-
-        if indicator == IndicatorType.PERFORMANCE:
-            df = df[~df["motivo_id"].isin(self.times_data.not_af_perf)]
-        elif indicator == IndicatorType.REPAIR:
-            df = df[df["motivo_id"].isin(self.times_data.af_rep)]
-
-        return df
-
     def get_bar_lost(
         self,
         df: pd.DataFrame,
@@ -741,7 +750,7 @@ class IndicatorsTurn:
             name="Motivo",
             x=df_motivo["motivo_nome"],
             y=df_motivo["excedente"],
-            marker_color=self.grey_500_color,
+            marker_color=self.grey_600_color,
         )
 
         motive_bar.update(
@@ -765,7 +774,7 @@ class IndicatorsTurn:
             name="Problema",
             x=df_problema["problema"],
             y=df_problema["excedente"],
-            marker_color=df_grouped["color"],
+            marker_color=self.grey_500_color,
             hovertemplate="<b>Problema</b>: %{x}<br><b>Tempo Perdido</b>: %{y:.0f} min<br>",
         )
 
@@ -775,7 +784,7 @@ class IndicatorsTurn:
             y=df_grouped["excedente"],
             customdata=df_grouped["problema"],
             hovertemplate="<b>Motivo</b>: %{customdata}<br><b>Tempo Perdido</b>: %{y:.0f} min<br>",
-            marker_color=df_grouped["color"],
+            marker_color=self.grey_500_color,
         )
 
         # Gráfico de barras
@@ -798,5 +807,76 @@ class IndicatorsTurn:
 
         if not checked:
             fig.update_layout(showlegend=True)
+
+        return fig
+
+    def get_bar_stack_stops(self, df: pd.DataFrame, data) -> go.Figure:
+        """
+        Retorna um gráfico de barras empilhadas com o tempo perdido por maquina e seu motivo.
+        """
+
+        # Filtro pelo dia
+        # df = df[df["data_registro"] == pd.to_datetime(data).date()]
+        df = df[df["data_registro"] == pd.to_datetime(data).date()] if data is not None else df
+
+        # Remover colunas que não serão necessárias
+        df.drop(
+            columns=[
+                "feriado",
+                "domingo",
+                "sabado",
+                "contagem_total_produzido",
+                "contagem_total_ciclos",
+                "usuario_id_occ",
+                "solucao",
+                "status",
+            ],
+            inplace=True,
+        )
+
+        # Substituir problema por "Não apontado - 5min ou menos" e motivo_nome por "5min ou menos"
+        df.loc[df["tempo_registro_min"] <= 5, ["problema", "motivo_nome"]] = [
+            "Não apontado - 5min ou menos",
+            "5min ou menos",
+        ]
+
+        # Substituir valores nulos "Motivo não apontado" e em problema por "Não Informado"
+        df.fillna({"motivo_nome": "Motivo não apontado", "problema": "Não Informado"}, inplace=True)
+
+        # Ordenar por linha e data_registro e tempo_registro_min
+        df = df.sort_values(by=["linha", "data_registro", "tempo_registro_min"], ascending=True)
+
+        # Criação do gráfico de barras
+        fig = px.bar(
+            df,
+            x="linha",
+            y="tempo_registro_min",
+            color="motivo_nome",
+            barmode="stack",
+            labels={
+                "tempo_registro_min": "Tempo de Parada (min)",
+                "linha": "Linha",
+                "motivo_nome": "Motivo",
+            },
+            title="Tempo de Parada por Problema",
+            color_discrete_sequence=px.colors.sequential.Viridis,
+        )
+
+        # Adicionar título e labels
+        layout_1 = fig.update_layout(
+            title_x=0.5,
+            xaxis_title="Linha",
+            yaxis_title="Tempo de Parada (min)",
+            plot_bgcolor="white",
+            margin=dict(t=40, b=40, l=40, r=40),
+            xaxis=dict(
+                categoryorder="category ascending",
+                tickvals=df["linha"].unique(),
+            ),
+        )
+
+        layout_2 = fig.update_layout(xaxis_title="", yaxis_title="")
+
+        layout_1 if df is not None else layout_2
 
         return fig

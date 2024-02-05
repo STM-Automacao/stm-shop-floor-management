@@ -3,6 +3,7 @@ Autor: Bruno Tomaz
 Data: 15/01/2024
 Este módulo é responsável por criar os gráficos de indicadores.
 """
+
 # cSpell: words mcolors, eficiencia, vmin, vmax, cmap, figsize, linewidths, annot, cbar, xlabel,
 # cSpell: words ylabel, xticks, yticks, colorscale, hoverongaps, zmin, zmax, showscale, xgap, ygap,
 # cSpell: words nticks, tickmode, tickvals, ticktext, tickangle, lightgray, tickfont, showticklabels
@@ -85,7 +86,6 @@ class Indicators:
                 tickmode="linear",
                 tickvals=list(range(1, 32)),  # Definir os dias
                 ticktext=list(range(1, 32)),  # Definir os dias
-                tickangle=45,  # Rotacionar os dias
             ),
             yaxis_title="Turno",
             yaxis=dict(
@@ -157,7 +157,6 @@ class Indicators:
                 tickmode="linear",
                 tickvals=list(range(1, 32)),  # Definir os dias
                 ticktext=list(range(1, 32)),  # Definir os dias
-                tickangle=45,  # Rotacionar os dias
             ),
             yaxis=dict(
                 tickmode="linear",
@@ -231,7 +230,6 @@ class Indicators:
             ),
             yaxis=dict(
                 tickmode="linear",
-                tickangle=45,
             ),
             plot_bgcolor="white",
             margin=dict(t=40, b=40, l=40, r=40),

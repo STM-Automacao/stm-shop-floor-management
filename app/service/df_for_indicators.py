@@ -4,7 +4,6 @@ Data: 31/01/2024
 Este módulo é responsável por criar DataFrames para os indicadores.
 """
 
-
 # pylint: disable=import-error
 from datetime import datetime
 from itertools import product
@@ -228,9 +227,9 @@ class DFIndicators:
         df_grouped = df_grouped.merge(all_dates_df, on=["data_turno", "turno"], how="right")
 
         # Se a data é no futuro, definir a eficiência como NaN
-        df_grouped.loc[
-            df_grouped["data_turno"] > today.strftime("%Y-%m-%d"), indicador.value
-        ] = np.nan
+        df_grouped.loc[df_grouped["data_turno"] > today.strftime("%Y-%m-%d"), indicador.value] = (
+            np.nan
+        )
 
         # Remodelar os dados para o formato de heatmap
         df_pivot = df_grouped.pivot(index="turno", columns="data_turno", values=indicador.value)

@@ -7,6 +7,7 @@ Módulo que contém o layout e as funções de callback do Modal de Reparos.
 import json
 from io import StringIO as stringIO
 
+import dash_ag_grid as dag
 import dash_bootstrap_components as dbc
 import dash_mantine_components as dmc
 import pandas as pd
@@ -86,6 +87,8 @@ layout = [
                     ),
                 ],
             ),
+            html.Hr(),
+            dbc.Row(id="grid-repair-modal", children=[]),
         ]
     ),
     dbc.ModalFooter(
@@ -188,3 +191,121 @@ def update_graph_repair_modal_perdas(info, checked, turn):
     fig = indicators.get_bar_lost(df, turn, IndicatorType.REPAIR, checked)
 
     return fig
+
+
+@callback(
+    Output("grid-repair-modal", "children"),
+    [
+        Input("store-info", "data"),
+        Input("radio-items", "value"),
+    ],
+)
+def update_grid_repair_modal(data_info, turn):
+    """
+    Função que atualiza o grid de eficiência do modal.
+    """
+    if data_info is None:
+        raise PreventUpdate
+
+    # Carregue a string JSON em um DataFrame
+    df_maq_info_cadastro = pd.read_json(stringIO(data_info), orient="split")
+
+    # Crie o DataFrame
+    df = indicators.get_time_lost(df_maq_info_cadastro, IndicatorType.REPAIR, turn)
+    df = indicators.adjust_df_for_bar_lost(df, IndicatorType.REPAIR)
+
+    # Ordenar por linha, data_hora_registro
+    df = df.sort_values(by=["linha", "data_hora_registro"])
+
+    column_defs = [
+        {
+            "field": "fabrica",
+            "sortable": True,
+            "resizable": True,
+            "cellClass": "center-aligned-cell",
+            "headerClass": "center-aligned-header",
+            "flex": 1,
+        },
+        {
+            "field": "linha",
+            "filter": True,
+            "sortable": True,
+            "resizable": True,
+            "cellClass": "center-aligned-cell",
+            "headerClass": "center-aligned-header",
+            "flex": 1,
+        },
+        {
+            "field": "maquina_id",
+            "filter": True,
+            "sortable": True,
+            "resizable": True,
+            "cellClass": "center-aligned-cell",
+            "headerClass": "center-aligned-header",
+            "flex": 1,
+        },
+        {
+            "field": "motivo_nome",
+            "headerName": "Motivo",
+            "filter": True,
+            "resizable": True,
+            "sortable": True,
+            "flex": 2,
+        },
+        {
+            "field": "problema",
+            "sortable": True,
+            "resizable": True,
+            "tooltipField": "problema",
+            "flex": 2,
+        },
+        {
+            "field": "tempo_registro_min",
+            "headerName": "Tempo Parada",
+            "sortable": True,
+            "resizable": True,
+            "flex": 1,
+        },
+        {
+            "field": "desconto_min",
+            "headerName": "Tempo descontado",
+            "sortable": True,
+            "resizable": True,
+            "cellClass": "center-aligned-cell",
+            "headerClass": "center-aligned-header",
+            "flex": 1,
+        },
+        {
+            "field": "excedente",
+            "headerName": "Tempo que afeta",
+            "sortable": True,
+            "resizable": True,
+            "cellClass": "center-aligned-cell",
+            "headerClass": "center-aligned-header",
+            "flex": 1,
+        },
+        {
+            "field": "data_hora_registro",
+            "headerName": "Inicio Parada",
+            "sortable": True,
+            "resizable": True,
+            "flex": 2,
+        },
+        {
+            "field": "data_hora_final",
+            "headerName": "Fim Parada",
+            "sortable": True,
+            "resizable": True,
+            "flex": 2,
+        },
+    ]
+    grid = dag.AgGrid(
+        id="AgGrid-repair-modal",
+        columnDefs=column_defs,
+        rowData=df.to_dict("records"),
+        columnSize="responsiveSizeToFit",
+        dashGridOptions={"pagination": True, "paginationAutoPageSize": True},
+        style={"height": "600px"},
+    )
+
+    return grid

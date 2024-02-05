@@ -17,6 +17,15 @@
   font-family: 'Hedvig Letters Serif', serif;
 }
 
+.center-aligned-header .ag-header-cell-label {
+  justify-content: center;
+}
+
+.center-aligned-cell {
+  text-align: center;
+}
+
+
 /* ------------------- Colors ------------------- */
 .root {
   --bs-danger: #e30613;
