@@ -7,6 +7,7 @@
     Para mais informações, acesse: https://dash.plotly.com/
 """
 
+
 # cSpell: words apscheduler,
 from threading import Lock
 
@@ -17,9 +18,8 @@ from dash.dependencies import Input, Output
 from dash.exceptions import PreventUpdate
 
 # pylint: disable=E0401
-from database.get_data import GetData
-from flask_caching import Cache
 from graphics.last_month_ind import LastMonthInd
+from helpers.cache import cache, update_cache
 from pages import main_page
 
 from app import app
@@ -28,31 +28,10 @@ from app import app
 
 
 lock = Lock()
-get_data = GetData()
 last_month_ind = LastMonthInd()
 
-# ========================================= Cache ========================================= #
 
-cache = Cache(
-    app.server,
-    config={
-        "CACHE_TYPE": "filesystem",
-        "CACHE_DIR": "cache-directory",
-        "CACHE_THRESHOLD": 50,
-    },
-)
-
-
-def update_cache():
-    """
-    Função que atualiza o cache com os dados do banco de dados.
-    Agiliza o carregamento dos dados na aplicação.
-    """
-    with lock:
-        df1, df2 = get_data.get_cleaned_data()
-
-        cache.set("df1", df1.to_json(date_format="iso", orient="split"))
-        cache.set("df2", df2.to_json(date_format="iso", orient="split"))
+# ========================================= Background ========================================= #
 
 
 def update_last_month_gauge():
@@ -68,20 +47,34 @@ scheduler.add_job(func=update_cache, trigger="interval", seconds=120)  # Atualiz
 scheduler.add_job(func=update_last_month_gauge, trigger="cron", hour=1)  # Atualiza a cada 24 horas
 scheduler.start()
 
-# dbc.Nav(
-#    ThemeChangerAIO(aio_id="theme", radio_props={"value": dbc.themes.BOOTSTRAP}),
-# ),
 
 # ========================================= Layout ========================================= #
 content = html.Div(id="page-content")
 
 app.layout = dbc.Container(
     children=[
+        # ---------------------- Store ---------------------- #
         dcc.Store(id="store-info"),
         dcc.Store(id="store-prod"),
+        dcc.Store(id="store-df-eff"),
+        dcc.Store(id="store-df-perf"),
+        dcc.Store(id="store-df-repair"),
+        dcc.Store(id="store-df-eff-heatmap"),
+        dcc.Store(id="store-df-eff-heatmap-tuple"),
+        dcc.Store(id="store-annotations_eff_turn_list_tuple"),
+        dcc.Store(id="store-df-perf_repair_heat_tuple"),
+        dcc.Store(id="store-annotations_list_tuple"),
+        dcc.Store(id="store-df_perf_heat_turn_tuple"),
+        dcc.Store(id="store-df-repair_heat_turn_tuple"),
+        dcc.Store(id="store-annotations_perf_turn_list_tuple"),
+        dcc.Store(id="store-annotations_repair_turn_list_tuple"),
         dcc.Store(id="is-data-store", storage_type="session", data=False),
+        # ---------------------- Main Layout ---------------------- #
         html.H1("Shop Floor Management", className="text-center"),
         html.Hr(),
+        # dbc.Nav(
+        #    ThemeChangerAIO(aio_id="theme", radio_props={"value": dbc.themes.BOOTSTRAP}),
+        # ),
         dbc.Row(
             main_page.layout,
         ),
@@ -97,6 +90,18 @@ app.layout = dbc.Container(
     [
         Output("store-info", "data"),
         Output("store-prod", "data"),
+        Output("store-df-eff", "data"),
+        Output("store-df-perf", "data"),
+        Output("store-df-repair", "data"),
+        Output("store-df-eff-heatmap", "data"),
+        Output("store-df-eff-heatmap-tuple", "data"),
+        Output("store-annotations_eff_turn_list_tuple", "data"),
+        Output("store-df-perf_repair_heat_tuple", "data"),
+        Output("store-annotations_list_tuple", "data"),
+        Output("store-df_perf_heat_turn_tuple", "data"),
+        Output("store-df-repair_heat_turn_tuple", "data"),
+        Output("store-annotations_perf_turn_list_tuple", "data"),
+        Output("store-annotations_repair_turn_list_tuple", "data"),
     ],
     Input("store-info", "data"),
 )
@@ -110,9 +115,36 @@ def update_store(_data):
 
     df_maq_info_cadastro = cache.get("df1")
     df_maq_info_prod_cad = cache.get("df2")
-    print("========== Atualizando store ==========")
+    df_eff = cache.get("df_eff")
+    df_perf = cache.get("df_perf")
+    df_repair = cache.get("df_repair")
+    df_eff_heatmap = cache.get("df_eff_heatmap")
+    df_eff_heatmap_tuple = cache.get("df_eff_heatmap_tuple")
+    annotations_eff_turn_list_tuple = cache.get("annotations_eff_turn_list_tuple")
+    df_perf_repair_heat_tuple = cache.get("df_perf_repair_heat_tuple")
+    annotations_list_tuple = cache.get("annotations_list_tuple")
+    df_perf_heat_turn_tuple = cache.get("df_perf_heat_turn_tuple")
+    df_repair_heat_turn_tuple = cache.get("df_repair_heat_turn_tuple")
+    annotations_perf_turn_list_tuple = cache.get("annotations_perf_turn_list_tuple")
+    annotations_repair_turn_list_tuple = cache.get("annotations_repair_turn_list_tuple")
 
-    return df_maq_info_cadastro, df_maq_info_prod_cad
+    print("========== Store atualizado ==========")
+    return (
+        df_maq_info_cadastro,
+        df_maq_info_prod_cad,
+        df_eff,
+        df_perf,
+        df_repair,
+        df_eff_heatmap,
+        df_eff_heatmap_tuple,
+        annotations_eff_turn_list_tuple,
+        df_perf_repair_heat_tuple,
+        annotations_list_tuple,
+        df_perf_heat_turn_tuple,
+        df_repair_heat_turn_tuple,
+        annotations_perf_turn_list_tuple,
+        annotations_repair_turn_list_tuple,
+    )
 
 
 @callback(

@@ -3,17 +3,15 @@ Autor: Bruno Tomaz
 Data: 23/01/2024
 Módulo responsável por criar os gráficos de indicadores por turno.
 """
+
 # cSpell: words mcolors, eficiencia, vmin, vmax, cmap, figsize, linewidths, annot, cbar, xlabel,
 # cSpell: words ylabel, xticks, yticks, colorscale, hoverongaps, zmin, zmax, showscale, xgap, ygap,
 # cSpell: words nticks, tickmode, tickvals, ticktext, tickangle, lightgray, tickfont, showticklabels
 # cSpell: words ndenumerate producao_total customdata xaxes usuario traceorder yref bordercolor
-# cSpell: words borderwidth borderpad
+# cSpell: words borderwidth borderpad ticksuffix sabado solucao viridis categoryorder
 
-from datetime import datetime
-from itertools import product
 
 import matplotlib.colors as mcolors
-import numpy as np
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
@@ -33,14 +31,19 @@ class IndicatorsTurn:
         self.danger_color = "#e30613"
         self.success_color = "#00a13a"
         self.warning_color = "#ffdd00"
+        self.grey_500_color = "#adb5bd"
+        self.grey_600_color = "#6c757d"
+        self.grey_700_color = "#495057"
+        self.grey_800_color = "#343a40"
+        self.grey_900_color = "#212529"
         self.times_data = TimesData()
 
     def get_eff_heat_turn(
         self,
-        dataframe: pd.DataFrame,
+        df_pivot: pd.DataFrame,
+        annotations: list,
         meta: int = 90,
-        annotations: bool = False,
-        more_colors: bool = False,
+        annotations_check: bool = False,
     ) -> go.Figure:
         """
         Este método é responsável por criar o gráfico de eficiência, por turno.
@@ -59,59 +62,13 @@ class IndicatorsTurn:
         de verde se estiver acima de 90%.
         """
 
-        # Converter 'data_registro' para datetime e criar uma nova coluna 'data_turno'
-        dataframe["data_registro"] = pd.to_datetime(dataframe["data_registro"])
-        dataframe["data_turno"] = dataframe["data_registro"].dt.strftime("%Y-%m-%d")
-
-        # Agrupar por 'data_turno' e 'turno' e calcular a média da eficiência
-        df_grouped = (
-            dataframe.groupby(["data_turno", "linha"], observed=False)["eficiencia"]
-            .mean()
-            .reset_index()
-        )
-
-        # Encontra a data de hoje e o primeiro e último dia do mês
-        today = datetime.now()
-        start_date = today.replace(day=1).strftime("%Y-%m-%d")
-        end_date = (
-            today.replace(month=today.month % 12 + 1, day=1) - pd.Timedelta(days=1)
-        ).strftime("%Y-%m-%d")
-
-        # Cria um DataFrame com todas as datas possíveis
-        all_dates = pd.date_range(start=start_date, end=end_date).strftime("%Y-%m-%d")
-        all_lines = dataframe["linha"].unique()
-        all_dates_df = pd.DataFrame(
-            list(product(all_dates, all_lines)), columns=["data_turno", "linha"]
-        )
-
-        # Mescla com o DataFrame original
-        df_grouped = df_grouped.merge(all_dates_df, on=["data_turno", "linha"], how="right")
-
-        # Se a data é no futuro, definir a eficiência como NaN
-        df_grouped.loc[df_grouped["data_turno"] > today.strftime("%Y-%m-%d"), "eficiencia"] = np.nan
-
-        # Ordenar por linha e data
-        df_grouped = df_grouped.sort_values(["linha", "data_turno"], ascending=[True, True])
-
-        # Remodelar os dados para o formato de heatmap
-        df_pivot = df_grouped.pivot(index="linha", columns="data_turno", values="eficiencia")
-
         # Criar escala de cores personalizada - cores do bootstrap
-        if more_colors:
-            colors = [
-                [0, self.danger_color],
-                [0.75, self.danger_color],
-                [0.9, self.warning_color],
-                [0.9, self.success_color],
-                [1, self.success_color],
-            ]
-        else:
-            colors = [
-                [0, self.danger_color],
-                [0.9, self.danger_color],
-                [0.9, self.success_color],
-                [1, self.success_color],
-            ]
+        colors = [
+            [0, self.danger_color],
+            [0.9, self.danger_color],
+            [0.9, self.success_color],
+            [1, self.success_color],
+        ]
 
         # Extrair apenas o dia da data
         df_pivot.columns = pd.to_datetime(df_pivot.columns).day
@@ -133,16 +90,9 @@ class IndicatorsTurn:
             )
         )
 
-        # Adicionar anotações com a média da eficiência
-        if annotations:
-            for (i, j), value in np.ndenumerate(df_pivot.values):
-                fig.add_annotation(
-                    x=df_pivot.columns[j],
-                    y=df_pivot.index[i],
-                    text=f"{value:.1%}",
-                    showarrow=False,
-                    font=dict(color="white", size=8),
-                )
+        # Adicionar anotações com a média
+        if annotations_check:
+            fig.update_layout(annotations=annotations)
 
         # Definir o título do gráfico
         fig.update_layout(
@@ -155,11 +105,10 @@ class IndicatorsTurn:
                 tickmode="linear",
                 tickvals=list(range(1, 32)),  # Definir os dias
                 ticktext=list(range(1, 32)),  # Definir os dias
-                tickangle=45,  # Rotacionar os dias
             ),
             yaxis=dict(
                 tickmode="linear",
-                tickangle=45,
+                ticksuffix=" ",  # Adicionar um espaço no final
             ),
             plot_bgcolor="white",
             margin=dict({"t": 40, "b": 40, "l": 40, "r": 40}),
@@ -187,11 +136,23 @@ class IndicatorsTurn:
         """
 
         # Agrupar por 'turno' e "linha" e calcular a média da eficiência e soma da produção
+        # Definir a ordem desejada para 'turno'
+        turno_order = ["NOT", "MAT", "VES"]
+
+        # Converter 'turno' para uma variável categórica com a ordem desejada
+        dataframe["turno"] = pd.Categorical(
+            dataframe["turno"], categories=turno_order, ordered=True
+        )
+
+        # Agrupar, agregar e redefinir o índice
         df_grouped = (
-            dataframe.groupby(["linha", "turno"], observed=False)
+            dataframe.groupby(["linha", "turno"], observed=True)
             .agg({"eficiencia": "mean", "total_produzido": "sum"})
             .reset_index()
         )
+
+        # Ordenar o DataFrame por 'linha' e 'turno'
+        df_grouped = df_grouped.sort_values(["linha", "turno"])
 
         # Ajustar produção total para caixas, dividindo por 10
         df_grouped["total_produzido"] = (df_grouped["total_produzido"] / 10).round(0)
@@ -210,9 +171,9 @@ class IndicatorsTurn:
                 "eficiencia": False,
             },
             color_discrete_map={
-                "NOT": self.danger_color,
-                "MAT": self.warning_color,
-                "VES": self.success_color,
+                "NOT": self.grey_500_color,
+                "MAT": self.grey_600_color,
+                "VES": self.grey_900_color,
             },
             labels={"eficiencia": "Eficiência"},
         )
@@ -232,7 +193,10 @@ class IndicatorsTurn:
             title_x=0.5,
             margin=dict({"t": 80, "b": 40, "l": 40, "r": 40}),
             legend=dict(
-                {"title_text": "Turno"},
+                {
+                    "title_text": "Turno",
+                    "traceorder": "normal",
+                },
             ),
             template="plotly_white",
             font=dict({"family": "Inter"}),
@@ -305,16 +269,16 @@ class IndicatorsTurn:
         df_info_desc_times = df_info_desc_times[df_info_desc_times["turno"] == turn]
 
         # Se coluna "excedente" for nula, substituir pelo valor de "tempo_registro_min"
-        df_info_desc_times.loc[
-            df_info_desc_times["excedente"].isnull(), "excedente"
-        ] = df_info_desc_times["tempo_registro_min"]
+        df_info_desc_times.loc[df_info_desc_times["excedente"].isnull(), "excedente"] = (
+            df_info_desc_times["tempo_registro_min"]
+        )
 
-        # Se motivo id for nulo e excedente for menor que 15 substituir motivo_nome por
-        # "Não apontado - 15min ou menos"
+        # Se motivo id for nulo e excedente for menor que 5 substituir motivo_nome por
+        # "5min ou menos"
         df_info_desc_times.loc[
-            (df_info_desc_times["motivo_id"].isnull()) & (df_info_desc_times["excedente"] <= 15),
+            (df_info_desc_times["motivo_id"].isnull()) & (df_info_desc_times["excedente"] <= 5),
             ["motivo_nome", "problema"],
-        ] = ["Não apontado - 15min ou menos", "Não apontado - 15min ou menos"]
+        ] = ["5min ou menos", "Não apontado - 5min ou menos"]
 
         # Preencher onde motivo_nome for nulo
         df_info_desc_times["motivo_nome"].fillna("Motivo não informado", inplace=True)
@@ -325,7 +289,39 @@ class IndicatorsTurn:
             "problema",
         ] = "Parada Programada"
 
+        # data_hora_final para datetime
+        df_info_desc_times["data_hora_final"] = pd.to_datetime(
+            df_info_desc_times["data_hora_final"]
+        )
+
         return df_info_desc_times
+
+    def adjust_df_for_bar_lost(self, df: pd.DataFrame, indicator: IndicatorType) -> pd.DataFrame:
+        """
+        Remove as paradas que não afetam o indicador.
+
+        Parâmetros:
+        - df: Dataframe contendo os dados
+        - indicator: Define se é performance ou repair
+
+        Retorno:
+        - df: Dataframe contendo só as paradas que afetam.
+        """
+
+        indicator_actions = {
+            IndicatorType.PERFORMANCE: lambda df: df[
+                ~df["motivo_id"].isin(self.times_data.not_af_perf)
+            ],
+            IndicatorType.REPAIR: lambda df: df[df["motivo_id"].isin(self.times_data.af_rep)],
+            IndicatorType.EFFICIENCY: lambda df: df[
+                ~df["motivo_id"].isin(self.times_data.not_af_eff)
+            ],
+        }
+
+        if indicator in indicator_actions:
+            df = indicator_actions[indicator](df)
+
+        return df
 
     def get_eff_bar_lost(self, df: pd.DataFrame, turn: str, checked: bool = False) -> go.Figure:
         """
@@ -345,6 +341,9 @@ class IndicatorsTurn:
             "VES": "Vespertino",
         }
 
+        # Remover linhas que não afetam a eficiência
+        df = self.adjust_df_for_bar_lost(df, IndicatorType.EFFICIENCY)
+
         # ---------- df motivo ---------- #
         # Agrupar motivo_nome
         df_motivo = (
@@ -360,12 +359,6 @@ class IndicatorsTurn:
             (df["motivo_id"] == 3) & (df["problema"].isnull()),
             "problema",
         ] = "Refeição"
-
-        # Preencher onde problema for nulo e motivo_id for 12
-        df.loc[
-            (df["motivo_id"] == 12) & (df["problema"].isnull()),
-            "problema",
-        ] = "Parada Programada"
 
         # Preencher onde problema for nulo
         df.loc[:, "problema"] = df["problema"].fillna("Problema não informado")
@@ -393,6 +386,7 @@ class IndicatorsTurn:
             name="Motivo",
             x=df_motivo["motivo_nome"],
             y=df_motivo["excedente"],
+            marker_color=self.grey_600_color,
         )
 
         motive_bar.update(
@@ -400,18 +394,9 @@ class IndicatorsTurn:
         )
 
         # Problema
-        problem_bar = go.Bar(
-            name="Problema",
-            x=df_problema["problema"],
-            y=df_problema["excedente"],
-        )
-
-        problem_bar.update(
-            hovertemplate="<b>Problema</b>: %{x}<br><b>Tempo Perdido</b>: %{y:.0f} min<br>",
-        )
 
         # Cria uma paleta de cores com os valores únicos na coluna 'problema'
-        palette = sns.color_palette("hls", df_grouped["problema"].nunique())
+        palette = sns.dark_palette("lightgray", df_grouped["problema"].nunique())
 
         # Converte as cores RGB para hexadecimal
         palette_hex = [mcolors.to_hex(color) for color in palette]
@@ -422,13 +407,21 @@ class IndicatorsTurn:
         # Mapeia os valores na coluna 'problema' para as cores correspondentes
         df_grouped["color"] = df_grouped["problema"].map(color_map)
 
+        problem_bar = go.Bar(
+            name="Problema",
+            x=df_problema["problema"],
+            y=df_problema["excedente"],
+            marker_color=self.grey_500_color,
+            hovertemplate="<b>Problema</b>: %{x}<br><b>Tempo Perdido</b>: %{y:.0f} min<br>",
+        )
+
         # Group
         group_bar = go.Bar(
             x=df_grouped["motivo_nome"],
             y=df_grouped["excedente"],
             customdata=df_grouped["problema"],
             hovertemplate="<b>Motivo</b>: %{customdata}<br><b>Tempo Perdido</b>: %{y:.0f} min<br>",
-            marker_color=df_grouped["color"],
+            marker_color=self.grey_500_color,
         )
 
         # Gráfico de barras
@@ -456,10 +449,11 @@ class IndicatorsTurn:
 
     def get_heat_turn(
         self,
-        dataframe: pd.DataFrame,
+        df_pivot: pd.DataFrame,
         indicator: IndicatorType,
+        annotations: list,
         meta: int = 4,
-        annotations: bool = False,
+        annotations_check: bool = True,
     ) -> go.Figure:
         """
         Este método é responsável por criar o gráfico de reparos e performance, por turno.
@@ -478,41 +472,8 @@ class IndicatorsTurn:
         de vermelho se estiver acima de 4%.
         """
 
-        # Converter 'data_registro' para datetime e criar uma nova coluna 'data_turno'
-        dataframe["data_registro"] = pd.to_datetime(dataframe["data_registro"])
-        dataframe["data_turno"] = dataframe["data_registro"].dt.strftime("%Y-%m-%d")
-
         indicator = indicator.value
         ind_capitalized = str(indicator).capitalize()
-
-        # Agrupar por 'data_turno' e 'turno' e calcular a média
-        df_grouped = dataframe.groupby(["data_turno", "linha"])[indicator].mean().reset_index()
-
-        # Encontra a data de hoje e o primeiro e último dia do mês
-        today = datetime.now()
-        start_date = today.replace(day=1).strftime("%Y-%m-%d")
-        end_date = (
-            today.replace(month=today.month % 12 + 1, day=1) - pd.Timedelta(days=1)
-        ).strftime("%Y-%m-%d")
-
-        # Cria um DataFrame com todas as datas possíveis
-        all_dates = pd.date_range(start=start_date, end=end_date).strftime("%Y-%m-%d")
-        all_lines = dataframe["linha"].unique()
-        all_dates_df = pd.DataFrame(
-            list(product(all_dates, all_lines)), columns=["data_turno", "linha"]
-        )
-
-        # Mescla com o DataFrame original
-        df_grouped = df_grouped.merge(all_dates_df, on=["data_turno", "linha"], how="right")
-
-        # Se a data é no futuro, definir a eficiência como NaN
-        df_grouped.loc[df_grouped["data_turno"] > today.strftime("%Y-%m-%d"), indicator] = np.nan
-
-        # Ordenar por linha e data
-        df_grouped = df_grouped.sort_values(["linha", "data_turno"], ascending=[True, True])
-
-        # Remodelar os dados para o formato de heatmap
-        df_pivot = df_grouped.pivot(index="linha", columns="data_turno", values=indicator)
 
         # Criar escala de cores personalizada - cores do bootstrap
         colors = [
@@ -543,15 +504,8 @@ class IndicatorsTurn:
         )
 
         # Adicionar anotações com a média
-        if annotations:
-            for (i, j), value in np.ndenumerate(df_pivot.values):
-                fig.add_annotation(
-                    x=df_pivot.columns[j],
-                    y=df_pivot.index[i],
-                    text=f"{value:.1%}",
-                    showarrow=False,
-                    font=dict(color="white", size=8),
-                )
+        if annotations_check:
+            fig.update_layout(annotations=annotations)
 
         # Definir o título do gráfico
         fig.update_layout(
@@ -564,11 +518,10 @@ class IndicatorsTurn:
                 tickmode="linear",
                 tickvals=list(range(1, 32)),
                 ticktext=list(range(1, 32)),
-                tickangle=45,
             ),
             yaxis=dict(
                 tickmode="linear",
-                tickangle=45,
+                ticksuffix=" ",  # Adicionar um espaço no final
             ),
             plot_bgcolor="white",
             margin=dict({"t": 40, "b": 40, "l": 40, "r": 40}),
@@ -599,12 +552,23 @@ class IndicatorsTurn:
 
         indicator = indicator.value
 
-        # Agrupar e calcular a média
+        # Definir a ordem desejada para 'turno'
+        turno_order = ["NOT", "MAT", "VES"]
+
+        # Converter 'turno' para uma variável categórica com a ordem desejada
+        dataframe["turno"] = pd.Categorical(
+            dataframe["turno"], categories=turno_order, ordered=True
+        )
+
+        # Agrupar, agregar e redefinir o índice
         df_grouped = (
-            dataframe.groupby(["linha", "turno"])
+            dataframe.groupby(["linha", "turno"], observed=True)
             .agg({indicator: "mean", "afeta": "sum"})
             .reset_index()
         )
+
+        # Ordenar o DataFrame por 'linha' e 'turno'
+        df_grouped = df_grouped.sort_values(["linha", "turno"])
 
         # Gráfico de barras
         fig = px.bar(
@@ -620,9 +584,9 @@ class IndicatorsTurn:
                 indicator: False,
             },
             color_discrete_map={
-                "NOT": self.danger_color,
-                "MAT": self.warning_color,
-                "VES": self.success_color,
+                "NOT": self.grey_500_color,
+                "MAT": self.grey_600_color,
+                "VES": self.grey_900_color,
             },
             labels={indicator: f"{indicator.capitalize()}"},
         )
@@ -712,25 +676,6 @@ class IndicatorsTurn:
 
         return fig
 
-    def adjust_df_for_bar_lost(self, df: pd.DataFrame, indicator: IndicatorType) -> pd.DataFrame:
-        """
-        Remove as paradas que não afetam o indicador.
-
-        Parâmetros:
-        - df: Dataframe contendo os dados
-        - indicator: Define se é performance ou repair
-
-        Retorno:
-        - df: Dataframe contendo só as paradas que afetam.
-        """
-
-        if indicator == IndicatorType.PERFORMANCE:
-            df = df[~df["motivo_id"].isin(self.times_data.not_af_perf)]
-        elif indicator == IndicatorType.REPAIR:
-            df = df[df["motivo_id"].isin(self.times_data.af_rep)]
-
-        return df
-
     def get_bar_lost(
         self,
         df: pd.DataFrame,
@@ -805,25 +750,15 @@ class IndicatorsTurn:
             name="Motivo",
             x=df_motivo["motivo_nome"],
             y=df_motivo["excedente"],
+            marker_color=self.grey_600_color,
         )
 
         motive_bar.update(
             hovertemplate="<b>Motivo</b>: %{x}<br><b>Tempo Perdido</b>: %{y:.0f} min<br>",
         )
 
-        # Problema
-        problem_bar = go.Bar(
-            name="Problema",
-            x=df_problema["problema"],
-            y=df_problema["excedente"],
-        )
-
-        problem_bar.update(
-            hovertemplate="<b>Problema</b>: %{x}<br><b>Tempo Perdido</b>: %{y:.0f} min<br>",
-        )
-
         # Cria uma paleta de cores com os valores únicos na coluna 'problema'
-        palette = sns.color_palette("hls", df_grouped["problema"].nunique())
+        palette = sns.dark_palette("lightgray", df_grouped["problema"].nunique())
 
         # Converte as cores RGB para hexadecimal
         palette_hex = [mcolors.to_hex(color) for color in palette]
@@ -834,13 +769,22 @@ class IndicatorsTurn:
         # Mapeia os valores na coluna 'problema' para as cores correspondentes
         df_grouped["color"] = df_grouped["problema"].map(color_map)
 
+        # Problema
+        problem_bar = go.Bar(
+            name="Problema",
+            x=df_problema["problema"],
+            y=df_problema["excedente"],
+            marker_color=self.grey_500_color,
+            hovertemplate="<b>Problema</b>: %{x}<br><b>Tempo Perdido</b>: %{y:.0f} min<br>",
+        )
+
         # Group
         group_bar = go.Bar(
             x=df_grouped["motivo_nome"],
             y=df_grouped["excedente"],
             customdata=df_grouped["problema"],
             hovertemplate="<b>Motivo</b>: %{customdata}<br><b>Tempo Perdido</b>: %{y:.0f} min<br>",
-            marker_color=df_grouped["color"],
+            marker_color=self.grey_500_color,
         )
 
         # Gráfico de barras
@@ -863,5 +807,76 @@ class IndicatorsTurn:
 
         if not checked:
             fig.update_layout(showlegend=True)
+
+        return fig
+
+    def get_bar_stack_stops(self, df: pd.DataFrame, data) -> go.Figure:
+        """
+        Retorna um gráfico de barras empilhadas com o tempo perdido por maquina e seu motivo.
+        """
+
+        # Filtro pelo dia
+        # df = df[df["data_registro"] == pd.to_datetime(data).date()]
+        df = df[df["data_registro"] == pd.to_datetime(data).date()] if data is not None else df
+
+        # Remover colunas que não serão necessárias
+        df.drop(
+            columns=[
+                "feriado",
+                "domingo",
+                "sabado",
+                "contagem_total_produzido",
+                "contagem_total_ciclos",
+                "usuario_id_occ",
+                "solucao",
+                "status",
+            ],
+            inplace=True,
+        )
+
+        # Substituir problema por "Não apontado - 5min ou menos" e motivo_nome por "5min ou menos"
+        df.loc[df["tempo_registro_min"] <= 5, ["problema", "motivo_nome"]] = [
+            "Não apontado - 5min ou menos",
+            "5min ou menos",
+        ]
+
+        # Substituir valores nulos "Motivo não apontado" e em problema por "Não Informado"
+        df.fillna({"motivo_nome": "Motivo não apontado", "problema": "Não Informado"}, inplace=True)
+
+        # Ordenar por linha e data_registro e tempo_registro_min
+        df = df.sort_values(by=["linha", "data_registro", "tempo_registro_min"], ascending=True)
+
+        # Criação do gráfico de barras
+        fig = px.bar(
+            df,
+            x="linha",
+            y="tempo_registro_min",
+            color="motivo_nome",
+            barmode="stack",
+            labels={
+                "tempo_registro_min": "Tempo de Parada (min)",
+                "linha": "Linha",
+                "motivo_nome": "Motivo",
+            },
+            title="Tempo de Parada por Problema",
+            color_discrete_sequence=px.colors.sequential.Viridis,
+        )
+
+        # Adicionar título e labels
+        layout_1 = fig.update_layout(
+            title_x=0.5,
+            xaxis_title="Linha",
+            yaxis_title="Tempo de Parada (min)",
+            plot_bgcolor="white",
+            margin=dict(t=40, b=40, l=40, r=40),
+            xaxis=dict(
+                categoryorder="category ascending",
+                tickvals=df["linha"].unique(),
+            ),
+        )
+
+        layout_2 = fig.update_layout(xaxis_title="", yaxis_title="")
+
+        layout_1 if df is not None else layout_2
 
         return fig

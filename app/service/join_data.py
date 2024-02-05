@@ -165,6 +165,9 @@ class JoinData:
             ]
         )
 
+        # Ordenar por linha, data_hora_registro
+        df_info.sort_values(by=["linha", "data_hora_registro"], inplace=True)
+
         # Ajustar problema e solução caso seja "nan"
         df_info["problema"] = np.where(df_info["problema"] == "nan", np.nan, df_info["problema"])
         df_info["solucao"] = np.where(df_info["solucao"] == "nan", np.nan, df_info["solucao"])
@@ -256,29 +259,42 @@ class JoinData:
         )
         df_info["problema"] = np.where(condition_feriado, "Feriado", df_info["problema"])
 
-        # Cria a máscara para as linhas que atendem às condições
-        mask = (df_info["tempo_registro_min"] > 475) & df_info["motivo_id"].isnull()
-
-        # Cria colunas temporárias com os valores preenchidos
-        df_info["motivo_id_filled"] = df_info["motivo_id"].ffill()
-        df_info["motivo_nome_filled"] = df_info["motivo_nome"].ffill()
-        df_info["problema_filled"] = df_info["problema"].ffill()
-        df_info["solucao_filled"] = df_info["solucao"].ffill()
-
-        # Aplica a máscara e substitui os valores nas colunas originais
-        df_info.loc[mask, "motivo_id"] = df_info.loc[mask, "motivo_id_filled"]
-        df_info.loc[mask, "motivo_nome"] = df_info.loc[mask, "motivo_nome_filled"]
-        df_info.loc[mask, "problema"] = df_info.loc[mask, "problema_filled"]
-        df_info.loc[mask, "solucao"] = df_info.loc[mask, "solucao_filled"]
-
-        # Remove as colunas temporárias
-        df_info = df_info.drop(
-            columns=["motivo_id_filled", "motivo_nome_filled", "problema_filled", "solucao_filled"]
-        )
-
         # Se o tempo de registro for maior que 480 mudar para 480
         df_info["tempo_registro_min"] = np.where(
             df_info["tempo_registro_min"] > 480, 480, df_info["tempo_registro_min"]
+        )
+
+        # Ajusta para parada programada qdo não temo motivo e fica parada todo turno
+        mask = (df_info["motivo_id"].isnull()) & (df_info["tempo_registro_min"] == 480)
+        df_info["motivo_id"] = np.where(mask, 12, df_info["motivo_id"])
+        df_info["motivo_nome"] = np.where(mask, "Parada Programada", df_info["motivo_nome"])
+
+        # Busca a última parada caso não tenha motivo e seja a primeira parada do turno
+        # Ordena o DataFrame por 'maquina_id' e 'turno'
+        df_info.sort_values(by=["maquina_id", "data_hora_registro"], inplace=True)
+
+        # Cria colunas temporárias com os valores do último turno
+        df_info["motivo_id_last"] = df_info.groupby("maquina_id", observed=False)[
+            "motivo_id"
+        ].shift()
+        df_info["motivo_nome_last"] = df_info.groupby("maquina_id", observed=False)[
+            "motivo_nome"
+        ].shift()
+        df_info["problema_last"] = df_info.groupby("maquina_id", observed=False)["problema"].shift()
+        df_info["solucao_last"] = df_info.groupby("maquina_id", observed=False)["solucao"].shift()
+
+        # Cria a máscara para as linhas que atendem às condições
+        mask = (df_info["tempo_registro_min"] > 475) & df_info["motivo_id"].isnull()
+
+        # Aplica a máscara e substitui os valores nas colunas originais
+        df_info.loc[mask, "motivo_id"] = df_info.loc[mask, "motivo_id_last"]
+        df_info.loc[mask, "motivo_nome"] = df_info.loc[mask, "motivo_nome_last"]
+        df_info.loc[mask, "problema"] = df_info.loc[mask, "problema_last"]
+        df_info.loc[mask, "solucao"] = df_info.loc[mask, "solucao_last"]
+
+        # Remove as colunas temporárias
+        df_info = df_info.drop(
+            columns=["motivo_id_last", "motivo_nome_last", "problema_last", "solucao_last"]
         )
 
         # Remover as linhas onde a linha é 0
