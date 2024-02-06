@@ -4,7 +4,7 @@ Controle de processos de produção com o objetivo de melhorar constantemente os
 
 
 
-
+[![wakatime](https://wakatime.com/badge/github/brunotomaz-dev/stm-shop-floor-management.svg)](https://wakatime.com/badge/github/brunotomaz-dev/stm-shop-floor-management)
 
 [![MIT License](https://img.shields.io/badge/License-MIT-green.svg)](https://choosealicense.com/licenses/mit/)
 
