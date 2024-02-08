@@ -25,6 +25,14 @@
   text-align: center;
 }
 
+.card-body-modal-style {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+}
+
+
 
 /* ------------------- Colors ------------------- */
 .root {

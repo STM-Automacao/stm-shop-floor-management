@@ -11,7 +11,6 @@ Este módulo é responsável por criar os gráficos de indicadores.
 
 import pandas as pd
 import plotly.graph_objects as go
-
 # pylint: disable=E0401
 from helpers.types import IndicatorType
 from pandas.tseries.offsets import MonthEnd
@@ -437,17 +436,11 @@ class Indicators:
             )
         )
 
-        # Verificar se a meta é menor que 50%
-        if meta < 50:
-            yaxis_autorange = "reversed"
-        else:
-            yaxis_autorange = True
-
         fig.update_layout(
             showlegend=False,
             plot_bgcolor="white",
             xaxis=dict(showticklabels=False),  # Esconde os valores dos eixos
-            yaxis=dict(showticklabels=False, autorange=yaxis_autorange),
+            yaxis=dict(showticklabels=False, autorange=True),
             margin=dict(t=0, b=0, l=0, r=0),
             height=None,
             autosize=True,

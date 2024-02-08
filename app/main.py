@@ -23,11 +23,17 @@ from pages import main_page
 
 from app import app
 
-# from dash_bootstrap_templates import ThemeChangerAIO
+# from dash_bootstrap_templates import ThemeSwitchAIO
 
 
 lock = Lock()
 last_month_ind = LastMonthInd()
+
+# Seleção de temas para o App - Variáveis:
+# template_boots = "bootstrap"  # para o gráfico
+# template_darkly = "darkly"
+# url_boots = dbc.themes.BOOTSTRAP  # para o switch
+# url_darkly = dbc.themes.DARKLY
 
 
 # ========================================= Background ========================================= #
@@ -67,13 +73,26 @@ app.layout = dbc.Container(
         dcc.Store(id="store-df-repair_heat_turn_tuple"),
         dcc.Store(id="store-annotations_perf_turn_list_tuple"),
         dcc.Store(id="store-annotations_repair_turn_list_tuple"),
+        dcc.Store(id="store-df_working_time"),
         dcc.Store(id="is-data-store", storage_type="session", data=False),
         # ---------------------- Main Layout ---------------------- #
-        html.H1("Shop Floor Management", className="text-center"),
+        dbc.Row(
+            [
+                dbc.Col(
+                    html.H1("Shop Floor Management", className="text-center"),
+                    # md=11,
+                ),
+                # dbc.Col(
+                #     ThemeSwitchAIO(
+                #         aio_id="theme",
+                #         themes=[url_boots, url_darkly],
+                #     ),
+                #     class_name="h-100 d-flex align-items-center justify-content-end",
+                #     md=1,
+                # ),
+            ],
+        ),
         html.Hr(),
-        # dbc.Nav(
-        #    ThemeChangerAIO(aio_id="theme", radio_props={"value": dbc.themes.BOOTSTRAP}),
-        # ),
         dbc.Row(
             main_page.layout,
         ),
@@ -101,6 +120,7 @@ app.layout = dbc.Container(
         Output("store-df-repair_heat_turn_tuple", "data"),
         Output("store-annotations_perf_turn_list_tuple", "data"),
         Output("store-annotations_repair_turn_list_tuple", "data"),
+        Output("store-df_working_time", "data"),
     ],
     Input("store-info", "data"),
 )
@@ -126,6 +146,7 @@ def update_store(_data):
     df_repair_heat_turn_tuple = cache.get("df_repair_heat_turn_tuple")
     annotations_perf_turn_list_tuple = cache.get("annotations_perf_turn_list_tuple")
     annotations_repair_turn_list_tuple = cache.get("annotations_repair_turn_list_tuple")
+    df_working_time = cache.get("df_working_time")
 
     print("========== Store atualizado ==========")
     return (
@@ -143,6 +164,7 @@ def update_store(_data):
         df_repair_heat_turn_tuple,
         annotations_perf_turn_list_tuple,
         annotations_repair_turn_list_tuple,
+        df_working_time,
     )
 
 

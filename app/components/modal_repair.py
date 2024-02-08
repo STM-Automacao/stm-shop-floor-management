@@ -42,21 +42,8 @@ layout = [
                         ),
                         md=4,
                     ),
-                    dbc.Col(
-                        dmc.Switch(
-                            id="annotations-switch-repair",
-                            label="Anotações",
-                            size="sm",
-                            radius="lg",
-                            className="mb-1 inter",
-                            checked=True,
-                        ),
-                        md=2,
-                    ),
                 ],
-                justify="between",
             ),
-            # dcc.Loading(dcc.Graph(id="graph-repair-modal")),
             dbc.Spinner(
                 children=dcc.Graph(id="graph-repair-modal"),
                 color="danger",
@@ -108,12 +95,11 @@ layout = [
     Output("graph-repair-modal", "figure"),
     [
         Input("radio-items-repair", "value"),
-        Input("annotations-switch-repair", "checked"),
         Input("store-df-repair_heat_turn_tuple", "data"),
         Input("store-annotations_repair_turn_list_tuple", "data"),
     ],
 )
-def update_graph_repair_modal(value, checked, df_tuple, ann_tuple):
+def update_graph_repair_modal(value, df_tuple, ann_tuple):
     """
     Função que atualiza o gráfico de reparos por turno.
     """
@@ -129,18 +115,18 @@ def update_graph_repair_modal(value, checked, df_tuple, ann_tuple):
     annotations_list_tuple = [json.loads(lst_json) for lst_json in ann_tuple_json]
 
     # Converta a lista em uma tupla e desempacote
-    noturno, matutino, vespertino = tuple(df_list)
-    ann_not, ann_mat, ann_ves = tuple(annotations_list_tuple)
+    noturno, matutino, vespertino, total = tuple(df_list)
+    ann_not, ann_mat, ann_ves, ann_total = tuple(annotations_list_tuple)
 
     # Criar um dicionário com os DataFrames
-    df_dict = {"NOT": noturno, "MAT": matutino, "VES": vespertino}
-    list_dict = {"NOT": ann_not, "MAT": ann_mat, "VES": ann_ves}
+    df_dict = {"NOT": noturno, "MAT": matutino, "VES": vespertino, "TOT": total}
+    list_dict = {"NOT": ann_not, "MAT": ann_mat, "VES": ann_ves, "TOT": ann_total}
 
     # Selecionar o DataFrame correto
     df = df_dict[value]
     annotations = list_dict[value]
 
-    fig = indicators.get_heat_turn(df, IndicatorType.REPAIR, annotations, annotations_check=checked)
+    fig = indicators.get_heat_turn(df, IndicatorType.REPAIR, annotations)
 
     return fig
 
@@ -197,7 +183,7 @@ def update_graph_repair_modal_perdas(info, checked, turn):
     Output("grid-repair-modal", "children"),
     [
         Input("store-info", "data"),
-        Input("radio-items", "value"),
+        Input("radio-items-repair", "value"),
     ],
 )
 def update_grid_repair_modal(data_info, turn):

@@ -138,8 +138,9 @@ class DFIndicators:
         noturno = self.__adjust_eff_data_heatmap_turn(turn="NOT")
         matutino = self.__adjust_eff_data_heatmap_turn(turn="MAT")
         vespertino = self.__adjust_eff_data_heatmap_turn(turn="VES")
+        total = self.__adjust_eff_data_heatmap_turn()
 
-        return noturno, matutino, vespertino
+        return noturno, matutino, vespertino, total
 
     # ---------------------------------------- Anotações ---------------------------------------- #
 
@@ -164,12 +165,13 @@ class DFIndicators:
         Função que retorna um DataFrame com as anotações de eficiência.
         Filtrado por turno.
         """
-        noturno, matutino, vespertino = self.get_eff_data_heatmap_turn()
+        noturno, matutino, vespertino, total = self.get_eff_data_heatmap_turn()
 
         return (
             self.__annotations_list(noturno),
             self.__annotations_list(matutino),
             self.__annotations_list(vespertino),
+            self.__annotations_list(total),
         )
 
     # -------------------------- Indicadores de Performance e Reparos --------------------------- #
@@ -265,7 +267,9 @@ class DFIndicators:
 
     # -------------------------- Heatmap Performance e Repair by turn -------------------------- #
 
-    def __heatmap_perf_repair_turn(self, indicador: IndicatorType, turn: str) -> pd.DataFrame:
+    def __heatmap_perf_repair_turn(
+        self, indicador: IndicatorType, turn: str = None
+    ) -> pd.DataFrame:
         """
         Função que retorna um DataFrame com os dados de performance e reparo para o heatmap.
         Filtrado por turno.
@@ -279,7 +283,7 @@ class DFIndicators:
         if indicador == IndicatorType.REPAIR:
             dataframe = self.get_repair_data()
 
-        dataframe = dataframe[dataframe["turno"] == turn]
+        dataframe = dataframe[dataframe["turno"] == turn] if turn else dataframe
 
         indicator = indicador.value
 
@@ -330,8 +334,9 @@ class DFIndicators:
         noturno = self.__heatmap_perf_repair_turn(IndicatorType.PERFORMANCE, turn="NOT")
         matutino = self.__heatmap_perf_repair_turn(IndicatorType.PERFORMANCE, turn="MAT")
         vespertino = self.__heatmap_perf_repair_turn(IndicatorType.PERFORMANCE, turn="VES")
+        total = self.__heatmap_perf_repair_turn(IndicatorType.PERFORMANCE)
 
-        return noturno, matutino, vespertino
+        return noturno, matutino, vespertino, total
 
     def get_repair_heatmap_turn(self) -> tuple:
         """
@@ -341,8 +346,9 @@ class DFIndicators:
         noturno = self.__heatmap_perf_repair_turn(IndicatorType.REPAIR, turn="NOT")
         matutino = self.__heatmap_perf_repair_turn(IndicatorType.REPAIR, turn="MAT")
         vespertino = self.__heatmap_perf_repair_turn(IndicatorType.REPAIR, turn="VES")
+        total = self.__heatmap_perf_repair_turn(IndicatorType.REPAIR)
 
-        return noturno, matutino, vespertino
+        return noturno, matutino, vespertino, total
 
     # ---------------------------------------- Anotações ---------------------------------------- #
 
@@ -352,12 +358,13 @@ class DFIndicators:
         Filtrado por turno.
         """
 
-        noturno, matutino, vespertino = self.get_perf_heatmap_turn()
+        noturno, matutino, vespertino, total = self.get_perf_heatmap_turn()
 
         return (
             self.__annotations_list(noturno),
             self.__annotations_list(matutino),
             self.__annotations_list(vespertino),
+            self.__annotations_list(total),
         )
 
     def get_repair_annotations_turn(self):
@@ -366,10 +373,11 @@ class DFIndicators:
         Filtrado por turno.
         """
 
-        noturno, matutino, vespertino = self.get_repair_heatmap_turn()
+        noturno, matutino, vespertino, total = self.get_repair_heatmap_turn()
 
         return (
             self.__annotations_list(noturno),
             self.__annotations_list(matutino),
             self.__annotations_list(vespertino),
+            self.__annotations_list(total),
         )

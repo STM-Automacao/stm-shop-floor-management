@@ -4,6 +4,7 @@
     Esse módulo é responsável por realizar a leitura dos dados do banco de dados.
     É utilizada para fazer a leitura em segundo plano, sem que o usuário perceba.
 """
+
 import pandas as pd
 
 # pylint: disable=E0401
@@ -114,6 +115,7 @@ class GetData:
         df_occ_cleaned = self.clean_df.get_maq_occ_cleaned(df_occ)
         df_info_cleaned = self.clean_df.get_maq_info_cleaned(df_info)
         df_maq_info_prod_cad_cleaned = self.clean_df.get_maq_production_cleaned(df_info_production)
+        df_working_minutes = self.clean_df.get_time_working(df_info)
         print("Ok...")
         print("========== Juntando dados ==========")
         # Junção dos dados
@@ -121,7 +123,7 @@ class GetData:
         df_maq_info_cadastro = self.join_df.problems_adjust(df_info_occ)
         print("Ok...")
         # Retorno dos dados
-        return df_maq_info_cadastro, df_maq_info_prod_cad_cleaned
+        return df_maq_info_cadastro, df_maq_info_prod_cad_cleaned, df_working_minutes
 
     def get_last_month_data(self) -> tuple:
         """

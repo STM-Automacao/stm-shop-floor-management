@@ -14,6 +14,7 @@ import pandas as pd
 from dash import callback, dcc, html
 from dash.dependencies import Input, Output
 from dash.exceptions import PreventUpdate
+
 # pylint: disable=E0401
 from graphics.indicators_turn import IndicatorsTurn
 from helpers.types import MODAL_RADIO, IndicatorType
@@ -40,19 +41,7 @@ layout = [
                         ),
                         md=4,
                     ),
-                    dbc.Col(
-                        dmc.Switch(
-                            id="annotations-switch-performance",
-                            label="Anotações",
-                            size="sm",
-                            radius="lg",
-                            className="mb-1 inter",
-                            checked=True,
-                        ),
-                        md=2,
-                    ),
                 ],
-                justify="between",
             ),
             dbc.Spinner(
                 children=dcc.Graph(id="graph-performance-modal"),
@@ -105,14 +94,12 @@ layout = [
     Output("graph-performance-modal", "figure"),
     [
         Input("radio-items-performance", "value"),
-        Input("annotations-switch-performance", "checked"),
         Input("store-df_perf_heat_turn_tuple", "data"),
         Input("store-annotations_perf_turn_list_tuple", "data"),
     ],
 )
 def update_graph_performance_modal(
     radio_items_value,
-    checked,
     df_tuple,
     ann_tuple,
 ):
@@ -131,20 +118,18 @@ def update_graph_performance_modal(
     annotations_list_tuple = [json.loads(lst_json) for lst_json in ann_tuple_json]
 
     # Converta a lista em uma tupla e desempacote
-    noturno, matutino, vespertino = tuple(df_list)
-    ann_not, ann_mat, ann_ves = tuple(annotations_list_tuple)
+    noturno, matutino, vespertino, total = tuple(df_list)
+    ann_not, ann_mat, ann_ves, ann_total = tuple(annotations_list_tuple)
 
     # Criar um dicionário com os DataFrames
-    df_dict = {"NOT": noturno, "MAT": matutino, "VES": vespertino}
-    list_dict = {"NOT": ann_not, "MAT": ann_mat, "VES": ann_ves}
+    df_dict = {"NOT": noturno, "MAT": matutino, "VES": vespertino, "TOT": total}
+    list_dict = {"NOT": ann_not, "MAT": ann_mat, "VES": ann_ves, "TOT": ann_total}
 
     # Selecionar o DataFrame correto
     df = df_dict[radio_items_value]
     annotations = list_dict[radio_items_value]
 
-    fig = indicators.get_heat_turn(
-        df, IndicatorType.PERFORMANCE, annotations, annotations_check=checked
-    )
+    fig = indicators.get_heat_turn(df, IndicatorType.PERFORMANCE, annotations)
 
     return fig
 
