@@ -131,7 +131,6 @@ layout = [
                                         dcc.Graph(id="every-stop-graph"),
                                         class_name="inter",
                                     ),
-                                    dbc.Row(id="grid-eficiencia-modal", children=[]),
                                 ]
                             ),
                         ),
@@ -141,6 +140,7 @@ layout = [
                 ],
                 className="mb-3",
             ),
+            dbc.Row(id="grid-eficiencia-modal", children=[]),
         ]
     ),
     dbc.ModalFooter(
