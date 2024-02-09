@@ -11,19 +11,22 @@ import dash_ag_grid as dag
 import dash_bootstrap_components as dbc
 import dash_mantine_components as dmc
 import pandas as pd
+
+# pylint: disable=E0401
+from components import btn_modal
 from dash import callback, dcc, html
 from dash.dependencies import Input, Output
 from dash.exceptions import PreventUpdate
-
-# pylint: disable=E0401
+from graphics.indicators import Indicators
 from graphics.indicators_turn import IndicatorsTurn
-from helpers.types import MODAL_RADIO, IndicatorType
+from helpers.types import IndicatorType
 from service.times_data import TimesData
 
 from app import app
 
 times_data = TimesData()
 indicators = IndicatorsTurn()
+indicators_geral = Indicators()
 
 # ========================================= Modal Layout ======================================== #
 
@@ -34,13 +37,8 @@ layout = [
             dbc.Row(
                 [
                     dbc.Col(
-                        dmc.RadioGroup(
-                            [dmc.Radio(l, value=v, color=c) for v, l, c in MODAL_RADIO],
-                            id="radio-items-repair",
-                            value="MAT",
-                            className="inter",
-                        ),
-                        md=4,
+                        btn_modal.radio_btn_repair,
+                        class_name="radio-group",
                     ),
                 ],
             ),
@@ -48,6 +46,10 @@ layout = [
                 children=dcc.Graph(id="graph-repair-modal"),
                 color="danger",
                 size="lg",
+            ),
+            dcc.Graph(
+                id="graph-line-modal-3",
+                style={"height": "80px"},
             ),
             html.Hr(),
             dbc.Row(
@@ -57,13 +59,11 @@ layout = [
                         [
                             dbc.Row(
                                 [
-                                    dmc.Switch(
+                                    dbc.Switch(
                                         id="perdas-switch-repair",
                                         label="Agrupado",
-                                        size="sm",
-                                        radius="lg",
                                         className="mb-1 inter",
-                                        checked=False,
+                                        value=False,
                                     ),
                                     dcc.Graph(id="graph-repair-modal-perdas"),
                                 ]
@@ -94,7 +94,7 @@ layout = [
 @callback(
     Output("graph-repair-modal", "figure"),
     [
-        Input("radio-items-repair", "value"),
+        Input(f"radio-items-{IndicatorType.REPAIR.value}", "value"),
         Input("store-df-repair_heat_turn_tuple", "data"),
         Input("store-annotations_repair_turn_list_tuple", "data"),
     ],
@@ -131,6 +131,28 @@ def update_graph_repair_modal(value, df_tuple, ann_tuple):
     return fig
 
 
+# ---------------------- Line Chart ---------------------- #
+@callback(
+    Output("graph-line-modal-3", "figure"),
+    [
+        Input("store-df-repair", "data"),
+        Input(f"radio-items-{IndicatorType.REPAIR.value}", "value"),
+    ],
+)
+def update_graph_line_modal_1(data, turn):
+    """
+    Função que atualiza o gráfico de linha do modal.
+    """
+    if data is None:
+        raise PreventUpdate
+
+    df = pd.read_json(stringIO(data), orient="split")
+
+    figure = indicators_geral.plot_daily_efficiency(df, IndicatorType.REPAIR, 4, turn)
+
+    return figure
+
+
 @callback(
     Output("graph-repair-modal-2", "figure"),
     [
@@ -159,8 +181,8 @@ def update_graph_repair_modal_2(info, prod):
     Output("graph-repair-modal-perdas", "figure"),
     [
         Input("store-info", "data"),
-        Input("perdas-switch-repair", "checked"),
-        Input("radio-items-repair", "value"),
+        Input("perdas-switch-repair", "value"),
+        Input(f"radio-items-{IndicatorType.REPAIR.value}", "value"),
     ],
 )
 def update_graph_repair_modal_perdas(info, checked, turn):
@@ -183,7 +205,7 @@ def update_graph_repair_modal_perdas(info, checked, turn):
     Output("grid-repair-modal", "children"),
     [
         Input("store-info", "data"),
-        Input("radio-items-repair", "value"),
+        Input(f"radio-items-{IndicatorType.REPAIR.value}", "value"),
     ],
 )
 def update_grid_repair_modal(data_info, turn):

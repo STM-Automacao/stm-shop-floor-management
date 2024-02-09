@@ -11,6 +11,7 @@ Este módulo é responsável por criar os gráficos de indicadores.
 
 import pandas as pd
 import plotly.graph_objects as go
+
 # pylint: disable=E0401
 from helpers.types import IndicatorType
 from pandas.tseries.offsets import MonthEnd
@@ -64,6 +65,7 @@ class Indicators:
                 x=df_pivot.columns,
                 y=df_pivot.index,
                 colorscale=colors,
+                name="Eficiência",
                 zmin=0,
                 zmax=1,  # Escala de valores de 0 a 1
                 hoverongaps=False,
@@ -134,6 +136,7 @@ class Indicators:
                 x=df_pivot.columns,
                 y=df_pivot.index,
                 colorscale=colors,
+                name="Performance",
                 zmin=0,
                 zmax=1,  # Escala de valores de 0 a 1
                 hoverongaps=False,
@@ -203,6 +206,7 @@ class Indicators:
                 x=df_pivot.columns,
                 y=df_pivot.index,
                 colorscale=colors,
+                name="Reparos",
                 zmin=0,
                 zmax=1,  # Escala de valores de 0 a 1
                 hoverongaps=False,
@@ -374,7 +378,7 @@ class Indicators:
         return fig
 
     def plot_daily_efficiency(
-        self, df: pd.DataFrame, indicator: IndicatorType, meta: int
+        self, df: pd.DataFrame, indicator: IndicatorType, meta: int, turn: str = None
     ) -> go.Figure:
         """
         Este método é responsável por criar o gráfico de linhas diária.
@@ -383,7 +387,7 @@ class Indicators:
         df (pd.DataFrame): DataFrame contendo os dados para o gráfico.
         indicator (IndicatorType): Tipo de indicador.
 
-        Retorna:
+        Retorna:0
         fig: Objeto plotly.graph_objects.Figure com o gráfico de linhas diária.
         """
 
@@ -392,6 +396,9 @@ class Indicators:
         # Converter 'data_registro' para datetime e criar uma nova coluna 'data_turno'
         df["data_registro"] = pd.to_datetime(df["data_registro"])
         df["data_turno"] = df["data_registro"].dt.strftime("%Y-%m-%d")
+
+        # Filtrar por turno
+        df = df[df["turno"] == turn] if turn and turn != "TOT" else df
 
         # Agrupar por 'data_turno' e 'turno' e calcular a média do indicador
         df_grouped = df.groupby(["data_turno"])[indicator].mean().reset_index()
@@ -417,6 +424,7 @@ class Indicators:
                 x=df_grouped["data_turno"],
                 y=df_grouped[indicator],
                 mode="lines+markers",
+                name=f"Linha de {indicator}",
                 line=dict(color="blue"),
                 marker=dict(color="blue"),
                 hovertemplate="<i>Dia</i>: %{x}" + "<br><b>Porcentagem</b>: %{y:.1f}<br>",

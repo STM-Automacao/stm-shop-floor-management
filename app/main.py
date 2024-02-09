@@ -17,7 +17,7 @@ from dash.dependencies import Input, Output
 from dash.exceptions import PreventUpdate
 
 # pylint: disable=E0401
-from graphics.last_month_ind import LastMonthInd
+from database.last_month_ind import LastMonthInd
 from helpers.cache import cache, update_cache
 from pages import main_page
 
@@ -39,17 +39,17 @@ last_month_ind = LastMonthInd()
 # ========================================= Background ========================================= #
 
 
-def update_last_month_gauge():
+def update_last_month():
     """
     Função que salva imagens de gauge do mês anterior.
     """
     with lock:
-        last_month_ind.get_last_month_ind()
+        last_month_ind.save_last_month_data()
 
 
 scheduler = BackgroundScheduler()
 scheduler.add_job(func=update_cache, trigger="interval", seconds=120)  # Atualiza a cada 2 minutos
-scheduler.add_job(func=update_last_month_gauge, trigger="cron", hour=1)  # Atualiza a cada 24 horas
+scheduler.add_job(func=update_last_month, trigger="cron", hour=1)  # Atualiza a cada 24 horas
 scheduler.start()
 
 

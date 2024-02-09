@@ -13,20 +13,23 @@ import dash_bootstrap_components as dbc
 import dash_mantine_components as dmc
 import numpy as np
 import pandas as pd
-from dash import callback, dcc, html
-from dash.dependencies import Input, Output
-from dash.exceptions import PreventUpdate
-from dash_iconify import DashIconify
 
 # pylint: disable=E0401
+from components import btn_modal, modal_history
+from dash import callback, dcc, html
+from dash.dependencies import Input, Output, State
+from dash.exceptions import PreventUpdate
+from dash_iconify import DashIconify
+from graphics.indicators import Indicators
 from graphics.indicators_turn import IndicatorsTurn
-from helpers.types import MODAL_RADIO, IndicatorType
+from helpers.types import IndicatorType
 from service.times_data import TimesData
 
 from app import app
 
 times_data = TimesData()
 indicators = IndicatorsTurn()
+indicators_geral = Indicators()
 today = pd.Timestamp.now().date()
 first_day = pd.Timestamp(today.year, today.month, 1).date()
 
@@ -41,12 +44,12 @@ layout = [
             dbc.Row(
                 [
                     dbc.Col(
-                        dmc.RadioGroup(
-                            [dmc.Radio(l, value=v, color=c) for v, l, c in MODAL_RADIO],
-                            id="radio-items",
-                            value="MAT",
-                            className="inter",
-                        ),
+                        btn_modal.radio_btn_eff,
+                        class_name="radio-group",
+                        md=3,
+                    ),
+                    dbc.Col(
+                        btn_modal.btn_opt_eff,
                     ),
                 ],
             ),
@@ -54,6 +57,10 @@ layout = [
                 children=dcc.Graph(id="graph-eficiencia-modal"),
                 size="lg",
                 color="danger",
+            ),
+            dcc.Graph(
+                id="graph-line-modal-1",
+                style={"height": "80px"},
             ),
             html.Hr(),
             dbc.Collapse(
@@ -72,37 +79,17 @@ layout = [
             ),
             dbc.Row(
                 [
-                    dbc.Row(
-                        [
-                            dbc.Col(
-                                dmc.Switch(
-                                    id="production-switch-eficiencia",
-                                    label="Produção",
-                                    size="sm",
-                                    radius="lg",
-                                    className="mb-1 inter",
-                                    checked=False,
-                                ),
-                                md=6,
-                            ),
-                            dbc.Col(
-                                dmc.Switch(
-                                    id="perdas-switch-eficiencia",
-                                    label="Agrupado",
-                                    size="sm",
-                                    radius="lg",
-                                    className="mb-1 inter",
-                                    checked=True,
-                                ),
-                                md=6,
-                            ),
-                        ]
-                    ),
                     dbc.Col(dcc.Graph(id="graph-eficiencia-modal-2"), md=6),
                     dbc.Col(
                         [
                             dbc.Row(
                                 [
+                                    dbc.Switch(
+                                        id="perdas-switch-eficiencia",
+                                        label="Agrupado",
+                                        className="mb-1 inter",
+                                        value=True,
+                                    ),
                                     dcc.Graph(id="graph-eficiencia-modal-perdas"),
                                 ]
                             ),
@@ -113,15 +100,8 @@ layout = [
                 ]
             ),
             html.Hr(),
-            html.Div(
+            dbc.Row(
                 [
-                    dbc.Button(
-                        "Detalhes",
-                        id="detalhes-button",
-                        className="mb-3",
-                        color="secondary",
-                        n_clicks=0,
-                    ),
                     dbc.Collapse(
                         dbc.Card(
                             dbc.CardBody(
@@ -151,6 +131,7 @@ layout = [
                                         dcc.Graph(id="every-stop-graph"),
                                         class_name="inter",
                                     ),
+                                    dbc.Row(id="grid-eficiencia-modal", children=[]),
                                 ]
                             ),
                         ),
@@ -160,7 +141,6 @@ layout = [
                 ],
                 className="mb-3",
             ),
-            dbc.Row(id="grid-eficiencia-modal", children=[]),
         ]
     ),
     dbc.ModalFooter(
@@ -171,17 +151,41 @@ layout = [
             withPlaceholder=True,
         ),
     ),
+    # ---------------- Modal History ---------------- #
+    dbc.Modal(
+        children=modal_history.layout,
+        id="modal_history",
+        size="xl",
+        scrollable=True,
+        # fullscreen=True,
+        modal_class_name="inter",
+        is_open=False,
+    ),
 ]
 
 
 # ======================================= Modal Callbacks ======================================== #
 
 
+@callback(
+    Output("modal_history", "is_open"),
+    [Input(f"history-button-{IndicatorType.EFFICIENCY.value}", "n_clicks")],
+    [State("modal_history", "is_open")],
+)
+def toggle_modal_history(n, is_open):
+    """
+    Função que abre e fecha o modal do histórico.
+    """
+    if n:
+        return not is_open
+    return is_open
+
+
 # ---------------------- Heatmap ---------------------- #
 @callback(
     Output("graph-eficiencia-modal", "figure"),
     [
-        Input("radio-items", "value"),
+        Input(f"radio-items-{IndicatorType.EFFICIENCY.value}", "value"),
         Input("store-df-eff-heatmap-tuple", "data"),
         Input("store-annotations_eff_turn_list_tuple", "data"),
     ],
@@ -218,6 +222,28 @@ def update_graph_eficiencia_modal(value, df_tuple, ann_tuple):
     return figure
 
 
+# ---------------------- Line Chart ---------------------- #
+@callback(
+    Output("graph-line-modal-1", "figure"),
+    [
+        Input("store-df-eff", "data"),
+        Input(f"radio-items-{IndicatorType.EFFICIENCY.value}", "value"),
+    ],
+)
+def update_graph_line_modal_1(data, turn):
+    """
+    Função que atualiza o gráfico de linha do modal.
+    """
+    if data is None:
+        raise PreventUpdate
+
+    df = pd.read_json(stringIO(data), orient="split")
+
+    figure = indicators_geral.plot_daily_efficiency(df, IndicatorType.EFFICIENCY, 90, turn)
+
+    return figure
+
+
 # ---------------------- Bar Totais ---------------------- #
 @callback(
     Output("graph-eficiencia-modal-2", "figure"),
@@ -248,8 +274,8 @@ def update_graph_eficiencia_modal_2(data_info, data_prod):
     Output("graph-eficiencia-modal-perdas", "figure"),
     [
         Input("store-info", "data"),
-        Input("perdas-switch-eficiencia", "checked"),
-        Input("radio-items", "value"),
+        Input("perdas-switch-eficiencia", "value"),
+        Input(f"radio-items-{IndicatorType.EFFICIENCY.value}", "value"),
     ],
 )
 def update_graph_eficiencia_modal_perdas(data_info, checked, turn):
@@ -273,7 +299,7 @@ def update_graph_eficiencia_modal_perdas(data_info, checked, turn):
     Output("grid-eficiencia-modal", "children"),
     [
         Input("store-info", "data"),
-        Input("radio-items", "value"),
+        Input(f"radio-items-{IndicatorType.EFFICIENCY.value}", "value"),
         Input("date-picker-eficiencia", "value"),
         Input("detalhes-bar-collapse", "is_open"),
     ],
@@ -399,8 +425,11 @@ def update_grid_eficiencia_modal(data_info, turn, data_picker, open_btn):
 
 # ---------------------- Collapse Btn ---------------------- #
 @callback(
-    Output("detalhes-bar-collapse", "is_open"),
-    [Input("detalhes-button", "n_clicks")],
+    [
+        Output("detalhes-bar-collapse", "is_open"),
+        Output(f"detalhes-button-{IndicatorType.EFFICIENCY.value}", "active"),
+    ],
+    [Input(f"detalhes-button-{IndicatorType.EFFICIENCY.value}", "n_clicks")],
     [Input("detalhes-bar-collapse", "is_open")],
 )
 def toggle_collapse(n, is_open):
@@ -408,8 +437,8 @@ def toggle_collapse(n, is_open):
     Função que abre e fecha o collapse do detalhes.
     """
     if n:
-        return not is_open
-    return is_open
+        return not is_open, not is_open
+    return is_open, is_open
 
 
 # ---------------------- Bar Stacked ---------------------- #
@@ -418,7 +447,7 @@ def toggle_collapse(n, is_open):
     [
         Input("date-picker-eficiencia", "value"),
         Input("store-info", "data"),
-        Input("radio-items", "value"),
+        Input(f"radio-items-{IndicatorType.EFFICIENCY.value}", "value"),
         Input("store-df_working_time", "data"),
     ],
 )
@@ -446,14 +475,22 @@ def update_every_stop_graph(date, data_info, turn, data_working_time):
 
 # ---------------------- Collapse Production ---------------------- #
 @callback(
-    Output("production-collapse", "is_open"),
-    [Input("production-switch-eficiencia", "checked")],
+    [
+        Output("production-collapse", "is_open"),
+        Output(f"production-btn-{IndicatorType.EFFICIENCY.value}", "active"),
+    ],
+    [
+        Input(f"production-btn-{IndicatorType.EFFICIENCY.value}", "n_clicks"),
+        Input("production-collapse", "is_open"),
+    ],
 )
-def toggle_collapse_production(checked):
+def toggle_collapse_production(n, is_open):
     """
-    Função que abre e fecha o collapse da produção.
+    Função que abre e fecha o collapse de produção.
     """
-    return checked
+    if n:
+        return not is_open, not is_open
+    return is_open, is_open
 
 
 # ---------------------- Table Production ---------------------- #
@@ -461,7 +498,7 @@ def toggle_collapse_production(checked):
     Output("card-body-eff-production-modal", "children"),
     [
         Input("store-prod", "data"),
-        Input("radio-items", "value"),
+        Input(f"radio-items-{IndicatorType.EFFICIENCY.value}", "value"),
     ],
 )
 def update_card_body_production(data_prod, turn):
@@ -496,7 +533,6 @@ def update_card_body_production(data_prod, turn):
             "field": df_columns[0],
             "headerName": df_columns[0].capitalize(),
             "sortable": True,
-            "resizable": True,
             "flex": 1,
         },
         *[
@@ -504,11 +540,17 @@ def update_card_body_production(data_prod, turn):
                 "field": column,
                 "headerName": f"Linha {column}",
                 "sortable": True,
-                "resizable": True,
                 "flex": 1,
             }
-            for column in df_columns[1:]
+            for column in df_columns[1:15]
         ],
+        {
+            "field": df_columns[15],
+            "headerName": df_columns[15].capitalize(),
+            "sortable": True,
+            "resizable": True,
+            "flex": 1,
+        },
     ]
 
     table = dag.AgGrid(

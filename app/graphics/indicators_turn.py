@@ -79,6 +79,7 @@ class IndicatorsTurn:
                 x=df_pivot.columns,
                 y=df_pivot.index,
                 colorscale=colors,
+                name="Heatmap",
                 zmin=0,
                 zmax=1,  # Escala de valores de 0 a 1
                 hoverongaps=False,
@@ -283,6 +284,11 @@ class IndicatorsTurn:
             df_info_desc_times["tempo_registro_min"]
         )
 
+        # Se o problema for uma string "None" substituir por "Não Informado"
+        df_info_desc_times["problema"] = df_info_desc_times["problema"].replace(
+            "None", "Problema não Informado"
+        )
+
         # Se motivo id for nulo e excedente for menor que 5 substituir motivo_nome por
         # "5min ou menos"
         df_info_desc_times.loc[
@@ -428,6 +434,7 @@ class IndicatorsTurn:
 
         # Group
         group_bar = go.Bar(
+            name="Motivo/Problema",
             x=df_grouped["motivo_nome"],
             y=df_grouped["excedente"],
             customdata=df_grouped["problema"],
@@ -503,6 +510,7 @@ class IndicatorsTurn:
                 x=df_pivot.columns,
                 y=df_pivot.index,
                 colorscale=colors,
+                name="Heatmap",
                 zmin=0,
                 zmax=1,
                 hoverongaps=False,
@@ -788,6 +796,7 @@ class IndicatorsTurn:
 
         # Group
         group_bar = go.Bar(
+            name="Motivo/Problema",
             x=df_grouped["motivo_nome"],
             y=df_grouped["excedente"],
             customdata=df_grouped["problema"],
