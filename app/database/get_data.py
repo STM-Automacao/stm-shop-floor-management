@@ -13,7 +13,7 @@ from service.clean_data import CleanData
 from service.join_data import JoinData
 
 
-# cSpell: words automacao, ocorrencia
+# cSpell: words automacao, ocorrencia dateadd datediff
 class GetData:
     """
     Essa classe é responsável por realizar a leitura dos dados do banco de dados.
@@ -70,19 +70,46 @@ class GetData:
 
         # Query para leitura dos dados de de produção
         query_production = (
-            "SELECT"
+            "WITH aux AS ("
+            " SELECT"
             " t1.maquina_id,"
-            " (SELECT TOP 1 t2.linha FROM AUTOMACAO.dbo.maquina_cadastro t2"
-            " WHERE t2.maquina_id = t1.maquina_id AND t2.data_registro <= t1.data_registro"
-            " ORDER BY t2.data_registro DESC, t2.hora_registro desc) as linha,"
             " t1.turno,"
-            " MAX(t1.contagem_total_ciclos) total_ciclos,"
-            " MAX(t1.contagem_total_produzido) total_produzido,"
-            " t1.data_registro"
+            " t1.contagem_total_ciclos,"
+            " t1.contagem_total_produzido,"
+            " (SELECT TOP 1 t2.linha FROM AUTOMACAO.dbo.maquina_cadastro t2"
+            " WHERE t2.maquina_id = t1.maquina_id AND"
+            " DATEADD(minute, -1, CAST(t2.data_registro AS DATETIME) +"
+            " CAST(t2.hora_registro AS DATETIME)) <="
+            " CAST(t1.data_registro AS DATETIME) + CAST(t1.hora_registro AS DATETIME)"
+            " ORDER BY t2.data_registro DESC, t2.hora_registro desc) as linha,"
+            " CASE"
+            " WHEN CAST(t1.hora_registro AS TIME) <= '00:01'"
+            " THEN DATEADD(day, -1, CAST(t1.data_registro AS DATETIME))"
+            " ELSE CAST(t1.data_registro AS DATETIME)"
+            " END as data_registro_aux,"
+            " CAST(t1.hora_registro AS TIME) as hora_registro"
             " FROM"
             " AUTOMACAO.dbo.maquina_info t1"
-            f" WHERE data_registro >= '{first_day}'"
-            " GROUP BY t1.maquina_id, t1.data_registro, t1.turno"
+            " ), aux2 AS ("
+            " SELECT *,"
+            " ROW_NUMBER() OVER (PARTITION BY maquina_id, turno, CAST(data_registro_aux AS DATE)"
+            " ORDER BY ABS(DATEDIFF(minute, hora_registro,"
+            " CASE turno WHEN 'NOT' THEN '07:59:59'"
+            " WHEN 'MAT' THEN '15:59:59'"
+            " WHEN 'VES' THEN '23:59:59' END))) as rn"
+            " FROM aux"
+            " )"
+            " SELECT"
+            " maquina_id,"
+            " linha,"
+            " turno,"
+            " contagem_total_ciclos as total_ciclos,"
+            " contagem_total_produzido as total_produzido,"
+            " CAST(data_registro_aux AS DATE) as data_registro,"
+            " hora_registro"
+            " FROM"
+            " aux2"
+            f" WHERE rn = 1 AND data_registro_aux >= '{first_day}'  "
             " ORDER BY data_registro DESC, maquina_id, turno"
         )
 
