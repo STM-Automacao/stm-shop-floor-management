@@ -279,7 +279,7 @@ class JoinData:
             df_info["tempo_registro_min"] > 480, 480, df_info["tempo_registro_min"]
         )
 
-        # Ajusta para parada programada qdo não temo motivo e fica parada todo turno
+        # Ajusta para parada programada qdo não tem o motivo e fica parada todo turno
         mask = (df_info["motivo_id"].isnull()) & (df_info["tempo_registro_min"] >= 478)
         df_info["motivo_id"] = np.where(mask, 12, df_info["motivo_id"])
         df_info["motivo_nome"] = np.where(mask, "Parada Programada", df_info["motivo_nome"])
@@ -317,6 +317,21 @@ class JoinData:
             (df_info["motivo_id"] == 12) & (df_info["tempo_registro_min"] >= 478),
             480,
             df_info["tempo_registro_min"],
+        )
+
+        # Se o motivo for 6, o tempo de registro for maior que 200 e for sábado,
+        # alterar o motivo para 16 e o motivo_nome para "Limpeza Industrial"
+        df_info["motivo_id"] = np.where(
+            (df_info["motivo_id"] == 6)
+            & (df_info["tempo_registro_min"] > 200)
+            & (df_info["sabado"] == 1),
+            16,
+            df_info["motivo_id"],
+        )
+        df_info["motivo_nome"] = np.where(
+            (df_info["motivo_id"] == 16) & (df_info["sabado"] == 1),
+            "Limpeza Industrial",
+            df_info["motivo_nome"],
         )
 
         # Remover as linhas onde a linha é 0
