@@ -7,7 +7,6 @@
     Para mais informações, acesse: https://dash.plotly.com/
 """
 
-
 # cSpell: words apscheduler,
 from threading import Lock
 
@@ -18,33 +17,39 @@ from dash.dependencies import Input, Output
 from dash.exceptions import PreventUpdate
 
 # pylint: disable=E0401
-from graphics.last_month_ind import LastMonthInd
+from database.last_month_ind import LastMonthInd
 from helpers.cache import cache, update_cache
 from pages import main_page
 
 from app import app
 
-# from dash_bootstrap_templates import ThemeChangerAIO
+# from dash_bootstrap_templates import ThemeSwitchAIO
 
 
 lock = Lock()
 last_month_ind = LastMonthInd()
 
+# Seleção de temas para o App - Variáveis:
+# template_boots = "bootstrap"  # para o gráfico
+# template_darkly = "darkly"
+# url_boots = dbc.themes.BOOTSTRAP  # para o switch
+# url_darkly = dbc.themes.DARKLY
+
 
 # ========================================= Background ========================================= #
 
 
-def update_last_month_gauge():
+def update_last_month():
     """
     Função que salva imagens de gauge do mês anterior.
     """
     with lock:
-        last_month_ind.get_last_month_ind()
+        last_month_ind.save_last_month_data()
 
 
 scheduler = BackgroundScheduler()
 scheduler.add_job(func=update_cache, trigger="interval", seconds=120)  # Atualiza a cada 2 minutos
-scheduler.add_job(func=update_last_month_gauge, trigger="cron", hour=1)  # Atualiza a cada 24 horas
+scheduler.add_job(func=update_last_month, trigger="cron", hour=1)  # Atualiza a cada 24 horas
 scheduler.start()
 
 
@@ -68,13 +73,26 @@ app.layout = dbc.Container(
         dcc.Store(id="store-df-repair_heat_turn_tuple"),
         dcc.Store(id="store-annotations_perf_turn_list_tuple"),
         dcc.Store(id="store-annotations_repair_turn_list_tuple"),
+        dcc.Store(id="store-df_working_time"),
         dcc.Store(id="is-data-store", storage_type="session", data=False),
         # ---------------------- Main Layout ---------------------- #
-        html.H1("Shop Floor Management", className="text-center"),
+        dbc.Row(
+            [
+                dbc.Col(
+                    html.H1("Shop Floor Management", className="text-center"),
+                    # md=11,
+                ),
+                # dbc.Col(
+                #     ThemeSwitchAIO(
+                #         aio_id="theme",
+                #         themes=[url_boots, url_darkly],
+                #     ),
+                #     class_name="h-100 d-flex align-items-center justify-content-end",
+                #     md=1,
+                # ),
+            ],
+        ),
         html.Hr(),
-        # dbc.Nav(
-        #    ThemeChangerAIO(aio_id="theme", radio_props={"value": dbc.themes.BOOTSTRAP}),
-        # ),
         dbc.Row(
             main_page.layout,
         ),
@@ -102,6 +120,7 @@ app.layout = dbc.Container(
         Output("store-df-repair_heat_turn_tuple", "data"),
         Output("store-annotations_perf_turn_list_tuple", "data"),
         Output("store-annotations_repair_turn_list_tuple", "data"),
+        Output("store-df_working_time", "data"),
     ],
     Input("store-info", "data"),
 )
@@ -127,6 +146,7 @@ def update_store(_data):
     df_repair_heat_turn_tuple = cache.get("df_repair_heat_turn_tuple")
     annotations_perf_turn_list_tuple = cache.get("annotations_perf_turn_list_tuple")
     annotations_repair_turn_list_tuple = cache.get("annotations_repair_turn_list_tuple")
+    df_working_time = cache.get("df_working_time")
 
     print("========== Store atualizado ==========")
     return (
@@ -144,6 +164,7 @@ def update_store(_data):
         df_repair_heat_turn_tuple,
         annotations_perf_turn_list_tuple,
         annotations_repair_turn_list_tuple,
+        df_working_time,
     )
 
 

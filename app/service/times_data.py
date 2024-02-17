@@ -250,7 +250,7 @@ class TimesData:
         df_eff_times_desc.loc[
             (df_eff_times_desc["producao_esperada"] == 0),
             "eficiencia",
-        ] = 1
+        ] = np.nan
 
         # Ajustar o index
         df_eff_times_desc.reset_index(drop=True, inplace=True)
@@ -293,6 +293,12 @@ class TimesData:
             ],
             inplace=True,
         )
+
+        # Conseguir apenas as datas que o motivo_id = 12 e o tempo de registro for maior que 480
+        datas_programadas = df_perf_times_desc[
+            (df_perf_times_desc["motivo_id"] == 12)
+            & (df_perf_times_desc["tempo_registro_min"] == 480)
+        ][["linha", "data_registro", "turno"]]
 
         # Remover as linhas que não afetam a performance
         df_perf_times_desc = df_perf_times_desc[
@@ -367,6 +373,33 @@ class TimesData:
         # Remover as linhas onde a linha é 0
         df_perf_times_desc = df_perf_times_desc[df_perf_times_desc["linha"] != 0]
 
+        # Se a data e o turno coincidem com datas_programadas, a performance é np.nan
+        # Converter 'data_registro' para datetime
+        df_perf_times_desc["data_registro"] = pd.to_datetime(df_perf_times_desc["data_registro"])
+        datas_programadas["data_registro"] = pd.to_datetime(datas_programadas["data_registro"])
+
+        # Criar uma chave única em ambos os DataFrames
+        df_perf_times_desc["key"] = (
+            df_perf_times_desc["linha"].astype(str)
+            + df_perf_times_desc["data_registro"].dt.strftime("%Y-%m-%d")
+            + df_perf_times_desc["turno"].astype(str)
+        )
+        datas_programadas["key"] = (
+            datas_programadas["linha"].astype(str)
+            + datas_programadas["data_registro"].dt.strftime("%Y-%m-%d")
+            + datas_programadas["turno"].astype(str)
+        )
+
+        # Se a chave coincide com datas_programadas, a performance é np.nan
+        df_perf_times_desc.loc[
+            df_perf_times_desc["key"].isin(datas_programadas["key"]),
+            "performance",
+        ] = np.nan
+
+        # Remover a coluna 'key'
+        df_perf_times_desc.drop(columns=["key"], inplace=True)
+        datas_programadas.drop(columns=["key"], inplace=True)
+
         # Ajustar o index
         df_perf_times_desc.reset_index(drop=True, inplace=True)
 
@@ -408,6 +441,12 @@ class TimesData:
             ],
             inplace=True,
         )
+
+        # Conseguir apenas as datas que o motivo_id = 12 e o tempo de registro for maior que 480
+        datas_programadas = df_rep_times_desc[
+            (df_rep_times_desc["motivo_id"] == 12)
+            & (df_rep_times_desc["tempo_registro_min"] == 480)
+        ][["linha", "data_registro", "turno"]]
 
         # Remover as linhas que não afetam o reparo
         df_rep_times_desc = df_rep_times_desc[df_rep_times_desc["motivo_id"].isin(self.af_rep)]
@@ -478,6 +517,33 @@ class TimesData:
 
         # Remover as linhas onde a linha é 0
         df_rep_times_desc = df_rep_times_desc[df_rep_times_desc["linha"] != 0]
+
+        # Se a data e o turno coincidem com datas_programadas, a performance é np.nan
+        # Converter 'data_registro' para datetime
+        df_rep_times_desc["data_registro"] = pd.to_datetime(df_rep_times_desc["data_registro"])
+        datas_programadas["data_registro"] = pd.to_datetime(datas_programadas["data_registro"])
+
+        # Criar uma chave única em ambos os DataFrames
+        df_rep_times_desc["key"] = (
+            df_rep_times_desc["linha"].astype(str)
+            + df_rep_times_desc["data_registro"].dt.strftime("%Y-%m-%d")
+            + df_rep_times_desc["turno"].astype(str)
+        )
+        datas_programadas["key"] = (
+            datas_programadas["linha"].astype(str)
+            + datas_programadas["data_registro"].dt.strftime("%Y-%m-%d")
+            + datas_programadas["turno"].astype(str)
+        )
+
+        # Se a chave coincide com datas_programadas, a performance é np.nan
+        df_rep_times_desc.loc[
+            df_rep_times_desc["key"].isin(datas_programadas["key"]),
+            "reparo",
+        ] = np.nan
+
+        # Remover a coluna 'key'
+        df_rep_times_desc.drop(columns=["key"], inplace=True)
+        datas_programadas.drop(columns=["key"], inplace=True)
 
         # Ajustar o index
         df_rep_times_desc.reset_index(drop=True, inplace=True)

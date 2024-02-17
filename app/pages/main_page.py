@@ -3,8 +3,8 @@
     Criada por: Bruno Tomaz
     Data: 15/01/2024
 """
-import json
 
+import json
 # cSpell: words eficiencia fullscreen
 from io import StringIO
 
@@ -12,16 +12,14 @@ import dash
 import dash_bootstrap_components as dbc
 import dash_mantine_components as dmc
 import pandas as pd
-
 # pylint: disable=E0401
 from components import modal_efficiency, modal_performance, modal_repair
 from dash import callback, dcc, html
 from dash.dependencies import Input, Output, State
 from dash.exceptions import PreventUpdate
-
+from database.last_month_ind import LastMonthInd
 # from dash_bootstrap_templates import ThemeChangerAIO
 from graphics.indicators import Indicators
-from helpers.path_config import EFF_LAST, PERF_LAST, REPAIR_LAST
 from helpers.types import IndicatorType
 from service.times_data import TimesData
 
@@ -29,6 +27,7 @@ from app import app
 
 ind_graphics = Indicators()
 times_data = TimesData()
+last_month = LastMonthInd()
 
 # ========================================= Layout ========================================= #
 
@@ -244,18 +243,22 @@ layout = [
                             ),
                         ],
                         id="reparos-row",
+                        class_name="mb-5",
                     ),
                 ],
             ),
-            html.Hr(),
-            dmc.Center(
-                children=dmc.Image(
-                    # pylint: disable=E1101
-                    src=app.get_asset_url("Logo Horizontal.png"),
-                    width="125px",
-                    withPlaceholder=True,
+            dmc.Footer(
+                dmc.Center(
+                    children=dmc.Image(
+                        # pylint: disable=E1101
+                        src=app.get_asset_url("Logo Horizontal.png"),
+                        width="125px",
+                        withPlaceholder=True,
+                    ),
+                    p=5,
                 ),
-                p=2,
+                height=32,
+                fixed=True,
             ),
         ],
         id="main-page",
@@ -469,8 +472,6 @@ def update_reparos_gauge_graph_actual(info, prod):
 @callback(
     Output("eficiencia-line-graph", "figure"),
     [
-        # Input("store-info", "data"),
-        # Input("store-prod", "data"),
         Input("store-df-eff", "data"),
     ],
 )
@@ -484,12 +485,10 @@ def update_eficiencia_line_graph(df):
 
     if df is None:
         raise PreventUpdate
-    # df_maq_info_cadastro = pd.read_json(StringIO(info), orient="split")
-    # df_maq_info_prod_cad = pd.read_json(StringIO(prod), orient="split")
+
     df_eff_line = pd.read_json(StringIO(df), orient="split")
 
-    # df = times_data.get_eff_data(df_maq_info_cadastro, df_maq_info_prod_cad)
-    fig = ind_graphics.plot_daily_efficiency(df_eff_line, IndicatorType.EFFICIENCY)
+    fig = ind_graphics.plot_daily_efficiency(df_eff_line, IndicatorType.EFFICIENCY, 90)
 
     return fig
 
@@ -515,7 +514,7 @@ def update_performance_line_graph(info, prod):
     df_maq_info_prod_cad = pd.read_json(StringIO(prod), orient="split")
 
     df = times_data.get_perf_data(df_maq_info_cadastro, df_maq_info_prod_cad)
-    fig = ind_graphics.plot_daily_efficiency(df, IndicatorType.PERFORMANCE)
+    fig = ind_graphics.plot_daily_efficiency(df, IndicatorType.PERFORMANCE, 4)
 
     return fig
 
@@ -541,7 +540,7 @@ def update_reparos_line_graph(info, prod):
     df_maq_info_prod_cad = pd.read_json(StringIO(prod), orient="split")
 
     df = times_data.get_repair_data(df_maq_info_cadastro, df_maq_info_prod_cad)
-    fig = ind_graphics.plot_daily_efficiency(df, IndicatorType.REPAIR)
+    fig = ind_graphics.plot_daily_efficiency(df, IndicatorType.REPAIR, 4)
 
     return fig
 
@@ -570,11 +569,7 @@ def update_last_month_gauge_graphs(info, prod):
     if info is None or prod is None:
         raise PreventUpdate
 
-    # Leitura dos dados de assets (salvos em csv)
-    # pylint: disable=E1101
-    df_eff = pd.read_csv((EFF_LAST))
-    df_perf = pd.read_csv((PERF_LAST))
-    df_repair = pd.read_csv((REPAIR_LAST))
+    df_eff, df_perf, df_repair = last_month.get_last_month_saved_ind()
 
     fig_eff = ind_graphics.draw_gauge_graphic(df_eff, IndicatorType.EFFICIENCY, 90)
     fig_perf = ind_graphics.draw_gauge_graphic(df_perf, IndicatorType.PERFORMANCE, 4)

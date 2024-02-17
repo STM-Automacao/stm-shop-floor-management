@@ -57,7 +57,7 @@ def update_cache():
     """
     with lock:
         # Carregar os dados do banco de dados e criar os DataFrames
-        df1, df2 = get_data.get_cleaned_data()
+        df1, df2, df3 = get_data.get_cleaned_data()
         df_ind = DFIndicators(df1, df2)
         df_eff = df_ind.get_eff_data()
         df_perf = df_ind.get_perf_data()
@@ -75,6 +75,7 @@ def update_cache():
         # Atualizar o cache
         cache.set("df1", df1.to_json(date_format="iso", orient="split"))
         cache.set("df2", df2.to_json(date_format="iso", orient="split"))
+        cache.set("df_working_time", df3.to_json(date_format="iso", orient="split"))
         cache.set("df_eff", df_eff.to_json(date_format="iso", orient="split"))
         cache.set("df_perf", df_perf.to_json(date_format="iso", orient="split"))
         cache.set("df_repair", df_repair.to_json(date_format="iso", orient="split"))
