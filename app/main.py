@@ -7,6 +7,8 @@
     Para mais informações, acesse: https://dash.plotly.com/
 """
 
+import os
+
 # cSpell: words apscheduler,
 from threading import Lock
 
@@ -20,6 +22,7 @@ from dash.exceptions import PreventUpdate
 from database.last_month_ind import LastMonthInd
 from helpers.cache import cache, update_cache
 from pages import main_page
+from waitress import serve
 
 from app import app
 
@@ -188,4 +191,7 @@ def update_is_data_store(data_info, data_prod):
 
 # ======================================== Run App ======================================== #
 if __name__ == "__main__":
-    app.run_server(debug=True, port=8050, host="0.0.0.0")
+    if os.getenv("APP_ENV") == "production":
+        serve(app.server, host="0.0.0.0", port=8080)
+    else:
+        app.run_server(debug=True, port=8050, host="0.0.0.0")

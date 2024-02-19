@@ -251,7 +251,7 @@ class JoinData:
         condition = (
             (df_info["motivo_id"].isnull())
             & (df_info["status"] == "parada")
-            & (df_info["tempo_registro_min"] > 475)
+            & (df_info["tempo_registro_min"] > 400)
         )
         condition_sabado = condition & (df_info["sabado"] == 1)
         df_info["motivo_id"] = np.where(condition_sabado, 12, df_info["motivo_id"])
@@ -333,6 +333,15 @@ class JoinData:
             "Limpeza Industrial",
             df_info["motivo_nome"],
         )
+
+        # Se for domingo e o tempo de registro for 480, ajustar para
+        # motivo_id 12, motivo_nome "Parada Programada" e problema "Domingo"
+        condition_mask = (df_info["domingo"] == 1) & (df_info["tempo_registro_min"] == 480)
+        df_info["motivo_id"] = np.where(condition_mask, 12, df_info["motivo_id"])
+        df_info["motivo_nome"] = np.where(
+            condition_mask, "Parada Programada", df_info["motivo_nome"]
+        )
+        df_info["problema"] = np.where(condition_mask, "Domingo", df_info["problema"])
 
         # Remover as linhas onde a linha é 0
         df_info = df_info[df_info["linha"] != 0]
