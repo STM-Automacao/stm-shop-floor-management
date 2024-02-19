@@ -59,7 +59,6 @@ class JoinData:
             "motivo_nome",
             "problema",
             "solucao",
-            "data_hora_registro_occ",
             "usuario_id_occ",
         ]
 
@@ -71,7 +70,13 @@ class JoinData:
         )
         for column in columns:
             df[column] = np.where(mask, df[column].shift(-1), df[column])
-            df[column] = np.where(mask.shift(1), pd.NaT, df[column])
+            df[column] = np.where(mask.shift(1), np.nan, df[column])
+
+        # Tratamento separado para a coluna "data_hora_registro_occ"
+        df["data_hora_registro_occ"] = np.where(
+            mask, df["data_hora_registro_occ"].shift(-1), df["data_hora_registro_occ"]
+        )
+        df["data_hora_registro_occ"] = np.where(mask.shift(1), pd.NaT, df["data_hora_registro_occ"])
 
         # Move a ocorrência para a linha seguinte se a data_hora_final for mais próxima
         mask = (
@@ -81,7 +86,15 @@ class JoinData:
         )
         for column in columns:
             df[column] = np.where(mask, df[column].shift(1), df[column])
-            df[column] = np.where(mask.shift(-1), pd.NaT, df[column])
+            df[column] = np.where(mask.shift(-1), np.nan, df[column])
+
+        # Tratamento separado para a coluna "data_hora_registro_occ"
+        df["data_hora_registro_occ"] = np.where(
+            mask, df["data_hora_registro_occ"].shift(1), df["data_hora_registro_occ"]
+        )
+        df["data_hora_registro_occ"] = np.where(
+            mask.shift(-1), pd.NaT, df["data_hora_registro_occ"]
+        )
 
         return df
 
@@ -126,7 +139,7 @@ class JoinData:
                     ],
                 )
 
-            return pd.Series([np.nan, np.nan, np.nan, np.nan, np.nan, np.nan])
+            return pd.Series([None, None, None, None, None, None])
 
         # Aplicar a função merge_rows
         df_info[
@@ -169,6 +182,8 @@ class JoinData:
         df_info.sort_values(by=["linha", "data_hora_registro"], inplace=True)
 
         # Ajustar problema e solução caso seja "nan"
+        df_info["problema"] = df_info["problema"].astype(str)
+        df_info["solucao"] = df_info["solucao"].astype(str)
         df_info["problema"] = np.where(df_info["problema"] == "nan", np.nan, df_info["problema"])
         df_info["solucao"] = np.where(df_info["solucao"] == "nan", np.nan, df_info["solucao"])
 
@@ -188,7 +203,7 @@ class JoinData:
         )
 
         # Ajustar motivo id
-        df_info["motivo_id"] = df_info["motivo_id"].fillna(np.nan).round(0).astype(float)
+        df_info["motivo_id"] = df_info["motivo_id"].fillna(np.nan)
 
         # Ajustar em problema, solucao, usuario_id_occ e motivo_nome
         df_info["problema"] = df_info["problema"].fillna("")
@@ -264,8 +279,8 @@ class JoinData:
             df_info["tempo_registro_min"] > 480, 480, df_info["tempo_registro_min"]
         )
 
-        # Ajusta para parada programada qdo não temo motivo e fica parada todo turno
-        mask = (df_info["motivo_id"].isnull()) & (df_info["tempo_registro_min"] == 480)
+        # Ajusta para parada programada qdo não tem o motivo e fica parada todo turno
+        mask = (df_info["motivo_id"].isnull()) & (df_info["tempo_registro_min"] >= 478)
         df_info["motivo_id"] = np.where(mask, 12, df_info["motivo_id"])
         df_info["motivo_nome"] = np.where(mask, "Parada Programada", df_info["motivo_nome"])
 
@@ -295,6 +310,28 @@ class JoinData:
         # Remove as colunas temporárias
         df_info = df_info.drop(
             columns=["motivo_id_last", "motivo_nome_last", "problema_last", "solucao_last"]
+        )
+
+        # Se for motivo 12 e parada for 478 minutos ou mais, ajustar para 480
+        df_info["tempo_registro_min"] = np.where(
+            (df_info["motivo_id"] == 12) & (df_info["tempo_registro_min"] >= 478),
+            480,
+            df_info["tempo_registro_min"],
+        )
+
+        # Se o motivo for 6, o tempo de registro for maior que 200 e for sábado,
+        # alterar o motivo para 16 e o motivo_nome para "Limpeza Industrial"
+        df_info["motivo_id"] = np.where(
+            (df_info["motivo_id"] == 6)
+            & (df_info["tempo_registro_min"] > 200)
+            & (df_info["sabado"] == 1),
+            16,
+            df_info["motivo_id"],
+        )
+        df_info["motivo_nome"] = np.where(
+            (df_info["motivo_id"] == 16) & (df_info["sabado"] == 1),
+            "Limpeza Industrial",
+            df_info["motivo_nome"],
         )
 
         # Remover as linhas onde a linha é 0

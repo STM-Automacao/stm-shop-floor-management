@@ -8,7 +8,7 @@ Módulo responsável por criar os gráficos de indicadores por turno.
 # cSpell: words ylabel, xticks, yticks, colorscale, hoverongaps, zmin, zmax, showscale, xgap, ygap,
 # cSpell: words nticks, tickmode, tickvals, ticktext, tickangle, lightgray, tickfont, showticklabels
 # cSpell: words ndenumerate producao_total customdata xaxes usuario traceorder yref bordercolor
-# cSpell: words borderwidth borderpad ticksuffix sabado solucao viridis categoryorder
+# cSpell: words borderwidth borderpad ticksuffix sabado solucao viridis categoryorder aggfunc
 
 
 import matplotlib.colors as mcolors
@@ -18,7 +18,7 @@ import plotly.graph_objects as go
 import seaborn as sns
 
 # pylint: disable=E0401
-from helpers.types import IndicatorType
+from helpers.types import BSColorsEnum, IndicatorType
 from service.times_data import TimesData
 
 
@@ -43,7 +43,6 @@ class IndicatorsTurn:
         df_pivot: pd.DataFrame,
         annotations: list,
         meta: int = 90,
-        annotations_check: bool = False,
     ) -> go.Figure:
         """
         Este método é responsável por criar o gráfico de eficiência, por turno.
@@ -80,6 +79,7 @@ class IndicatorsTurn:
                 x=df_pivot.columns,
                 y=df_pivot.index,
                 colorscale=colors,
+                name="Heatmap",
                 zmin=0,
                 zmax=1,  # Escala de valores de 0 a 1
                 hoverongaps=False,
@@ -90,15 +90,12 @@ class IndicatorsTurn:
             )
         )
 
-        # Adicionar anotações com a média
-        if annotations_check:
-            fig.update_layout(annotations=annotations)
-
         # Definir o título do gráfico
         fig.update_layout(
             title=f"Eficiência - Meta {meta}%",
             xaxis_title="Dia",
             yaxis_title="Linha",
+            annotations=annotations,
             title_x=0.5,  # Centralizar o título
             xaxis_nticks=31,  # Definir o número de dias
             xaxis=dict(
@@ -241,7 +238,11 @@ class IndicatorsTurn:
         return fig
 
     def get_time_lost(
-        self, df_info: pd.DataFrame, ind_type: IndicatorType, turn: str
+        self,
+        df_info: pd.DataFrame,
+        ind_type: IndicatorType,
+        turn: str,
+        working_minutes: pd.DataFrame = None,
     ) -> pd.DataFrame:
         """
         Este método é responsável por criar o dataframe de tempo perdido.
@@ -265,12 +266,27 @@ class IndicatorsTurn:
         # Conseguindo dataframe com tempos ajustados
         df_info_desc_times = self.times_data.get_times_discount(df_info, ind_type_map[ind_type])
 
+        # Unir df_info_desc_times com working_minutes.
+        if working_minutes is not None:
+            df_info_desc_times = pd.concat(
+                [df_info_desc_times, working_minutes], ignore_index=True, sort=False
+            )
+
         # Filtrar por turno
-        df_info_desc_times = df_info_desc_times[df_info_desc_times["turno"] == turn]
+        df_info_desc_times = (
+            df_info_desc_times[df_info_desc_times["turno"] == turn]
+            if turn != "TOT"
+            else df_info_desc_times
+        )
 
         # Se coluna "excedente" for nula, substituir pelo valor de "tempo_registro_min"
         df_info_desc_times.loc[df_info_desc_times["excedente"].isnull(), "excedente"] = (
             df_info_desc_times["tempo_registro_min"]
+        )
+
+        # Se o problema for uma string "None" substituir por "Não Informado"
+        df_info_desc_times["problema"] = df_info_desc_times["problema"].replace(
+            "None", "Problema não Informado"
         )
 
         # Se motivo id for nulo e excedente for menor que 5 substituir motivo_nome por
@@ -281,7 +297,7 @@ class IndicatorsTurn:
         ] = ["5min ou menos", "Não apontado - 5min ou menos"]
 
         # Preencher onde motivo_nome for nulo
-        df_info_desc_times["motivo_nome"].fillna("Motivo não informado", inplace=True)
+        df_info_desc_times["motivo_nome"].fillna("Motivo não apontado", inplace=True)
 
         df_info_desc_times.loc[
             (df_info_desc_times["motivo_id"] == 12)
@@ -339,6 +355,7 @@ class IndicatorsTurn:
             "NOT": "Noturno",
             "MAT": "Matutino",
             "VES": "Vespertino",
+            "TOT": "Total",
         }
 
         # Remover linhas que não afetam a eficiência
@@ -417,6 +434,7 @@ class IndicatorsTurn:
 
         # Group
         group_bar = go.Bar(
+            name="Motivo/Problema",
             x=df_grouped["motivo_nome"],
             y=df_grouped["excedente"],
             customdata=df_grouped["problema"],
@@ -453,7 +471,6 @@ class IndicatorsTurn:
         indicator: IndicatorType,
         annotations: list,
         meta: int = 4,
-        annotations_check: bool = True,
     ) -> go.Figure:
         """
         Este método é responsável por criar o gráfico de reparos e performance, por turno.
@@ -493,6 +510,7 @@ class IndicatorsTurn:
                 x=df_pivot.columns,
                 y=df_pivot.index,
                 colorscale=colors,
+                name="Heatmap",
                 zmin=0,
                 zmax=1,
                 hoverongaps=False,
@@ -503,15 +521,12 @@ class IndicatorsTurn:
             )
         )
 
-        # Adicionar anotações com a média
-        if annotations_check:
-            fig.update_layout(annotations=annotations)
-
         # Definir o título do gráfico
         fig.update_layout(
             title=f"{ind_capitalized} - Meta {meta}%",
             xaxis_title="Dia",
             yaxis_title="Linha",
+            annotations=annotations,
             title_x=0.5,
             xaxis_nticks=31,
             xaxis=dict(
@@ -698,6 +713,7 @@ class IndicatorsTurn:
             "NOT": "Noturno",
             "MAT": "Matutino",
             "VES": "Vespertino",
+            "TOT": "Total",
         }
 
         df = self.adjust_df_for_bar_lost(df, indicator)
@@ -780,6 +796,7 @@ class IndicatorsTurn:
 
         # Group
         group_bar = go.Bar(
+            name="Motivo/Problema",
             x=df_grouped["motivo_nome"],
             y=df_grouped["excedente"],
             customdata=df_grouped["problema"],
@@ -814,9 +831,10 @@ class IndicatorsTurn:
         """
         Retorna um gráfico de barras empilhadas com o tempo perdido por maquina e seu motivo.
         """
+        # Garantir que a data_registro tenha apenas a data
+        df["data_registro"] = pd.to_datetime(df["data_registro"]).dt.date
 
         # Filtro pelo dia
-        # df = df[df["data_registro"] == pd.to_datetime(data).date()]
         df = df[df["data_registro"] == pd.to_datetime(data).date()] if data is not None else df
 
         # Remover colunas que não serão necessárias
@@ -843,8 +861,36 @@ class IndicatorsTurn:
         # Substituir valores nulos "Motivo não apontado" e em problema por "Não Informado"
         df.fillna({"motivo_nome": "Motivo não apontado", "problema": "Não Informado"}, inplace=True)
 
-        # Ordenar por linha e data_registro e tempo_registro_min
-        df = df.sort_values(by=["linha", "data_registro", "tempo_registro_min"], ascending=True)
+        # Ordenar os dados para que 'Rodando' sempre apareça por último
+        df["sort"] = df["motivo_nome"] == "Rodando"
+        df = df.sort_values(
+            by=["linha", "data_registro", "sort", "tempo_registro_min"],
+            ascending=[True, True, False, False],
+        )
+        df = df.drop(columns="sort")
+
+        color_dict = {
+            "5min ou menos": BSColorsEnum.GREY_500_COLOR.value,
+            "Motivo não apontado": BSColorsEnum.GREY_600_COLOR.value,
+            "Ajustes": BSColorsEnum.GRAY_COLOR.value,
+            "Troca de Bobina": BSColorsEnum.GREY_400_COLOR.value,
+            "Refeição": BSColorsEnum.ORANGE_COLOR.value,
+            "Reunião": BSColorsEnum.SECONDARY_COLOR.value,
+            "Café e Ginástica Laboral": BSColorsEnum.PRIMARY_COLOR.value,
+            "Limpeza": BSColorsEnum.GREY_700_COLOR.value,
+            "Manutenção Elétrica": BSColorsEnum.BLUE_DELFT_COLOR.value,
+            "Manutenção Mecânica": BSColorsEnum.SPACE_CADET_COLOR.value,
+            "Material em Falta": BSColorsEnum.GREY_900_COLOR.value,
+            "Setup de Sabor": BSColorsEnum.PURPLE_COLOR.value,
+            "Setup de Tamanho": BSColorsEnum.PINK_COLOR.value,
+            "Parada Programada": BSColorsEnum.DANGER_COLOR.value,
+            "Intervenção de Qualidade": BSColorsEnum.INDIGO_COLOR.value,
+            "Linha Cheia": BSColorsEnum.TEAL_COLOR.value,
+            "Treinamento": BSColorsEnum.INFO_COLOR.value,
+            "Limpeza Industrial": BSColorsEnum.WARNING_COLOR.value,
+            "Troca de Filme": BSColorsEnum.GREY_800_COLOR.value,
+            "Rodando": BSColorsEnum.SUCCESS_COLOR.value,
+        }
 
         # Criação do gráfico de barras
         fig = px.bar(
@@ -854,19 +900,19 @@ class IndicatorsTurn:
             color="motivo_nome",
             barmode="stack",
             labels={
-                "tempo_registro_min": "Tempo de Parada (min)",
+                "tempo_registro_min": "Tempo (min)",
                 "linha": "Linha",
                 "motivo_nome": "Motivo",
             },
             title="Tempo de Parada por Problema",
-            color_discrete_sequence=px.colors.sequential.Viridis,
+            color_discrete_map=color_dict,
         )
 
         # Adicionar título e labels
         layout_1 = dict(
             title_x=0.5,
             xaxis_title="Linha",
-            yaxis_title="Tempo de Parada (min)",
+            yaxis_title="Tempo (min)",
             plot_bgcolor="white",
             margin=dict(t=40, b=40, l=40, r=40),
             xaxis=dict(
@@ -880,3 +926,37 @@ class IndicatorsTurn:
         fig.update_layout(layout_1 if df is not None else layout_2)
 
         return fig
+
+    def get_production_pivot(self, df: pd.DataFrame) -> pd.DataFrame:
+        """
+        Retorna um DataFrame pivotado com a produção total por linha e dia.
+
+        Parâmetros:
+        - df: DataFrame contendo os dados de produção.
+
+        Retorno:
+        - df_pivot: DataFrame pivotado com a produção total por linha e dia.
+        """
+
+        # Ordenar por linha, data_registro
+        df = df.sort_values(by=["linha", "data_registro"])
+
+        # Remover as linhas 0
+        df = df[df["linha"] != 0]
+
+        # Manter apenas o dia de data_registro
+        df["data_registro"] = pd.to_datetime(df["data_registro"], errors="coerce")
+        df["dia"] = df["data_registro"].dt.day
+
+        # Criar pivot table, com as datas como colunas e as linhas como índice
+        df_pivot = df.pivot_table(
+            index="dia",
+            columns="linha",
+            values="total_produzido",
+            aggfunc="sum",
+        )
+
+        # Adicionar uma linha com o total produzido por dia/linha
+        df_pivot["Total"] = df_pivot.sum(axis=1)
+
+        return df_pivot

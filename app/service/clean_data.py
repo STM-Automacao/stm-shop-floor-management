@@ -174,6 +174,42 @@ class CleanData:
 
         return df_info
 
+    def get_time_working(self, data: pd.DataFrame) -> pd.DataFrame:
+        """
+        Retorna os dados de maquina rodando.
+        """
+
+        info = self.maq_info(data)
+
+        df_info_rodando = info[info["status"] == "rodando"]
+
+        # Agrupar por linha, turno e data e somar o tempo de registro
+        df_info_rodando = (
+            df_info_rodando.groupby(
+                ["linha", "turno", "status", df_info_rodando["data_hora_registro"].dt.date],
+                observed=False,
+            )
+            .agg(tempo_registro_min=("tempo_registro_min", "sum"))
+            .reset_index()
+        )
+
+        # Remover linhas onde tempo_registro_min é menor que 0
+        df_info_rodando = df_info_rodando[(df_info_rodando["tempo_registro_min"] > 0)]
+
+        # Remover onde a linha for 0
+        df_info_rodando = df_info_rodando[df_info_rodando["linha"] != 0]
+
+        # Renomear colunas
+        df_info_rodando.rename(
+            columns={"status": "motivo_nome", "data_hora_registro": "data_registro"},
+            inplace=True,
+        )
+
+        # Capitalizar o motivo nome
+        df_info_rodando["motivo_nome"] = df_info_rodando["motivo_nome"].str.capitalize()
+
+        return df_info_rodando
+
     def get_adjusted_stops_data(self, info: pd.DataFrame) -> pd.DataFrame:
         """
         Retorna os dados de paradas ajustados de acordo com as regras definidas.
