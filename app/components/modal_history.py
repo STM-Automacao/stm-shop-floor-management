@@ -9,7 +9,7 @@ import dash_bootstrap_components as dbc
 import dash_mantine_components as dmc
 import matplotlib.colors as mcolors
 import pandas as pd
-import plotly.graph_objs as go
+import plotly.express as px
 import seaborn as sns
 from dash import Input, Output, callback, dcc, html
 from dash.exceptions import PreventUpdate
@@ -55,6 +55,8 @@ def update_graph_history_modal(_):
     if df_top_stops.empty:
         raise PreventUpdate
 
+    # -------------------- Gráfico de Perdas -------------------- #
+
     # Cria uma paleta de cores com os valores únicos na coluna 'problema'
     palette = sns.dark_palette("lightgray", df_top_stops["problema"].nunique())
 
@@ -64,33 +66,25 @@ def update_graph_history_modal(_):
     # Cria um dicionário que mapeia cada valor único na coluna 'problema' para uma cor na paleta
     color_map = dict(zip(df_top_stops["problema"].unique(), palette_hex))
 
-    # Mapeia os valores na coluna 'problema' para as cores correspondentes
-    df_top_stops["color"] = df_top_stops["problema"].map(color_map)
-
-    fig = go.Figure(
-        data=[
-            go.Bar(
-                x=df_top_stops["motivo_nome"],
-                y=df_top_stops["tempo_registro_min"],
-                name="Principais Paradas",
-                customdata=df_top_stops["problema"],
-                marker_color=df_top_stops["color"],
-                hovertemplate=(
-                    "<b>Motivo</b>: %{customdata}<br><b>Tempo Perdido</b>: %{y:.0f} min<br>"
-                ),
-            ),
-        ],
-        layout=go.Layout(
-            title="Principais Paradas",
-            xaxis_title="Motivo",
-            yaxis_title="Tempo Perdido (min)",
-            barmode="stack",
-            title_x=0.5,
-            template="plotly_white",
-            showlegend=False,
-            font=dict(family="Inter"),
-        ),
+    fig = px.bar(
+        df_top_stops,
+        x="motivo_nome",
+        y="tempo_registro_min",
+        color="problema",
+        color_discrete_map=color_map,
+        title="Principais Paradas",
+        labels={"motivo_nome": "Motivo", "tempo_registro_min": "Tempo Perdido (min)"},
+        template="plotly_white",
+        barmode="stack",
     )
+
+    fig.update_layout(
+        title_x=0.5,
+        font=dict(family="Inter"),
+        showlegend=True,
+    )
+
+    # -------------------- Tabela de Desempenho Mensal -------------------- #
 
     # Transforma 2024-01 em Jan/2024
     df_history["data_registro"] = pd.to_datetime(df_history["data_registro"], format="%Y-%m")

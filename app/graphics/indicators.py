@@ -318,7 +318,7 @@ class Indicators:
 
         # Verificar a primeira data_registro do dataframe para saber se os dados são do mês atual
         this_month = df["data_registro"].iloc[0].month == pd.Timestamp.now().month
-        month = "Atual" if this_month else "Anterior"
+        month = "Mês Atual" if this_month else "Mês Anterior"
 
         # Obter a função de acordo com o tipo de indicador
         func = func_map[ind_type]
@@ -416,7 +416,7 @@ class Indicators:
         df_grouped = pd.merge(df_all_dates, df_grouped, on="data_turno", how="left")
 
         # Substituir NaNs por 0
-        df_grouped[indicator].fillna(0, inplace=True)
+        df_grouped[indicator] = df_grouped[indicator].fillna(0)
 
         # Criar o gráfico
         fig = go.Figure(

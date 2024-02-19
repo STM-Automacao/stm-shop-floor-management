@@ -109,6 +109,18 @@ class LastMonthInd:
         df_info["problema"] = np.where(
             df_info["problema"] == "None", "Problema não apontado", df_info["problema"]
         )
+        # Se o motivo_id for 12 e o problema for motivo não apontado, substitui "Parada Programada"
+        df_info["problema"] = np.where(
+            (df_info["motivo_id"] == 12) & (df_info["problema"] == "Problema não apontado"),
+            "Parada Programada",
+            df_info["problema"],
+        )
+
+        # Encontra o problema 'Parada programada' e substitui por 'Parada Programada'
+        df_info["problema"] = np.where(
+            df_info["problema"] == "Parada programada", "Parada Programada", df_info["problema"]
+        )
+
         # Agrupa por motivo_nome e tempo_registro_min
         df_info_group = df_info.groupby(["motivo_nome", "problema"])["tempo_registro_min"].sum()
         df_info_group = df_info_group.sort_values(ascending=False).head(20)

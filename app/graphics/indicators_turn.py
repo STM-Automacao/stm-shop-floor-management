@@ -297,7 +297,9 @@ class IndicatorsTurn:
         ] = ["5min ou menos", "Não apontado - 5min ou menos"]
 
         # Preencher onde motivo_nome for nulo
-        df_info_desc_times["motivo_nome"].fillna("Motivo não apontado", inplace=True)
+        df_info_desc_times["motivo_nome"] = df_info_desc_times["motivo_nome"].fillna(
+            "Motivo não apontado"
+        )
 
         df_info_desc_times.loc[
             (df_info_desc_times["motivo_id"] == 12)
