@@ -9,7 +9,7 @@
 
 import os
 
-# cSpell: words apscheduler,
+# cSpell: words apscheduler, grafana
 from threading import Lock
 
 import dash_bootstrap_components as dbc
@@ -21,7 +21,7 @@ from dash.exceptions import PreventUpdate
 # pylint: disable=E0401
 from database.last_month_ind import LastMonthInd
 from helpers.cache import cache, update_cache
-from pages import main_page
+from pages import grafana, main_page
 from waitress import serve
 
 from app import app
@@ -97,7 +97,15 @@ app.layout = dbc.Container(
         ),
         html.Hr(),
         dbc.Row(
-            main_page.layout,
+            dbc.Tabs(
+                [
+                    dbc.Tab(
+                        main_page.layout,
+                        label="SFM Dashboard",
+                    ),
+                    dbc.Tab(grafana.layout, label="Grafana"),
+                ]
+            ),
         ),
     ],
     fluid=True,
@@ -194,4 +202,4 @@ if __name__ == "__main__":
     if os.getenv("APP_ENV") == "production":
         serve(app.server, host="0.0.0.0", port=8080)
     else:
-        app.run_server(debug=True, port=8050, host="0.0.0.0")
+        app.run_server(debug=True, port=8050)

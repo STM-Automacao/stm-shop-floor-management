@@ -236,3 +236,13 @@ class GetData:
         print(f"Ok ás {pd.to_datetime('today')}")
         # Retorno dos dados
         return df_maq_info_cadastro, df_maq_info_prod_cad_cleaned
+
+    def get_maq_tela(self):
+        """
+        Retorna os dados da tabela maquina_tela
+        """
+        query = "SELECT * FROM AUTOMACAO.dbo.maquina_tela"
+
+        df = self.db_read.get_automacao_data(query)
+
+        return df
