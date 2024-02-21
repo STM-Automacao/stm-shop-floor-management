@@ -1,21 +1,21 @@
 motivo_nome,problema,tempo_registro_min
-Parada Programada,Parada Programada,90548
+Parada Programada,Parada Programada,106400
 Parada Programada,Domingo,70408
 Motivo não apontado,Problema não apontado,66134
 Parada Programada,Feriado,35040
 Parada Programada,Sábado,30398
-Parada Programada,Parada programada,15852
 Refeição,Refeição,15577
 Limpeza,Limpeza industrial,8876
 Parada Programada,Backup,6956
 Refeição,Rodou as demais linhas,6200
 Manutenção Mecânica,Problema não apontado,1970
 Manutenção Mecânica,Murchando bandejas,1048
-Parada Programada,Sem programação para produção do bolinha,960
 Setup de Sabor,Troca da recehadora doce pela recheadora salgado,960
+Parada Programada,Sem programação para produção do bolinha,960
 Manutenção Mecânica,Manutenção no robô (técnicos da kuka),890
 Ajustes,Problema não apontado,846
 Parada Programada,Velório,724
 Material em Falta,Falta de pães bolinha assados,718
 Manutenção Mecânica,Robô travou,662
 Material em Falta,"Falta de pães assados, linha remanejada para fábrica-2",580
+Ajustes,Limpeza de placa,556
