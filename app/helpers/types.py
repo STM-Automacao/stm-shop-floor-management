@@ -2,8 +2,10 @@
 Modulo com tipos de dados utilizados na aplicação.
 """
 
-# cSpell: words eficiencia
+# cSpell: words eficiencia cmap
 from enum import Enum
+
+import matplotlib.pyplot as plt
 
 
 class IndicatorType(Enum):
@@ -45,3 +47,23 @@ MODAL_RADIO = [
     ["VES", "Vespertino", "red"],
     ["TOT", "Total", "orange"],
 ]
+
+
+def get_color(value, max_value):
+    # Cria um mapa de cores que vai do vermelho ao verde
+    cmap = plt.get_cmap("RdYlGn")
+
+    # Normaliza o valor para um número entre 0 e 1
+    normalized_value = float(value) / max_value
+
+    # Obtém a cor correspondente do mapa de cores
+    rgba_color = cmap(normalized_value)
+
+    # Converte a cor RGBA para uma string de cor hexadecimal
+    hex_color = "#%02x%02x%02x" % (
+        int(rgba_color[0] * 255),
+        int(rgba_color[1] * 255),
+        int(rgba_color[2] * 255),
+    )
+
+    return hex_color
