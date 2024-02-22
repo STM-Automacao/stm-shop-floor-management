@@ -48,4 +48,5 @@
     "hedvig",
     "isin",
   ],
+  "terminal.integrated.fontFamily": "'Hasklug Nerd Font Mono' ,'Hack Nerd Font Mono'",
 }
