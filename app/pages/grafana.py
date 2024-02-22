@@ -233,6 +233,4 @@ def update_grafana(_n):
             ),
         )
 
-    print(grafana_content.info())
-
     return cards
