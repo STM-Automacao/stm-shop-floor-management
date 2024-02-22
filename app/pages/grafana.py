@@ -4,7 +4,7 @@
 
 # cSpell:words grafana eficiencia
 import dash_bootstrap_components as dbc
-from dash import callback, html
+from dash import callback, dcc, html
 from dash.dependencies import Input, Output
 
 # pylint: disable=E0401
@@ -19,6 +19,7 @@ layout = html.Div(
     [
         html.H1("Dados do Grafana", className="text-center"),
         html.Div(id="grafana-content"),
+        dcc.Interval(id="grafana-interval", interval=1000 * 60 * 2, n_intervals=0),
     ]
 )
 
@@ -27,9 +28,9 @@ layout = html.Div(
 
 @callback(
     Output("grafana-content", "children"),
-    Input("grafana-content", "children"),
+    [Input("grafana-content", "children"), Input("grafana-interval", "n_intervals")],
 )
-def update_grafana(_n):
+def update_grafana(_n, _n_intervals):
     """
     Função que atualiza o conteúdo do grafana.
     """
