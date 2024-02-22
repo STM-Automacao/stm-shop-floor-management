@@ -99,11 +99,11 @@ app.layout = dbc.Container(
         dbc.Row(
             dbc.Tabs(
                 [
+                    dbc.Tab(grafana.layout, label="Ao Vivo"),
                     dbc.Tab(
                         main_page.layout,
                         label="SFM Dashboard",
                     ),
-                    dbc.Tab(grafana.layout, label="Grafana"),
                 ]
             ),
         ),
