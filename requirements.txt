@@ -2,7 +2,6 @@ APScheduler==3.10.4
 black==23.12.1
 dash==2.14.2
 dash-bootstrap-components==1.5.0
-dash-core-components==2.0.0
 dash-html-components==2.0.0
 dash-iconify==0.1.2
 dash-mantine-components==0.12.1
