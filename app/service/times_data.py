@@ -246,7 +246,7 @@ class TimesData:
         # Se eficiencia for nula, substituir por 0
         df_eff_times_desc.loc[df_eff_times_desc["eficiencia"].isnull(), "eficiencia"] = 0
 
-        # Se a produção esperada for 0 e a eficiência for 0, substituir por 1
+        # Se a produção esperada for 0 e a eficiência for 0, tornar a eficiência np.nan
         df_eff_times_desc.loc[
             (df_eff_times_desc["producao_esperada"] == 0),
             "eficiencia",
