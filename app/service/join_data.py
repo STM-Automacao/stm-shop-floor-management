@@ -247,6 +247,8 @@ class JoinData:
             df_info["problema"],
         )
 
+        # ------------------------------ Ajustes Marcação de Paradas ---------------------------- #
+
         # Ajustar motivo 12 para Sábado, Domingo e Feriado
         condition = (
             (df_info["motivo_id"].isnull())
@@ -284,7 +286,7 @@ class JoinData:
         df_info["motivo_id"] = np.where(mask, 12, df_info["motivo_id"])
         df_info["motivo_nome"] = np.where(mask, "Parada Programada", df_info["motivo_nome"])
 
-        # Busca a última parada caso não tenha motivo e seja a primeira parada do turno
+        # ---- Busca a última parada caso não tenha motivo e seja a primeira parada do turno ---- #
         # Ordena o DataFrame por 'maquina_id' e 'turno'
         df_info.sort_values(by=["maquina_id", "data_hora_registro"], inplace=True)
 
@@ -311,6 +313,7 @@ class JoinData:
         df_info = df_info.drop(
             columns=["motivo_id_last", "motivo_nome_last", "problema_last", "solucao_last"]
         )
+        # -------------------------------------------------------------------------------- #
 
         # Se for motivo 12 e parada for 478 minutos ou mais, ajustar para 480
         df_info["tempo_registro_min"] = np.where(
@@ -321,13 +324,12 @@ class JoinData:
 
         # Se o motivo for 6, o tempo de registro for maior que 200 e for sábado,
         # alterar o motivo para 16 e o motivo_nome para "Limpeza Industrial"
-        df_info["motivo_id"] = np.where(
+        m6_mask = (
             (df_info["motivo_id"] == 6)
             & (df_info["tempo_registro_min"] > 200)
-            & (df_info["sabado"] == 1),
-            16,
-            df_info["motivo_id"],
+            & (df_info["sabado"] == 1)
         )
+        df_info["motivo_id"] = np.where(m6_mask, 16, df_info["motivo_id"])
         df_info["motivo_nome"] = np.where(
             (df_info["motivo_id"] == 16) & (df_info["sabado"] == 1),
             "Limpeza Industrial",
