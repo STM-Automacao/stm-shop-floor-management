@@ -91,6 +91,7 @@ layout = [
 # ======================================== Modal Callbacks ======================================= #
 
 
+# FIXME: Fix this callback - novo store para heatmap e annotations
 @callback(
     Output("graph-repair-modal", "figure"),
     [

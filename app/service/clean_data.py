@@ -169,6 +169,9 @@ class CleanData:
         # Ajustar tipo do status
         df_info["status"] = df_info["status"].astype("category")
 
+        # Remover onde linha for 0
+        df_info = df_info[df_info["linha"] != 0]
+
         # Ajustar o index
         df_info.reset_index(drop=True, inplace=True)
 

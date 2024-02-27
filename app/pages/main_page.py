@@ -5,6 +5,7 @@
 """
 
 import json
+
 # cSpell: words eficiencia fullscreen
 from io import StringIO
 
@@ -12,12 +13,14 @@ import dash
 import dash_bootstrap_components as dbc
 import dash_mantine_components as dmc
 import pandas as pd
+
 # pylint: disable=E0401
 from components import modal_efficiency, modal_performance, modal_repair
 from dash import callback, dcc, html
 from dash.dependencies import Input, Output, State
 from dash.exceptions import PreventUpdate
 from database.last_month_ind import LastMonthInd
+
 # from dash_bootstrap_templates import ThemeChangerAIO
 from graphics.indicators import Indicators
 from helpers.types import IndicatorType
@@ -297,8 +300,8 @@ layout = [
 @callback(
     Output("eficiencia-heat-graph", "figure"),
     [
-        Input("store-df-eff-heatmap", "data"),
-        Input("store-annotations_list_tuple", "data"),
+        Input("store-df_eff_heatmap_tuple", "data"),
+        Input("store-annotations_eff_list_tuple", "data"),
         # Input(ThemeChangerAIO.ids.radio("theme"), "value"),
     ],
 )
@@ -313,18 +316,23 @@ def update_eficiencia_graph(df, ann_tuple):  # theme se quiser mudar o tema
     if df is None:
         raise PreventUpdate
 
+    df_list_json = json.loads(df)
     ann_tuple_json = json.loads(ann_tuple)
 
-    df_eff = pd.read_json(StringIO(df), orient="split")
+    df_eff_heatmap = [pd.read_json(StringIO(lst_json), orient="split") for lst_json in df_list_json]
     annotations_list_tuple = [json.loads(lst_json) for lst_json in ann_tuple_json]
 
-    ann_eff = annotations_list_tuple[0]
+    ann_eff_main = annotations_list_tuple[-1]
+    df_heatmap_main = df_eff_heatmap[-1]
 
-    fig = ind_graphics.efficiency_graphic(df_eff, ann_eff, 90)  # theme se quiser mudar o tema
+    fig = ind_graphics.efficiency_graphic(
+        df_heatmap_main, ann_eff_main, 90
+    )  # theme se quiser mudar o tema
 
     return fig
 
 
+# FIXME: Fix this callback - novo store para heatmap e annotations
 @callback(
     Output("performance-heat-graph", "figure"),
     [
@@ -357,6 +365,7 @@ def update_performance_graph(df_perf, ann_tuple):
     return fig
 
 
+# FIXME: Fix this callback - novo store para heatmap e annotations
 @callback(
     Output("reparos-heat-graph", "figure"),
     [

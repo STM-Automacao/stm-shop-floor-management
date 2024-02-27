@@ -182,6 +182,7 @@ def toggle_modal_history(n, is_open):
 
 
 # ---------------------- Heatmap ---------------------- #
+# FIXME: Fix this callback - novo store para heatmap e annotations
 @callback(
     Output("graph-eficiencia-modal", "figure"),
     [

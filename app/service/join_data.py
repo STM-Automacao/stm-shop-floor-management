@@ -301,7 +301,7 @@ class JoinData:
         df_info["solucao_last"] = df_info.groupby("maquina_id", observed=False)["solucao"].shift()
 
         # Cria a máscara para as linhas que atendem às condições
-        mask = (df_info["tempo_registro_min"] > 475) & df_info["motivo_id"].isnull()
+        mask = (df_info["tempo_registro_min"] > 200) & df_info["motivo_id"].isnull()
 
         # Aplica a máscara e substitui os valores nas colunas originais
         df_info.loc[mask, "motivo_id"] = df_info.loc[mask, "motivo_id_last"]
@@ -350,6 +350,16 @@ class JoinData:
 
         # Remover as linhas onde status é rodando
         df_info = df_info[df_info["status"] != "rodando"]
+
+        mask_no_energy = (
+            (df_info["status"] == "parada")
+            & (df_info["tempo_registro_min"] < 480)
+            & (df_info["status"].shift(-1) == "parada")
+            & (df_info["tempo_registro_min"].shift(-1) == 480)
+            & (df_info["status"].shift() == "parada")
+            & (df_info["tempo_registro_min"].shift() == 480)
+        )
+        df_info.loc[mask_no_energy, "tempo_registro_min"] = 480
 
         # Ajustar o index
         df_info.reset_index(drop=True, inplace=True)

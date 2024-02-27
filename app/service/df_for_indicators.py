@@ -78,7 +78,7 @@ class DFIndicators:
         all_dates_lines = pd.DataFrame(list(product(all_dates, all_lines)), columns=group_col)
 
         # Merge com o dataframe agrupado
-        df_grouped = pd.merge(all_dates_lines, df_grouped, on=group_col, how="right")
+        df_grouped = pd.merge(all_dates_lines, df_grouped, on=group_col, how="left")
 
         # Se a data é futura, o indicador é np.nan
         df_grouped.loc[df_grouped["data_turno"] > today.strftime("%Y-%m-%d"), indicator.value] = (

@@ -67,15 +67,12 @@ app.layout = dbc.Container(
         dcc.Store(id="store-df-eff"),
         dcc.Store(id="store-df-perf"),
         dcc.Store(id="store-df-repair"),
-        dcc.Store(id="store-df-eff-heatmap"),
-        dcc.Store(id="store-df-eff-heatmap-tuple"),
-        dcc.Store(id="store-annotations_eff_turn_list_tuple"),
-        dcc.Store(id="store-df-perf_repair_heat_tuple"),
-        dcc.Store(id="store-annotations_list_tuple"),
-        dcc.Store(id="store-df_perf_heat_turn_tuple"),
-        dcc.Store(id="store-df-repair_heat_turn_tuple"),
-        dcc.Store(id="store-annotations_perf_turn_list_tuple"),
-        dcc.Store(id="store-annotations_repair_turn_list_tuple"),
+        dcc.Store(id="store-df_eff_heatmap_tuple"),
+        dcc.Store(id="store-annotations_eff_list_tuple"),
+        dcc.Store(id="store-df_perf_heatmap_tuple"),
+        dcc.Store(id="annotations_perf_list_tuple"),
+        dcc.Store(id="store-df_repair_heatmap_tuple"),
+        dcc.Store(id="store-annotations_repair_list_tuple"),
         dcc.Store(id="store-df_working_time"),
         dcc.Store(id="is-data-store", storage_type="session", data=False),
         # ---------------------- Main Layout ---------------------- #
@@ -122,15 +119,12 @@ app.layout = dbc.Container(
         Output("store-df-eff", "data"),
         Output("store-df-perf", "data"),
         Output("store-df-repair", "data"),
-        Output("store-df-eff-heatmap", "data"),
-        Output("store-df-eff-heatmap-tuple", "data"),
-        Output("store-annotations_eff_turn_list_tuple", "data"),
-        Output("store-df-perf_repair_heat_tuple", "data"),
-        Output("store-annotations_list_tuple", "data"),
-        Output("store-df_perf_heat_turn_tuple", "data"),
-        Output("store-df-repair_heat_turn_tuple", "data"),
-        Output("store-annotations_perf_turn_list_tuple", "data"),
-        Output("store-annotations_repair_turn_list_tuple", "data"),
+        Output("store-df_eff_heatmap_tuple", "data"),
+        Output("store-annotations_eff_list_tuple", "data"),
+        Output("store-df_perf_heatmap_tuple", "data"),
+        Output("annotations_perf_list_tuple", "data"),
+        Output("store-df_repair_heatmap_tuple", "data"),
+        Output("store-annotations_repair_list_tuple", "data"),
         Output("store-df_working_time", "data"),
     ],
     Input("store-info", "data"),
@@ -148,15 +142,12 @@ def update_store(_data):
     df_eff = cache.get("df_eff")
     df_perf = cache.get("df_perf")
     df_repair = cache.get("df_repair")
-    df_eff_heatmap = cache.get("df_eff_heatmap")
     df_eff_heatmap_tuple = cache.get("df_eff_heatmap_tuple")
-    annotations_eff_turn_list_tuple = cache.get("annotations_eff_turn_list_tuple")
-    df_perf_repair_heat_tuple = cache.get("df_perf_repair_heat_tuple")
-    annotations_list_tuple = cache.get("annotations_list_tuple")
-    df_perf_heat_turn_tuple = cache.get("df_perf_heat_turn_tuple")
-    df_repair_heat_turn_tuple = cache.get("df_repair_heat_turn_tuple")
-    annotations_perf_turn_list_tuple = cache.get("annotations_perf_turn_list_tuple")
-    annotations_repair_turn_list_tuple = cache.get("annotations_repair_turn_list_tuple")
+    annotations_eff_turn_list_tuple = cache.get("annotations_eff_list_tuple")
+    df_perf_heatmap_tuple = cache.get("df_perf_heatmap_tuple")
+    annotations_perf_turn_list_tuple = cache.get("annotations_perf_list_tuple")
+    df_repair_heatmap_tuple = cache.get("df_repair_heatmap_tuple")
+    annotations_repair_turn_list_tuple = cache.get("annotations_repair_list_tuple")
     df_working_time = cache.get("df_working_time")
 
     print("========== Store atualizado ==========")
@@ -166,14 +157,11 @@ def update_store(_data):
         df_eff,
         df_perf,
         df_repair,
-        df_eff_heatmap,
         df_eff_heatmap_tuple,
         annotations_eff_turn_list_tuple,
-        df_perf_repair_heat_tuple,
-        annotations_list_tuple,
-        df_perf_heat_turn_tuple,
-        df_repair_heat_turn_tuple,
+        df_perf_heatmap_tuple,
         annotations_perf_turn_list_tuple,
+        df_repair_heatmap_tuple,
         annotations_repair_turn_list_tuple,
         df_working_time,
     )
