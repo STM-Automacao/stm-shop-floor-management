@@ -50,6 +50,17 @@ MODAL_RADIO = [
 
 
 def get_color(value, max_value):
+    """
+    Retorna uma cor hexadecimal com base no valor fornecido e no valor máximo.
+
+    Parâmetros:
+    value (float): O valor para o qual a cor será calculada.
+    max_value (float): O valor máximo possível.
+
+    Retorna:
+    str: Uma cor hexadecimal correspondente ao valor fornecido.
+    """
+
     # Cria um mapa de cores que vai do vermelho ao verde
     cmap = plt.get_cmap("RdYlGn")
 
@@ -60,10 +71,8 @@ def get_color(value, max_value):
     rgba_color = cmap(normalized_value)
 
     # Converte a cor RGBA para uma string de cor hexadecimal
-    hex_color = "#%02x%02x%02x" % (
-        int(rgba_color[0] * 255),
-        int(rgba_color[1] * 255),
-        int(rgba_color[2] * 255),
+    hex_color = (
+        f"#{int(rgba_color[0]*255):02x}{int(rgba_color[1]*255):02x}{int(rgba_color[2]*255):02x}"
     )
 
     return hex_color
