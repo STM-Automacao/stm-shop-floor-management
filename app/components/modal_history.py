@@ -57,6 +57,9 @@ def update_graph_history_modal(_):
 
     # -------------------- Gráfico de Perdas -------------------- #
 
+    # Limita o problema a 5 palavras
+    df_top_stops["problema"] = df_top_stops["problema"].apply(lambda x: " ".join(x.split()[:4]))
+
     # Cria uma paleta de cores com os valores únicos na coluna 'problema'
     palette = sns.dark_palette("lightgray", df_top_stops["problema"].nunique())
 
@@ -82,6 +85,7 @@ def update_graph_history_modal(_):
         title_x=0.5,
         font=dict(family="Inter"),
         showlegend=True,
+        margin=dict({"t": 80, "b": 40, "l": 40, "r": 40}),
     )
 
     # -------------------- Tabela de Desempenho Mensal -------------------- #

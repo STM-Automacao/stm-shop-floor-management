@@ -91,13 +91,12 @@ layout = [
 # ======================================== Modal Callback ======================================= #
 
 
-# FIXME: Fix this callback - novo store para heatmap e annotations
 @callback(
     Output("graph-performance-modal", "figure"),
     [
         Input(f"radio-items-{IndicatorType.PERFORMANCE.value}", "value"),
-        Input("store-df_perf_heat_turn_tuple", "data"),
-        Input("store-annotations_perf_turn_list_tuple", "data"),
+        Input("store-df_perf_heatmap_tuple", "data"),
+        Input("annotations_perf_list_tuple", "data"),
     ],
 )
 def update_graph_performance_modal(
@@ -120,8 +119,8 @@ def update_graph_performance_modal(
     annotations_list_tuple = [json.loads(lst_json) for lst_json in ann_tuple_json]
 
     # Converta a lista em uma tupla e desempacote
-    noturno, matutino, vespertino, total = tuple(df_list)
-    ann_not, ann_mat, ann_ves, ann_total = tuple(annotations_list_tuple)
+    noturno, matutino, vespertino, total, _ = tuple(df_list)
+    ann_not, ann_mat, ann_ves, ann_total, _ = tuple(annotations_list_tuple)
 
     # Criar um dicionário com os DataFrames
     df_dict = {"NOT": noturno, "MAT": matutino, "VES": vespertino, "TOT": total}

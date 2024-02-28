@@ -13,10 +13,12 @@ import os
 from threading import Lock
 
 import dash_bootstrap_components as dbc
+import dash_mantine_components as dmc
 from apscheduler.schedulers.background import BackgroundScheduler
 from dash import callback, dcc, html
 from dash.dependencies import Input, Output
 from dash.exceptions import PreventUpdate
+from dash_bootstrap_templates import ThemeSwitchAIO
 
 # pylint: disable=E0401
 from database.last_month_ind import LastMonthInd
@@ -26,17 +28,12 @@ from waitress import serve
 
 from app import app
 
-# from dash_bootstrap_templates import ThemeSwitchAIO
-
-
 lock = Lock()
 last_month_ind = LastMonthInd()
 
 # Seleção de temas para o App - Variáveis:
-# template_boots = "bootstrap"  # para o gráfico
-# template_darkly = "darkly"
-# url_boots = dbc.themes.BOOTSTRAP  # para o switch
-# url_darkly = dbc.themes.DARKLY
+URL_BOOTS = dbc.themes.BOOTSTRAP  # para o switch
+URL_DARKY = dbc.themes.DARKLY
 
 
 # ========================================= Background ========================================= #
@@ -77,32 +74,49 @@ app.layout = dbc.Container(
         dcc.Store(id="is-data-store", storage_type="session", data=False),
         # ---------------------- Main Layout ---------------------- #
         dbc.Row(
+            dbc.Col(
+                ThemeSwitchAIO(
+                    aio_id="theme",
+                    themes=[URL_BOOTS, URL_DARKY],
+                ),
+                class_name="h-100 d-flex align-items-center justify-content-end",
+            ),
+        ),
+        dbc.Row(
             [
                 dbc.Col(
                     html.H1("Shop Floor Management", className="text-center"),
-                    # md=11,
                 ),
-                # dbc.Col(
-                #     ThemeSwitchAIO(
-                #         aio_id="theme",
-                #         themes=[url_boots, url_darkly],
-                #     ),
-                #     class_name="h-100 d-flex align-items-center justify-content-end",
-                #     md=1,
-                # ),
             ],
         ),
         html.Hr(),
         dbc.Row(
-            dbc.Tabs(
-                [
-                    dbc.Tab(grafana.layout, label="Ao Vivo"),
-                    dbc.Tab(
-                        main_page.layout,
-                        label="SFM Dashboard",
-                    ),
-                ]
+            dbc.CardBody(
+                dbc.Tabs(
+                    [
+                        dbc.Tab(grafana.layout, label="Ao Vivo"),
+                        dbc.Tab(
+                            main_page.layout,
+                            label="SFM Dashboard",
+                        ),
+                    ]
+                )
             ),
+        ),
+        dmc.Footer(
+            dmc.Center(
+                children=dmc.Image(
+                    # pylint: disable=E1101
+                    src=app.get_asset_url("Logo Horizontal.png"),
+                    width="125px",
+                    withPlaceholder=True,
+                ),
+                p=5,
+            ),
+            height=32,
+            fixed=True,
+            className="bg-light",
+            id="footer",
         ),
     ],
     fluid=True,
@@ -112,6 +126,23 @@ app.layout = dbc.Container(
 
 
 # ========================================= Callbacks ========================================= #
+@callback(
+    Output("footer", "className"),
+    Input(ThemeSwitchAIO.ids.switch("theme"), "value"),
+)
+def update_footer_class_name(light_theme):
+    """
+    Atualiza o nome da classe do rodapé com base no tema de cores.
+
+    Parâmetros:
+    light_theme (bool): Indica se o tema de cores é claro ou escuro.
+
+    Retorna:
+    str: O nome da classe do rodapé atualizado.
+    """
+    return "bg-dark" if not light_theme else "bg-light"
+
+
 @callback(
     [
         Output("store-info", "data"),

@@ -54,10 +54,8 @@ class DFIndicators:
         # Criar coluna 'data_turno' para agrupar por dia e turno
         dataframe["data_turno"] = dataframe["data_registro"].dt.strftime("%Y-%m-%d")
 
-        group_col = ["data_turno", "linha"]
-
-        if main:
-            group_col = ["data_turno", "turno"]
+        # Coluna para agrupar por linha ou turno
+        group_col = ["data_turno", "linha"] if not main else ["data_turno", "turno"]
 
         # Agrupar por data_turno e turno e calcular a média do indicador
         df_grouped = (
@@ -74,7 +72,7 @@ class DFIndicators:
 
         # Criar um dataframe com as datas possíveis
         all_dates = pd.date_range(start=start_date, end=end_date).strftime("%Y-%m-%d")
-        all_lines = dataframe["linha"].unique()
+        all_lines = dataframe["linha"].unique() if not main else dataframe["turno"].unique()
         all_dates_lines = pd.DataFrame(list(product(all_dates, all_lines)), columns=group_col)
 
         # Merge com o dataframe agrupado

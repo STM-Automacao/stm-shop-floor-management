@@ -49,6 +49,13 @@ MODAL_RADIO = [
 ]
 
 
+class TemplateType(Enum):
+    """Template types"""
+
+    LIGHT = "bootstrap"
+    DARK = "darkly"
+
+
 def get_color(value, max_value):
     """
     Retorna uma cor hexadecimal com base no valor fornecido e no valor máximo.

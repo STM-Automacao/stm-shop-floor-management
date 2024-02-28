@@ -182,13 +182,12 @@ def toggle_modal_history(n, is_open):
 
 
 # ---------------------- Heatmap ---------------------- #
-# FIXME: Fix this callback - novo store para heatmap e annotations
 @callback(
     Output("graph-eficiencia-modal", "figure"),
     [
         Input(f"radio-items-{IndicatorType.EFFICIENCY.value}", "value"),
-        Input("store-df-eff-heatmap-tuple", "data"),
-        Input("store-annotations_eff_turn_list_tuple", "data"),
+        Input("store-df_eff_heatmap_tuple", "data"),
+        Input("store-annotations_eff_list_tuple", "data"),
     ],
 )
 def update_graph_eficiencia_modal(value, df_tuple, ann_tuple):
@@ -207,8 +206,8 @@ def update_graph_eficiencia_modal(value, df_tuple, ann_tuple):
     annotations_list_tuple = [json.loads(lst_json) for lst_json in ann_tuple_json]
 
     # Converta a lista em uma tupla e desempacote
-    noturno, matutino, vespertino, total = tuple(df_list)
-    ann_not, ann_mat, ann_ves, ann_total = tuple(annotations_list_tuple)
+    noturno, matutino, vespertino, total, _ = tuple(df_list)
+    ann_not, ann_mat, ann_ves, ann_total, _ = tuple(annotations_list_tuple)
 
     # Criar um dicionário com os DataFrames
     df_dict = {"NOT": noturno, "MAT": matutino, "VES": vespertino, "TOT": total}
@@ -248,24 +247,18 @@ def update_graph_line_modal_1(data, turn):
 # ---------------------- Bar Totais ---------------------- #
 @callback(
     Output("graph-eficiencia-modal-2", "figure"),
-    [
-        Input("store-info", "data"),
-        Input("store-prod", "data"),
-    ],
+    Input("store-df-eff", "data"),
 )
-def update_graph_eficiencia_modal_2(data_info, data_prod):
+def update_graph_eficiencia_modal_2(df_eff):
     """
     Função que atualiza o gráfico de barras de eficiência do modal.
     """
-    if data_info is None or data_prod is None:
+    if df_eff is None:
         raise PreventUpdate
 
-    df_maq_info_cadastro = pd.read_json(stringIO(data_info), orient="split")
-    df_maq_info_prod_cad = pd.read_json(stringIO(data_prod), orient="split")
+    df_eff_cad = pd.read_json(stringIO(df_eff), orient="split")
 
-    df = times_data.get_eff_data(df_maq_info_cadastro, df_maq_info_prod_cad)
-
-    figure = indicators.get_eff_bar_turn(df)
+    figure = indicators.get_eff_bar_turn(df_eff_cad)
 
     return figure
 

@@ -91,13 +91,12 @@ layout = [
 # ======================================== Modal Callbacks ======================================= #
 
 
-# FIXME: Fix this callback - novo store para heatmap e annotations
 @callback(
     Output("graph-repair-modal", "figure"),
     [
         Input(f"radio-items-{IndicatorType.REPAIR.value}", "value"),
-        Input("store-df-repair_heat_turn_tuple", "data"),
-        Input("store-annotations_repair_turn_list_tuple", "data"),
+        Input("store-df_repair_heatmap_tuple", "data"),
+        Input("store-annotations_repair_list_tuple", "data"),
     ],
 )
 def update_graph_repair_modal(value, df_tuple, ann_tuple):
@@ -116,8 +115,8 @@ def update_graph_repair_modal(value, df_tuple, ann_tuple):
     annotations_list_tuple = [json.loads(lst_json) for lst_json in ann_tuple_json]
 
     # Converta a lista em uma tupla e desempacote
-    noturno, matutino, vespertino, total = tuple(df_list)
-    ann_not, ann_mat, ann_ves, ann_total = tuple(annotations_list_tuple)
+    noturno, matutino, vespertino, total, _ = tuple(df_list)
+    ann_not, ann_mat, ann_ves, ann_total, _ = tuple(annotations_list_tuple)
 
     # Criar um dicionário com os DataFrames
     df_dict = {"NOT": noturno, "MAT": matutino, "VES": vespertino, "TOT": total}
