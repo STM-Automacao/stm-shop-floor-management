@@ -4,14 +4,12 @@
     @data: 15/01/2024
 """
 
-# cSpell: words eficiencia fullscreen
-
 import json
 from io import StringIO
 
 import dash_bootstrap_components as dbc
 import pandas as pd
-from components import gauge, heatmap, modal_efficiency, modal_performance, modal_repair
+from components import gauge, heatmap, line_graph, modal_efficiency, modal_performance, modal_repair
 from dash import Input, Output, State, callback, html
 from dash.exceptions import PreventUpdate
 from dash_bootstrap_templates import ThemeSwitchAIO
@@ -51,7 +49,7 @@ layout = [
                                         class_name="p-1",
                                     ),
                                 ],
-                                sm={"size": 12, "offset": 1, "order": 1},
+                                sm={"size": 12, "offset": 0, "order": 3},
                                 md={"size": 8, "offset": 0, "order": 2},
                                 xxl={"size": 10, "order": 2},
                                 class_name="p-1",
@@ -97,7 +95,7 @@ layout = [
                                         class_name="p-1",
                                     ),
                                 ],
-                                sm={"size": 12, "offset": 1, "order": 1},
+                                sm={"size": 12, "offset": 0, "order": 3},
                                 md={"size": 8, "offset": 0, "order": 2},
                                 xxl={"size": 10, "order": 2},
                                 class_name="p-1",
@@ -136,7 +134,7 @@ layout = [
                                         class_name="p-1",
                                     ),
                                 ],
-                                sm={"size": 12, "offset": 1, "order": 1},
+                                sm={"size": 12, "offset": 0, "order": 3},
                                 md={"size": 8, "offset": 0, "order": 2},
                                 xxl={"size": 10, "order": 2},
                                 class_name="p-1",
@@ -426,4 +424,51 @@ def update_heatmap(
             id="repair-button",
             children=heatmap_repair,
         ),
+    )
+
+
+# ---------- Line Chart ---------- #
+
+
+@callback(
+    [
+        Output(f"line-chart-{IndicatorType.EFFICIENCY.value}", "children"),
+        Output(f"line-chart-{IndicatorType.PERFORMANCE.value}", "children"),
+        Output(f"line-chart-{IndicatorType.REPAIR.value}", "children"),
+    ],
+    [
+        Input("store-df-eff", "data"),
+        Input("store-df-perf", "data"),
+        Input("store-df-repair", "data"),
+        Input(ThemeSwitchAIO.ids.switch("theme"), "value"),
+    ],
+)
+def update_line_chart(df_1, df_2, df_3, toggle_theme):
+    """
+    Update the line chart with the given dataframes and theme.
+
+    Args:
+        df_1 (str): The first dataframe in JSON format.
+        df_2 (str): The second dataframe in JSON format.
+        df_3 (str): The third dataframe in JSON format.
+        toggle_theme (bool): A boolean indicating whether to toggle the theme.
+
+    Returns:
+        tuple: A tuple containing three line graphs created from the dataframes.
+    """
+    if df_1 is None:
+        raise PreventUpdate
+
+    lg = line_graph.LineGraph()
+
+    template = TemplateType.LIGHT if toggle_theme else TemplateType.DARK
+
+    df_eff = pd.read_json(StringIO(df_1), orient="split")
+    df_perf = pd.read_json(StringIO(df_2), orient="split")
+    df_repair = pd.read_json(StringIO(df_3), orient="split")
+
+    return (
+        lg.create_line_graph(df_eff, IndicatorType.EFFICIENCY, 90, template),
+        lg.create_line_graph(df_perf, IndicatorType.PERFORMANCE, 4, template),
+        lg.create_line_graph(df_repair, IndicatorType.REPAIR, 4, template),
     )

@@ -11,7 +11,6 @@ import pandas as pd
 
 # pylint: disable=E0401
 from database.get_data import GetData
-from graphics.indicators import Indicators
 from helpers.path_config import DF_HISTORY, EFF_LAST, PERF_LAST, REPAIR_LAST, TOP_STOPS
 from service.times_data import TimesData
 
@@ -24,7 +23,6 @@ class LastMonthInd:
     def __init__(self):
         self.times_data = TimesData()
         self.get_data = GetData()
-        self.indicators = Indicators()
 
     def save_last_month_data(self):
         """

@@ -4,14 +4,10 @@
 @Date: 28/02/2024
 """
 
-# cSpell: words tseries colorscale colorbar tickfont lightgray zmin zmax zmid zauto zsmooth
-# cSpell: words hoverongaps showscale xgap ygap nticks tickmode tickvals ticktext
-
 import pandas as pd
 import plotly.graph_objs as go
 from dash import dcc
 from helpers.types import BSColorsEnum, IndicatorType, TemplateType
-from pandas.tseries.offsets import MonthEnd
 
 
 class Heatmap:
@@ -82,10 +78,6 @@ class Heatmap:
         # Extrai apenas o dia da data
         dataframe.columns = pd.to_datetime(dataframe.columns).day
 
-        # Descobrir em que mês estamos e último dia do mês
-        this_month = pd.Timestamp.now().replace(day=1) + MonthEnd(0)
-        last_day = this_month.day
-
         # Cria o hover data
         hover_data = (
             f"Turno: %{{y}}<br>Dia: %{{x}}<br>{indicator.value.capitalize()}: %{{z:.1%}}"
@@ -97,7 +89,7 @@ class Heatmap:
         figure = go.Figure(
             data=go.Heatmap(
                 z=dataframe.values,
-                x=dataframe.columns.astype(str),
+                x=dataframe.columns,
                 y=dataframe.index,
                 colorscale=color_scale[indicator],
                 name=indicator.value.capitalize(),
@@ -116,16 +108,17 @@ class Heatmap:
                     title="Dia do Mês",
                     tickfont=dict(color="lightgray"),
                     tickmode="linear",
-                    nticks=last_day,
-                    tickvals=list(range(1, last_day)),
-                    ticktext=list(range(1, last_day)),
-                    range=[-0.5, last_day - 0.5],
+                    nticks=31,
+                    tickvals=list(range(1, 32)),
+                    ticktext=list(range(1, 32)),
+                    tickangle=0,
                 ),
                 yaxis=dict(title="Turno", tickfont=dict(color="lightgray"), ticksuffix=" "),
                 font=dict(family="Inter"),
                 margin=dict(t=40, b=40, l=40, r=40),
                 annotations=annotations,
                 template=TemplateType.LIGHT.value if not template else template.value,
+                plot_bgcolor="RGBA(0,0,0,0.01)",
             ),
         )
 

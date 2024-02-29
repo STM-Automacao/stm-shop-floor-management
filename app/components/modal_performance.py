@@ -17,7 +17,6 @@ from components import btn_modal
 from dash import callback, dcc, html
 from dash.dependencies import Input, Output
 from dash.exceptions import PreventUpdate
-from graphics.indicators import Indicators
 from graphics.indicators_turn import IndicatorsTurn
 from helpers.types import IndicatorType
 from service.times_data import TimesData
@@ -26,7 +25,6 @@ from app import app
 
 times_data = TimesData()
 indicators = IndicatorsTurn()
-indicators_geral = Indicators()
 
 # ========================================= Modal Layout ======================================== #
 layout = [
@@ -152,9 +150,9 @@ def update_graph_line_modal_1(data, turn):
 
     df = pd.read_json(stringIO(data), orient="split")
 
-    figure = indicators_geral.plot_daily_efficiency(df, IndicatorType.PERFORMANCE, 4, turn)
+    # figure = indicators_geral.plot_daily_efficiency(df, IndicatorType.PERFORMANCE, 4, turn)
 
-    return figure
+    return "figure"
 
 
 @callback(

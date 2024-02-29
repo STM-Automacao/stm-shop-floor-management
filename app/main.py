@@ -95,8 +95,9 @@ app.layout = dbc.Container(
                 [
                     dbc.Tab(grafana.layout, label="Ao Vivo"),
                     dbc.Tab(main_page.layout, label="SFM Dashboard"),
-                ]
-            )
+                ],
+            ),
+            class_name="mb-5",
         ),
         dmc.Footer(
             dmc.Center(

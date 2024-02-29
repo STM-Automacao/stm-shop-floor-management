@@ -126,6 +126,9 @@ class DFIndicators:
                 )
             )
 
+        # Remover a anotação com texto "nan%"
+        annotations = [annotation for annotation in annotations if "nan%" not in annotation["text"]]
+
         return annotations
 
     def get_annotations(self, indicator: IndicatorType) -> tuple:

@@ -20,7 +20,6 @@ from dash import callback, dcc, html
 from dash.dependencies import Input, Output, State
 from dash.exceptions import PreventUpdate
 from dash_iconify import DashIconify
-from graphics.indicators import Indicators
 from graphics.indicators_turn import IndicatorsTurn
 from helpers.types import IndicatorType
 from service.times_data import TimesData
@@ -29,7 +28,6 @@ from app import app
 
 times_data = TimesData()
 indicators = IndicatorsTurn()
-indicators_geral = Indicators()
 today = pd.Timestamp.now().date()
 first_day = pd.Timestamp(today.year, today.month, 1).date()
 
@@ -239,9 +237,9 @@ def update_graph_line_modal_1(data, turn):
 
     df = pd.read_json(stringIO(data), orient="split")
 
-    figure = indicators_geral.plot_daily_efficiency(df, IndicatorType.EFFICIENCY, 90, turn)
+    # figure = indicators_geral.plot_daily_efficiency(df, IndicatorType.EFFICIENCY, 90, turn)
 
-    return figure
+    return "figure"
 
 
 # ---------------------- Bar Totais ---------------------- #

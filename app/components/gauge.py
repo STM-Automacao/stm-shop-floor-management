@@ -9,8 +9,6 @@ import plotly.graph_objs as go
 from dash import dcc
 from helpers.types import BSColorsEnum, IndicatorType, TemplateType
 
-# cSpell: words tickfont lightgray
-
 
 class Gauge:
     """
