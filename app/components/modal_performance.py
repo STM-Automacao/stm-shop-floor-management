@@ -96,7 +96,7 @@ layout = [
     [
         Input(f"radio-items-{IndicatorType.PERFORMANCE.value}", "value"),
         Input("store-df_perf_heatmap_tuple", "data"),
-        Input("annotations_perf_list_tuple", "data"),
+        Input("store-annotations_perf_list_tuple", "data"),
     ],
 )
 def update_graph_performance_modal(

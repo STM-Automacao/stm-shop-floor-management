@@ -67,7 +67,7 @@ app.layout = dbc.Container(
         dcc.Store(id="store-df_eff_heatmap_tuple"),
         dcc.Store(id="store-annotations_eff_list_tuple"),
         dcc.Store(id="store-df_perf_heatmap_tuple"),
-        dcc.Store(id="annotations_perf_list_tuple"),
+        dcc.Store(id="store-annotations_perf_list_tuple"),
         dcc.Store(id="store-df_repair_heatmap_tuple"),
         dcc.Store(id="store-annotations_repair_list_tuple"),
         dcc.Store(id="store-df_working_time"),
@@ -91,17 +91,12 @@ app.layout = dbc.Container(
         ),
         html.Hr(),
         dbc.Row(
-            dbc.CardBody(
-                dbc.Tabs(
-                    [
-                        dbc.Tab(grafana.layout, label="Ao Vivo"),
-                        dbc.Tab(
-                            main_page.layout,
-                            label="SFM Dashboard",
-                        ),
-                    ]
-                )
-            ),
+            dbc.Tabs(
+                [
+                    dbc.Tab(grafana.layout, label="Ao Vivo"),
+                    dbc.Tab(main_page.layout, label="SFM Dashboard"),
+                ]
+            )
         ),
         dmc.Footer(
             dmc.Center(
@@ -153,7 +148,7 @@ def update_footer_class_name(light_theme):
         Output("store-df_eff_heatmap_tuple", "data"),
         Output("store-annotations_eff_list_tuple", "data"),
         Output("store-df_perf_heatmap_tuple", "data"),
-        Output("annotations_perf_list_tuple", "data"),
+        Output("store-annotations_perf_list_tuple", "data"),
         Output("store-df_repair_heatmap_tuple", "data"),
         Output("store-annotations_repair_list_tuple", "data"),
         Output("store-df_working_time", "data"),
