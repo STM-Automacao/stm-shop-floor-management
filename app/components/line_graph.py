@@ -62,7 +62,7 @@ class LineGraph:
         dataframe["data_turno"] = dataframe["data_registro"].dt.strftime("%Y-%m-%d")
 
         # Filtrar por turno
-        dataframe = dataframe[dataframe["turno"] == turn] if turn else dataframe
+        dataframe = dataframe[dataframe["turno"] == turn] if turn and turn != "TOT" else dataframe
 
         # Agrupar por 'data_turno' e 'turno' e calcular a média do indicador
         df_grouped = dataframe.groupby(["data_turno"])[indicator].mean().reset_index()
@@ -100,7 +100,7 @@ class LineGraph:
                 showlegend=False,
                 xaxis=dict(showticklabels=False),
                 yaxis=dict(showticklabels=False, autorange=True),
-                margin=dict(l=40, r=30, t=10, b=10),
+                margin=dict(l=40, r=20, t=10, b=10),
                 height=None,
                 autosize=True,
                 font=dict(family="Inter"),

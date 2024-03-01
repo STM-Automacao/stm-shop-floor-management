@@ -34,7 +34,7 @@ layout = [
                                     class_name="p-1",
                                 ),
                                 sm={"size": 4, "offset": 1, "order": 1},
-                                md={"size": 2, "offset": 0, "order": 1},
+                                lg={"size": 2, "offset": 0, "order": 1},
                                 xxl={"size": 1, "order": 1},
                                 class_name="p-1",
                             ),
@@ -42,7 +42,7 @@ layout = [
                                 [
                                     dbc.Card(
                                         id=f"heatmap-{IndicatorType.EFFICIENCY.value}",
-                                        class_name="p-1",
+                                        class_name="p-1 mb-1",
                                     ),
                                     dbc.Card(
                                         id=f"line-chart-{IndicatorType.EFFICIENCY.value}",
@@ -50,7 +50,7 @@ layout = [
                                     ),
                                 ],
                                 sm={"size": 12, "offset": 0, "order": 3},
-                                md={"size": 8, "offset": 0, "order": 2},
+                                lg={"size": 8, "offset": 0, "order": 2},
                                 xxl={"size": 10, "order": 2},
                                 class_name="p-1",
                             ),
@@ -60,7 +60,7 @@ layout = [
                                     class_name="p-1",
                                 ),
                                 sm={"size": 4, "offset": 2, "order": 2},
-                                md={"size": 2, "offset": 0, "order": 3},
+                                lg={"size": 2, "offset": 0, "order": 3},
                                 xxl={"size": 1, "order": 3},
                                 class_name="p-1",
                             ),
@@ -80,7 +80,7 @@ layout = [
                                     ),
                                 ],
                                 sm={"size": 4, "offset": 1, "order": 1},
-                                md={"size": 2, "offset": 0, "order": 1},
+                                lg={"size": 2, "offset": 0, "order": 1},
                                 xxl={"size": 1, "order": 1},
                                 class_name="p-1",
                             ),
@@ -88,7 +88,7 @@ layout = [
                                 [
                                     dbc.Card(
                                         id=f"heatmap-{IndicatorType.PERFORMANCE.value}",
-                                        class_name="p-1",
+                                        class_name="p-1 mb-1",
                                     ),
                                     dbc.Card(
                                         id=f"line-chart-{IndicatorType.PERFORMANCE.value}",
@@ -96,7 +96,7 @@ layout = [
                                     ),
                                 ],
                                 sm={"size": 12, "offset": 0, "order": 3},
-                                md={"size": 8, "offset": 0, "order": 2},
+                                lg={"size": 8, "offset": 0, "order": 2},
                                 xxl={"size": 10, "order": 2},
                                 class_name="p-1",
                             ),
@@ -106,7 +106,7 @@ layout = [
                                     class_name="p-1",
                                 ),
                                 sm={"size": 4, "offset": 2, "order": 2},
-                                md={"size": 2, "offset": 0, "order": 3},
+                                lg={"size": 2, "offset": 0, "order": 3},
                                 xxl={"size": 1, "order": 3},
                                 class_name="p-1",
                             ),
@@ -120,14 +120,15 @@ layout = [
                                     id=f"last-gauge-{IndicatorType.REPAIR.value}", class_name="p-1"
                                 ),
                                 sm={"size": 4, "offset": 1, "order": 1},
-                                md={"size": 2, "offset": 0, "order": 1},
+                                lg={"size": 2, "offset": 0, "order": 1},
                                 xxl={"size": 1, "order": 1},
                                 class_name="p-1",
                             ),
                             dbc.Col(
                                 [
                                     dbc.Card(
-                                        id=f"heatmap-{IndicatorType.REPAIR.value}", class_name="p-1"
+                                        id=f"heatmap-{IndicatorType.REPAIR.value}",
+                                        class_name="p-1 mb-1",
                                     ),
                                     dbc.Card(
                                         id=f"line-chart-{IndicatorType.REPAIR.value}",
@@ -135,7 +136,7 @@ layout = [
                                     ),
                                 ],
                                 sm={"size": 12, "offset": 0, "order": 3},
-                                md={"size": 8, "offset": 0, "order": 2},
+                                lg={"size": 8, "offset": 0, "order": 2},
                                 xxl={"size": 10, "order": 2},
                                 class_name="p-1",
                             ),
@@ -145,7 +146,7 @@ layout = [
                                     class_name="p-1",
                                 ),
                                 sm={"size": 4, "offset": 2, "order": 2},
-                                md={"size": 2, "offset": 0, "order": 3},
+                                lg={"size": 2, "offset": 0, "order": 3},
                                 xxl={"size": 1, "order": 3},
                                 class_name="p-1",
                             ),

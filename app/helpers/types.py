@@ -7,6 +7,8 @@ from enum import Enum
 
 import matplotlib.pyplot as plt
 
+CICLOS_ESPERADOS = 10.6
+
 
 class IndicatorType(Enum):
     """Indicator types"""

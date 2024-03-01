@@ -8,6 +8,7 @@ from datetime import datetime
 
 import numpy as np
 import pandas as pd
+from helpers.types import CICLOS_ESPERADOS
 
 # cSpell: words solucao, usuario, producao, eficiencia
 
@@ -173,7 +174,7 @@ class TimesData:
 
         df_eff_times_desc = self.get_times_discount(df_info, self.desc_eff)
         df_prod_total = df_prod.copy()
-        ciclo_ideal = 10.6
+        ciclo_ideal = CICLOS_ESPERADOS
 
         # Descartar colunas desnecessárias de df_prod
         df_prod_total.drop(columns=["total_ciclos"], inplace=True)

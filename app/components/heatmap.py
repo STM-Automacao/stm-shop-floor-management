@@ -127,6 +127,7 @@ class Heatmap:
                 yaxis=dict(
                     title="Linha",
                     autorange="reversed",
+                    tickvals=list(range(1, dataframe.index.nunique() + 1)),
                 )
             )
 
