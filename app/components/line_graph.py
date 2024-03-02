@@ -100,7 +100,7 @@ class LineGraph:
                 showlegend=False,
                 xaxis=dict(showticklabels=False),
                 yaxis=dict(showticklabels=False, autorange=True),
-                margin=dict(l=40, r=20, t=10, b=10),
+                margin=dict(l=0, r=0, t=0, b=0),
                 height=None,
                 autosize=True,
                 font=dict(family="Inter"),

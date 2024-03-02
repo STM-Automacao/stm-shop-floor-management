@@ -44,7 +44,7 @@ class ProductionCards:
             ]
 
         # Produção total
-        df_prod["total_produzido"] = np.floor(df_prod["total_produzido"] / 10)  # caixas
+        df_prod.loc[:, "total_produzido"] = np.floor(df_prod["total_produzido"] / 10)  # caixas
         df_prod["total_produzido"] = df_prod["total_produzido"].astype(int)
 
         # Produção por turno

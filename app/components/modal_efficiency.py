@@ -10,7 +10,7 @@ from io import StringIO
 import dash_bootstrap_components as dbc
 import dash_mantine_components as dmc
 import pandas as pd
-from components import btn_modal, heatmap, line_graph, production_cards
+from components import btn_modal, heatmap, line_graph, production_cards, production_grid
 from dash import Input, Output, callback, html
 from dash.exceptions import PreventUpdate
 from dash_bootstrap_templates import ThemeSwitchAIO
@@ -45,6 +45,12 @@ layout = [
             dbc.Spinner(id="heatmap-line-spinner"),
             html.Hr(),
             dbc.Collapse(id="production-collapse-eff", class_name="mb-3"),
+            dbc.Row(
+                [
+                    dbc.Col(dbc.Card(id="eff-general"), md=6),
+                    dbc.Col(dbc.Card(id="eff-lost"), md=6),
+                ]
+            ),
         ]
     ),
     dbc.ModalFooter(
@@ -170,9 +176,11 @@ def toggle_collapse(n_clicks, is_open):
     [
         Input("store-info", "data"),
         Input("store-prod", "data"),
+        Input(f"radio-items-{IndicatorType.EFFICIENCY.value}", "value"),
+        Input(ThemeSwitchAIO.ids.switch("theme"), "value"),
     ],
 )
-def collapse_content(info, prod):
+def collapse_content(info, prod, turn, toggle_theme):
     """
     Creates a collapsible content card for production information.
 
@@ -186,24 +194,59 @@ def collapse_content(info, prod):
     if not info or not prod:
         raise PreventUpdate
 
-    crd = production_cards.ProductionCards()
+    pcd = production_cards.ProductionCards()
+    pgd = production_grid.ProductionGrid()
 
+    # ------------- Cards ------------- #
     maq_info = pd.read_json(StringIO(info), orient="split")
     maq_prod = pd.read_json(StringIO(prod), orient="split")
 
     df_info = pd.DataFrame(maq_info)
     df_prod = pd.DataFrame(maq_prod)
 
+    turno = {
+        "NOT": "Produção do Noturno",
+        "MAT": "Produção do Matutino",
+        "VES": "Produção do Vespertino",
+        "TOT": "Produção Total",
+    }
+
+    # ------------- Grid ------------- #
+
     return dbc.Card(
         [
             dbc.CardHeader("Produção"),
             dbc.CardBody(
                 [
-                    dbc.Row(crd.create_card(df_info, df_prod.copy())),
+                    dbc.Row(pcd.create_card(df_info, df_prod.copy())),
                     html.Hr(),
-                    dbc.Row(crd.create_card(df_info, df_prod, today=True)),
+                    dbc.Row(pcd.create_card(df_info, df_prod.copy(), today=True)),
+                    html.Hr(),
+                    html.H5(f"Tabela de {turno[turn]}", className="text-center"),
+                    dbc.Row(pgd.create_production_grid(df_prod, turn, toggle_theme)),
                 ]
             ),
         ],
         class_name="mb-3",
     )
+
+
+# --------------------- Efficiency General --------------------- #
+@callback(
+    Output("eff-general", "children"),
+    [
+        Input("store-df-eff", "data"),
+        Input(ThemeSwitchAIO.ids.switch("theme"), "value"),
+    ],
+)
+def efficiency_general(df_eff, toggle_theme):
+
+    if not df_eff:
+        raise PreventUpdate
+
+    template = TemplateType.LIGHT if toggle_theme else TemplateType.DARK
+
+    # Carrega o string json em um dataframe
+    df = pd.read_json(StringIO(df_eff), orient="split")
+
+    return

@@ -929,36 +929,36 @@ class IndicatorsTurn:
 
         return fig
 
-    def get_production_pivot(self, df: pd.DataFrame) -> pd.DataFrame:
-        """
-        Retorna um DataFrame pivotado com a produção total por linha e dia.
+    # def get_production_pivot(self, df: pd.DataFrame) -> pd.DataFrame:
+    #     """
+    #     Retorna um DataFrame pivotado com a produção total por linha e dia.
 
-        Parâmetros:
-        - df: DataFrame contendo os dados de produção.
+    #     Parâmetros:
+    #     - df: DataFrame contendo os dados de produção.
 
-        Retorno:
-        - df_pivot: DataFrame pivotado com a produção total por linha e dia.
-        """
+    #     Retorno:
+    #     - df_pivot: DataFrame pivotado com a produção total por linha e dia.
+    #     """
 
-        # Ordenar por linha, data_registro
-        df = df.sort_values(by=["linha", "data_registro"])
+    #     # Ordenar por linha, data_registro
+    #     df = df.sort_values(by=["linha", "data_registro"])
 
-        # Remover as linhas 0
-        df = df[df["linha"] != 0]
+    #     # Remover as linhas 0
+    #     df = df[df["linha"] != 0]
 
-        # Manter apenas o dia de data_registro
-        df["data_registro"] = pd.to_datetime(df["data_registro"], errors="coerce")
-        df["dia"] = df["data_registro"].dt.day
+    #     # Manter apenas o dia de data_registro
+    #     df["data_registro"] = pd.to_datetime(df["data_registro"], errors="coerce")
+    #     df["dia"] = df["data_registro"].dt.day
 
-        # Criar pivot table, com as datas como colunas e as linhas como índice
-        df_pivot = df.pivot_table(
-            index="dia",
-            columns="linha",
-            values="total_produzido",
-            aggfunc="sum",
-        )
+    #     # Criar pivot table, com as datas como colunas e as linhas como índice
+    #     df_pivot = df.pivot_table(
+    #         index="dia",
+    #         columns="linha",
+    #         values="total_produzido",
+    #         aggfunc="sum",
+    #     )
 
-        # Adicionar uma linha com o total produzido por dia/linha
-        df_pivot["Total"] = df_pivot.sum(axis=1)
+    #     # Adicionar uma linha com o total produzido por dia/linha
+    #     df_pivot["Total"] = df_pivot.sum(axis=1)
 
-        return df_pivot
+    #     return df_pivot
