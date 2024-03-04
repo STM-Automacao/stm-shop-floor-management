@@ -1,17 +1,20 @@
 {
   "python.analysis.extraPaths": ["./app"],
   "cSpell.words": [
+    "aggfunc",
     "asof",
     "astype",
     "barmode",
     "bothdates",
     "colorscale",
     "cumsum",
+    "customdata",
     "dataframe",
     "dataframes",
     "dotenv",
     "dropna",
     "dtypes",
+    "eficiencia",
     "ffill",
     "fillna",
     "fullscreen",
@@ -55,6 +58,7 @@
     "ticksuffix",
     "ticktext",
     "tickvals",
+    "traceorder",
     "tseries",
     "updatemode",
     "xanchor",
@@ -67,5 +71,5 @@
     "zmax",
     "zmin"
   ],
-  "terminal.integrated.fontFamily": "'MesloLGM Nerd Font' ,'Hack Nerd Font Mono'",
+  "terminal.integrated.fontFamily": "'Hasklug Nerd Font' ,'Hack Nerd Font Mono'",
 }

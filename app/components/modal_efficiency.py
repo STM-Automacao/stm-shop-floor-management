@@ -10,7 +10,14 @@ from io import StringIO
 import dash_bootstrap_components as dbc
 import dash_mantine_components as dmc
 import pandas as pd
-from components import btn_modal, heatmap, line_graph, production_cards, production_grid
+from components import (
+    bar_chart_general,
+    btn_modal,
+    heatmap,
+    line_graph,
+    production_cards,
+    production_grid,
+)
 from dash import Input, Output, callback, html
 from dash.exceptions import PreventUpdate
 from dash_bootstrap_templates import ThemeSwitchAIO
@@ -47,8 +54,8 @@ layout = [
             dbc.Collapse(id="production-collapse-eff", class_name="mb-3"),
             dbc.Row(
                 [
-                    dbc.Col(dbc.Card(id="eff-general"), md=6),
-                    dbc.Col(dbc.Card(id="eff-lost"), md=6),
+                    dbc.Col(dbc.Card(id="eff-general", class_name="p-1"), md=6),
+                    dbc.Col(dbc.Card(id="eff-lost", class_name="p-1"), md=6),
                 ]
             ),
         ]
@@ -240,13 +247,28 @@ def collapse_content(info, prod, turn, toggle_theme):
     ],
 )
 def efficiency_general(df_eff, toggle_theme):
+    """
+    Calculates and returns a bar chart representing the efficiency of a process.
 
+    Args:
+        df_eff (str): A JSON string representing the efficiency data.
+        toggle_theme (bool):
+        A boolean indicating whether to use a light or dark template for the chart.
+
+    Returns:
+        dict: A dictionary representing the generated bar chart.
+
+    Raises:
+        PreventUpdate: If the `df_eff` parameter is empty or None.
+
+    """
     if not df_eff:
         raise PreventUpdate
 
     template = TemplateType.LIGHT if toggle_theme else TemplateType.DARK
+    bcg = bar_chart_general.BarChartGeneral()
 
     # Carrega o string json em um dataframe
     df = pd.read_json(StringIO(df_eff), orient="split")
 
-    return
+    return bcg.create_bar_chart_gen(df, IndicatorType.EFFICIENCY, template, 90)
