@@ -71,7 +71,7 @@ class BarChartGeneral:
 
         # Definir o título do Gráfico
         figure.update_layout(
-            title="Desempenho por Linha",
+            title="Desempenho Total por Linha",
             title_x=0.5,
             yaxis=dict(
                 title="Linha",

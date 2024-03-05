@@ -38,308 +38,308 @@ class IndicatorsTurn:
         self.grey_900_color = "#212529"
         self.times_data = TimesData()
 
-    def get_eff_heat_turn(
-        self,
-        df_pivot: pd.DataFrame,
-        annotations: list,
-        meta: int = 90,
-    ) -> go.Figure:
-        """
-        Este método é responsável por criar o gráfico de eficiência, por turno.
+    # def get_eff_heat_turn(
+    #     self,
+    #     df_pivot: pd.DataFrame,
+    #     annotations: list,
+    #     meta: int = 90,
+    # ) -> go.Figure:
+    #     """
+    #     Este método é responsável por criar o gráfico de eficiência, por turno.
 
-        Parâmetros:
-        dataframe (pd.DataFrame): DataFrame contendo os dados para o gráfico.
-                                Deve incluir as colunas 'data_registro', 'turno' e 'eficiencia'.
-        meta (int): Meta de eficiência a ser alcançada. Padrão: 90.
-        annotations (bool): Se True, adiciona anotações com a média da eficiência.
+    #     Parâmetros:
+    #     dataframe (pd.DataFrame): DataFrame contendo os dados para o gráfico.
+    #                             Deve incluir as colunas 'data_registro', 'turno' e 'eficiencia'.
+    #     meta (int): Meta de eficiência a ser alcançada. Padrão: 90.
+    #     annotations (bool): Se True, adiciona anotações com a média da eficiência.
 
-        Retorna:
-        fig: Objeto plotly.graph_objects.Figure com o gráfico de eficiência.
+    #     Retorna:
+    #     fig: Objeto plotly.graph_objects.Figure com o gráfico de eficiência.
 
-        O gráfico é um heatmap que mostra a eficiência média por maquina e data.
-        A eficiência é colorida de vermelho se estiver abaixo de 90% e
-        de verde se estiver acima de 90%.
-        """
+    #     O gráfico é um heatmap que mostra a eficiência média por maquina e data.
+    #     A eficiência é colorida de vermelho se estiver abaixo de 90% e
+    #     de verde se estiver acima de 90%.
+    #     """
 
-        # Criar escala de cores personalizada - cores do bootstrap
-        colors = [
-            [0, self.danger_color],
-            [0.9, self.danger_color],
-            [0.9, self.success_color],
-            [1, self.success_color],
-        ]
+    #     # Criar escala de cores personalizada - cores do bootstrap
+    #     colors = [
+    #         [0, self.danger_color],
+    #         [0.9, self.danger_color],
+    #         [0.9, self.success_color],
+    #         [1, self.success_color],
+    #     ]
 
-        # Extrair apenas o dia da data
-        df_pivot.columns = pd.to_datetime(df_pivot.columns).day
+    #     # Extrair apenas o dia da data
+    #     df_pivot.columns = pd.to_datetime(df_pivot.columns).day
 
-        # Criar o gráfico de calor
-        fig = go.Figure(
-            data=go.Heatmap(
-                z=df_pivot.values,
-                x=df_pivot.columns,
-                y=df_pivot.index,
-                colorscale=colors,
-                name="Heatmap",
-                zmin=0,
-                zmax=1,  # Escala de valores de 0 a 1
-                hoverongaps=False,
-                hovertemplate="Linha: %{y}<br>Dia: %{x}<br>Eficiência: %{z:.1%}",
-                showscale=False,  # Não mostrar a escala de cores
-                xgap=1,  # Espaçamento entre os dias
-                ygap=1,  # Espaçamento entre os turnos
-            )
-        )
+    #     # Criar o gráfico de calor
+    #     fig = go.Figure(
+    #         data=go.Heatmap(
+    #             z=df_pivot.values,
+    #             x=df_pivot.columns,
+    #             y=df_pivot.index,
+    #             colorscale=colors,
+    #             name="Heatmap",
+    #             zmin=0,
+    #             zmax=1,  # Escala de valores de 0 a 1
+    #             hoverongaps=False,
+    #             hovertemplate="Linha: %{y}<br>Dia: %{x}<br>Eficiência: %{z:.1%}",
+    #             showscale=False,  # Não mostrar a escala de cores
+    #             xgap=1,  # Espaçamento entre os dias
+    #             ygap=1,  # Espaçamento entre os turnos
+    #         )
+    #     )
 
-        # Definir o título do gráfico
-        fig.update_layout(
-            title=f"Eficiência - Meta {meta}%",
-            xaxis_title="Dia",
-            yaxis_title="Linha",
-            annotations=annotations,
-            title_x=0.5,  # Centralizar o título
-            xaxis_nticks=31,  # Definir o número de dias
-            xaxis=dict(
-                tickmode="linear",
-                tickvals=list(range(1, 32)),  # Definir os dias
-                ticktext=list(range(1, 32)),  # Definir os dias
-            ),
-            yaxis=dict(
-                tickmode="linear",
-                ticksuffix=" ",  # Adicionar um espaço no final
-            ),
-            plot_bgcolor="white",
-            margin=dict({"t": 40, "b": 40, "l": 40, "r": 40}),
-            font=dict({"family": "Inter"}),
-        )
+    #     # Definir o título do gráfico
+    #     fig.update_layout(
+    #         title=f"Eficiência - Meta {meta}%",
+    #         xaxis_title="Dia",
+    #         yaxis_title="Linha",
+    #         annotations=annotations,
+    #         title_x=0.5,  # Centralizar o título
+    #         xaxis_nticks=31,  # Definir o número de dias
+    #         xaxis=dict(
+    #             tickmode="linear",
+    #             tickvals=list(range(1, 32)),  # Definir os dias
+    #             ticktext=list(range(1, 32)),  # Definir os dias
+    #         ),
+    #         yaxis=dict(
+    #             tickmode="linear",
+    #             ticksuffix=" ",  # Adicionar um espaço no final
+    #         ),
+    #         plot_bgcolor="white",
+    #         margin=dict({"t": 40, "b": 40, "l": 40, "r": 40}),
+    #         font=dict({"family": "Inter"}),
+    #     )
 
-        fig.update_yaxes(
-            autorange="reversed",
-        )
+    #     fig.update_yaxes(
+    #         autorange="reversed",
+    #     )
 
-        return fig
+    #     return fig
 
-    def get_eff_bar_turn(self, dataframe: pd.DataFrame, meta: int = 90) -> go.Figure:
-        """
-        Este método é responsável por criar o gráfico de eficiência, por turno.
+    # def get_eff_bar_turn(self, dataframe: pd.DataFrame, meta: int = 90) -> go.Figure:
+    #     """
+    #     Este método é responsável por criar o gráfico de eficiência, por turno.
 
-        Parâmetros:
-        dataframe (pd.DataFrame): DataFrame contendo os dados para o gráfico.
-                                Deve incluir as colunas 'linha', 'turno',
-                                'producao_total e 'eficiencia'.
-        meta (int): Meta de eficiência a ser alcançada. Padrão: 90.
+    #     Parâmetros:
+    #     dataframe (pd.DataFrame): DataFrame contendo os dados para o gráfico.
+    #                             Deve incluir as colunas 'linha', 'turno',
+    #                             'producao_total e 'eficiencia'.
+    #     meta (int): Meta de eficiência a ser alcançada. Padrão: 90.
 
-        Retorna:
-        fig: Objeto plotly.graph_objects.Figure com o gráfico de eficiência.
-        """
+    #     Retorna:
+    #     fig: Objeto plotly.graph_objects.Figure com o gráfico de eficiência.
+    #     """
 
-        # Agrupar por 'turno' e "linha" e calcular a média da eficiência e soma da produção
-        # Definir a ordem desejada para 'turno'
-        turno_order = ["NOT", "MAT", "VES"]
+    #     # Agrupar por 'turno' e "linha" e calcular a média da eficiência e soma da produção
+    #     # Definir a ordem desejada para 'turno'
+    #     turno_order = ["NOT", "MAT", "VES"]
 
-        # Converter 'turno' para uma variável categórica com a ordem desejada
-        dataframe["turno"] = pd.Categorical(
-            dataframe["turno"], categories=turno_order, ordered=True
-        )
+    #     # Converter 'turno' para uma variável categórica com a ordem desejada
+    #     dataframe["turno"] = pd.Categorical(
+    #         dataframe["turno"], categories=turno_order, ordered=True
+    #     )
 
-        # Agrupar, agregar e redefinir o índice
-        df_grouped = (
-            dataframe.groupby(["linha", "turno"], observed=True)
-            .agg({"eficiencia": "mean", "total_produzido": "sum"})
-            .reset_index()
-        )
+    #     # Agrupar, agregar e redefinir o índice
+    #     df_grouped = (
+    #         dataframe.groupby(["linha", "turno"], observed=True)
+    #         .agg({"eficiencia": "mean", "total_produzido": "sum"})
+    #         .reset_index()
+    #     )
 
-        # Ordenar o DataFrame por 'linha' e 'turno'
-        df_grouped = df_grouped.sort_values(["linha", "turno"])
+    #     # Ordenar o DataFrame por 'linha' e 'turno'
+    #     df_grouped = df_grouped.sort_values(["linha", "turno"])
 
-        # Ajustar produção total para caixas, dividindo por 10
-        df_grouped["total_produzido"] = (df_grouped["total_produzido"] / 10).round(0)
+    #     # Ajustar produção total para caixas, dividindo por 10
+    #     df_grouped["total_produzido"] = (df_grouped["total_produzido"] / 10).round(0)
 
-        # Gráfico de barras
-        fig = px.bar(
-            df_grouped,
-            orientation="h",
-            x="eficiencia",
-            y="linha",
-            color="turno",
-            barmode="group",
-            hover_data={
-                "total_produzido": True,
-                "linha": False,
-                "eficiencia": False,
-            },
-            color_discrete_map={
-                "NOT": self.grey_500_color,
-                "MAT": self.grey_600_color,
-                "VES": self.grey_900_color,
-            },
-            labels={"eficiencia": "Eficiência"},
-        )
+    #     # Gráfico de barras
+    #     fig = px.bar(
+    #         df_grouped,
+    #         orientation="h",
+    #         x="eficiencia",
+    #         y="linha",
+    #         color="turno",
+    #         barmode="group",
+    #         hover_data={
+    #             "total_produzido": True,
+    #             "linha": False,
+    #             "eficiencia": False,
+    #         },
+    #         color_discrete_map={
+    #             "NOT": self.grey_500_color,
+    #             "MAT": self.grey_600_color,
+    #             "VES": self.grey_900_color,
+    #         },
+    #         labels={"eficiencia": "Eficiência"},
+    #     )
 
-        # Ajustar hover
-        fig.update_traces(
-            hovertemplate="<b>Linha</b>: %{y}<br>"
-            "<b>Eficiência</b>: %{x:.1%}<br>"
-            "<b>Produção</b>: %{customdata[0]} caixas<br>",
-        )
+    #     # Ajustar hover
+    #     fig.update_traces(
+    #         hovertemplate="<b>Linha</b>: %{y}<br>"
+    #         "<b>Eficiência</b>: %{x:.1%}<br>"
+    #         "<b>Produção</b>: %{customdata[0]} caixas<br>",
+    #     )
 
-        # Definir o título do gráfico
-        fig.update_layout(
-            title="Eficiência por Linhas",
-            xaxis_title="Eficiência",
-            yaxis_title="Linha",
-            title_x=0.5,
-            margin=dict({"t": 80, "b": 40, "l": 40, "r": 40}),
-            legend=dict(
-                {
-                    "title_text": "Turno",
-                    "traceorder": "normal",
-                },
-            ),
-            template="plotly_white",
-            font=dict({"family": "Inter"}),
-        )
+    #     # Definir o título do gráfico
+    #     fig.update_layout(
+    #         title="Eficiência por Linhas",
+    #         xaxis_title="Eficiência",
+    #         yaxis_title="Linha",
+    #         title_x=0.5,
+    #         margin=dict({"t": 80, "b": 40, "l": 40, "r": 40}),
+    #         legend=dict(
+    #             {
+    #                 "title_text": "Turno",
+    #                 "traceorder": "normal",
+    #             },
+    #         ),
+    #         template="plotly_white",
+    #         font=dict({"family": "Inter"}),
+    #     )
 
-        # Ajustar valores de x para porcentagem
-        fig.update_xaxes(tickformat=".0%")
+    #     # Ajustar valores de x para porcentagem
+    #     fig.update_xaxes(tickformat=".0%")
 
-        # Ajustar para aparecer todas as linhas
-        fig.update_yaxes(
-            autorange="reversed",
-            tickvals=df_grouped["linha"].unique(),
-        )
+    #     # Ajustar para aparecer todas as linhas
+    #     fig.update_yaxes(
+    #         autorange="reversed",
+    #         tickvals=df_grouped["linha"].unique(),
+    #     )
 
-        # Calcular a média geral de eficiência
-        avg_efficiency = df_grouped["eficiencia"].mean()
+    #     # Calcular a média geral de eficiência
+    #     avg_efficiency = df_grouped["eficiencia"].mean()
 
-        # Adicionar linha de média geral
-        fig.add_trace(
-            go.Scatter(
-                x=[avg_efficiency] * len(df_grouped["linha"]),
-                y=df_grouped["linha"],
-                mode="lines",
-                name="Média Geral",
-                line=dict(dash="dash", color="black"),
-                hovertemplate="<b>Média Geral</b>: %{x:.1%}<br>",
-            )
-        )
+    #     # Adicionar linha de média geral
+    #     fig.add_trace(
+    #         go.Scatter(
+    #             x=[avg_efficiency] * len(df_grouped["linha"]),
+    #             y=df_grouped["linha"],
+    #             mode="lines",
+    #             name="Média Geral",
+    #             line=dict(dash="dash", color="black"),
+    #             hovertemplate="<b>Média Geral</b>: %{x:.1%}<br>",
+    #         )
+    #     )
 
-        # Adicionar linha de meta
-        fig.add_trace(
-            go.Scatter(
-                x=[meta / 100] * len(df_grouped["linha"]),
-                y=df_grouped["linha"],
-                mode="lines",
-                name=f"Meta {meta}%",
-                line=dict(dash="dash", color="blue"),
-                hovertemplate="<b>Meta</b>: %{x:.1%}<br>",
-            )
-        )
+    #     # Adicionar linha de meta
+    #     fig.add_trace(
+    #         go.Scatter(
+    #             x=[meta / 100] * len(df_grouped["linha"]),
+    #             y=df_grouped["linha"],
+    #             mode="lines",
+    #             name=f"Meta {meta}%",
+    #             line=dict(dash="dash", color="blue"),
+    #             hovertemplate="<b>Meta</b>: %{x:.1%}<br>",
+    #         )
+    #     )
 
-        return fig
+    #     return fig
 
-    def get_time_lost(
-        self,
-        df_info: pd.DataFrame,
-        ind_type: IndicatorType,
-        turn: str,
-        working_minutes: pd.DataFrame = None,
-    ) -> pd.DataFrame:
-        """
-        Este método é responsável por criar o dataframe de tempo perdido.
+    # def get_time_lost(
+    #     self,
+    #     df_info: pd.DataFrame,
+    #     ind_type: IndicatorType,
+    #     turn: str,
+    #     working_minutes: pd.DataFrame = None,
+    # ) -> pd.DataFrame:
+    #     """
+    #     Este método é responsável por criar o dataframe de tempo perdido.
 
-        Parâmetros:
-        df_info (pd.DataFrame): DataFrame contendo os dados para o gráfico.
-                                Deve incluir as colunas 'data_registro', 'turno' e 'eficiencia'.
-        ind_type (IndicatorType): Tipo do indicador.
+    #     Parâmetros:
+    #     df_info (pd.DataFrame): DataFrame contendo os dados para o gráfico.
+    #                             Deve incluir as colunas 'data_registro', 'turno' e 'eficiencia'.
+    #     ind_type (IndicatorType): Tipo do indicador.
 
-        Retorna:
-        df_info_desc_times (pd.DataFrame): DataFrame com os dados de tempo perdido.
-        """
+    #     Retorna:
+    #     df_info_desc_times (pd.DataFrame): DataFrame com os dados de tempo perdido.
+    #     """
 
-        # Mapear pelo tipo do indicador
-        ind_type_map = {
-            IndicatorType.EFFICIENCY: self.times_data.desc_eff,
-            IndicatorType.REPAIR: self.times_data.desc_rep,
-            IndicatorType.PERFORMANCE: self.times_data.desc_perf,
-        }
+    #     # Mapear pelo tipo do indicador
+    #     ind_type_map = {
+    #         IndicatorType.EFFICIENCY: self.times_data.desc_eff,
+    #         IndicatorType.REPAIR: self.times_data.desc_rep,
+    #         IndicatorType.PERFORMANCE: self.times_data.desc_perf,
+    #     }
 
-        # Conseguindo dataframe com tempos ajustados
-        df_info_desc_times = self.times_data.get_times_discount(df_info, ind_type_map[ind_type])
+    #     # Conseguindo dataframe com tempos ajustados
+    #     df_info_desc_times = self.times_data.get_times_discount(df_info, ind_type_map[ind_type])
 
-        # Unir df_info_desc_times com working_minutes.
-        if working_minutes is not None:
-            df_info_desc_times = pd.concat(
-                [df_info_desc_times, working_minutes], ignore_index=True, sort=False
-            )
+    #     # Unir df_info_desc_times com working_minutes.
+    #     if working_minutes is not None:
+    #         df_info_desc_times = pd.concat(
+    #             [df_info_desc_times, working_minutes], ignore_index=True, sort=False
+    #         )
 
-        # Filtrar por turno
-        df_info_desc_times = (
-            df_info_desc_times[df_info_desc_times["turno"] == turn]
-            if turn != "TOT"
-            else df_info_desc_times
-        )
+    #     # Filtrar por turno
+    #     df_info_desc_times = (
+    #         df_info_desc_times[df_info_desc_times["turno"] == turn]
+    #         if turn != "TOT"
+    #         else df_info_desc_times
+    #     )
 
-        # Se coluna "excedente" for nula, substituir pelo valor de "tempo_registro_min"
-        df_info_desc_times.loc[df_info_desc_times["excedente"].isnull(), "excedente"] = (
-            df_info_desc_times["tempo_registro_min"]
-        )
+    #     # Se coluna "excedente" for nula, substituir pelo valor de "tempo_registro_min"
+    #     df_info_desc_times.loc[df_info_desc_times["excedente"].isnull(), "excedente"] = (
+    #         df_info_desc_times["tempo_registro_min"]
+    #     )
 
-        # Se o problema for uma string "None" substituir por "Não Informado"
-        df_info_desc_times["problema"] = df_info_desc_times["problema"].replace(
-            "None", "Problema não Informado"
-        )
+    #     # Se o problema for uma string "None" substituir por "Não Informado"
+    #     df_info_desc_times["problema"] = df_info_desc_times["problema"].replace(
+    #         "None", "Problema não Informado"
+    #     )
 
-        # Se motivo id for nulo e excedente for menor que 5 substituir motivo_nome por
-        # "5min ou menos"
-        df_info_desc_times.loc[
-            (df_info_desc_times["motivo_id"].isnull()) & (df_info_desc_times["excedente"] <= 5),
-            ["motivo_nome", "problema"],
-        ] = ["5min ou menos", "Não apontado - 5min ou menos"]
+    #     # Se motivo id for nulo e excedente for menor que 5 substituir motivo_nome por
+    #     # "5min ou menos"
+    #     df_info_desc_times.loc[
+    #         (df_info_desc_times["motivo_id"].isnull()) & (df_info_desc_times["excedente"] <= 5),
+    #         ["motivo_nome", "problema"],
+    #     ] = ["5min ou menos", "Não apontado - 5min ou menos"]
 
-        # Preencher onde motivo_nome for nulo
-        df_info_desc_times["motivo_nome"] = df_info_desc_times["motivo_nome"].fillna(
-            "Motivo não apontado"
-        )
+    #     # Preencher onde motivo_nome for nulo
+    #     df_info_desc_times["motivo_nome"] = df_info_desc_times["motivo_nome"].fillna(
+    #         "Motivo não apontado"
+    #     )
 
-        df_info_desc_times.loc[
-            (df_info_desc_times["motivo_id"] == 12)
-            & (df_info_desc_times["problema"] == "Parada programada"),
-            "problema",
-        ] = "Parada Programada"
+    #     df_info_desc_times.loc[
+    #         (df_info_desc_times["motivo_id"] == 12)
+    #         & (df_info_desc_times["problema"] == "Parada programada"),
+    #         "problema",
+    #     ] = "Parada Programada"
 
-        # data_hora_final para datetime
-        df_info_desc_times["data_hora_final"] = pd.to_datetime(
-            df_info_desc_times["data_hora_final"]
-        )
+    #     # data_hora_final para datetime
+    #     df_info_desc_times["data_hora_final"] = pd.to_datetime(
+    #         df_info_desc_times["data_hora_final"]
+    #     )
 
-        return df_info_desc_times
+    #     return df_info_desc_times
 
-    def adjust_df_for_bar_lost(self, df: pd.DataFrame, indicator: IndicatorType) -> pd.DataFrame:
-        """
-        Remove as paradas que não afetam o indicador.
+    # def adjust_df_for_bar_lost(self, df: pd.DataFrame, indicator: IndicatorType) -> pd.DataFrame:
+    #     """
+    #     Remove as paradas que não afetam o indicador.
 
-        Parâmetros:
-        - df: Dataframe contendo os dados
-        - indicator: Define se é performance ou repair
+    #     Parâmetros:
+    #     - df: Dataframe contendo os dados
+    #     - indicator: Define se é performance ou repair
 
-        Retorno:
-        - df: Dataframe contendo só as paradas que afetam.
-        """
+    #     Retorno:
+    #     - df: Dataframe contendo só as paradas que afetam.
+    #     """
 
-        indicator_actions = {
-            IndicatorType.PERFORMANCE: lambda df: df[
-                ~df["motivo_id"].isin(self.times_data.not_af_perf)
-            ],
-            IndicatorType.REPAIR: lambda df: df[df["motivo_id"].isin(self.times_data.af_rep)],
-            IndicatorType.EFFICIENCY: lambda df: df[
-                ~df["motivo_id"].isin(self.times_data.not_af_eff)
-            ],
-        }
+    #     indicator_actions = {
+    #         IndicatorType.PERFORMANCE: lambda df: df[
+    #             ~df["motivo_id"].isin(self.times_data.not_af_perf)
+    #         ],
+    #         IndicatorType.REPAIR: lambda df: df[df["motivo_id"].isin(self.times_data.af_rep)],
+    #         IndicatorType.EFFICIENCY: lambda df: df[
+    #             ~df["motivo_id"].isin(self.times_data.not_af_eff)
+    #         ],
+    #     }
 
-        if indicator in indicator_actions:
-            df = indicator_actions[indicator](df)
+    #     if indicator in indicator_actions:
+    #         df = indicator_actions[indicator](df)
 
-        return df
+    #     return df
 
     def get_eff_bar_lost(self, df: pd.DataFrame, turn: str, checked: bool = False) -> go.Figure:
         """

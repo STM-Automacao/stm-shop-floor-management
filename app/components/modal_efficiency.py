@@ -10,14 +10,8 @@ from io import StringIO
 import dash_bootstrap_components as dbc
 import dash_mantine_components as dmc
 import pandas as pd
-from components import (
-    bar_chart_general,
-    btn_modal,
-    heatmap,
-    line_graph,
-    production_cards,
-    production_grid,
-)
+from components import (bar_chart_general, btn_modal, heatmap, line_graph,
+                        production_cards, production_grid)
 from dash import Input, Output, callback, html
 from dash.exceptions import PreventUpdate
 from dash_bootstrap_templates import ThemeSwitchAIO
@@ -272,3 +266,20 @@ def efficiency_general(df_eff, toggle_theme):
     df = pd.read_json(StringIO(df_eff), orient="split")
 
     return bcg.create_bar_chart_gen(df, IndicatorType.EFFICIENCY, template, 90)
+
+# --------------------- Efficiency Lost --------------------- #
+@callback(
+    Output("eff-lost", "children"),
+    [
+        Input("store-info", "data"),
+        Input(f"radio-items-{IndicatorType.EFFICIENCY.value}", "value"),
+        Input(ThemeSwitchAIO.ids.switch("theme"), "value"),
+    ],
+)
+def efficiency_lost(info, turn, toggle_theme):
+   
+    if not info:
+        raise PreventUpdate
+
+    template = TemplateType.LIGHT if toggle_theme else TemplateType.DARK
+    
