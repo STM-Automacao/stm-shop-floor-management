@@ -11,14 +11,12 @@ Módulo responsável por criar os gráficos de indicadores por turno.
 # cSpell: words borderwidth borderpad ticksuffix sabado solucao viridis categoryorder aggfunc
 
 
-import matplotlib.colors as mcolors
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-import seaborn as sns
 
 # pylint: disable=E0401
-from helpers.types import BSColorsEnum, IndicatorType
+from helpers.types import BSColorsEnum
 from service.times_data import TimesData
 
 
@@ -341,493 +339,499 @@ class IndicatorsTurn:
 
     #     return df
 
-    def get_eff_bar_lost(self, df: pd.DataFrame, turn: str, checked: bool = False) -> go.Figure:
-        """
-        Retorna um gráfico de barras representando o tempo perdido que mais impacta a eficiência.
-
-        Parâmetros:
-        - df: DataFrame contendo os dados necessários para a criação do gráfico.
-        - checked: Se True, retorna o gráfico de barras agrupado por motivo_nome e problema.
-
-        Retorno:
-        - fig: Objeto go.Figure contendo o gráfico de barras.
-        """
-        # Turno Map
-        turn_map = {
-            "NOT": "Noturno",
-            "MAT": "Matutino",
-            "VES": "Vespertino",
-            "TOT": "Total",
-        }
-
-        # Remover linhas que não afetam a eficiência
-        df = self.adjust_df_for_bar_lost(df, IndicatorType.EFFICIENCY)
-
-        # ---------- df motivo ---------- #
-        # Agrupar motivo_nome
-        df_motivo = (
-            df.groupby("motivo_nome")["excedente"]
-            .sum()
-            .sort_values(ascending=False)
-            .head(5)
-            .reset_index()
-        )
-
-        # Preencher onde motivo_id for 3 e problema for nulo
-        df.loc[
-            (df["motivo_id"] == 3) & (df["problema"].isnull()),
-            "problema",
-        ] = "Refeição"
-
-        # Preencher onde problema for nulo
-        df.loc[:, "problema"] = df["problema"].fillna("Problema não informado")
-
-        # ---------- df group ---------- #
-        # Agrupar por motivo_nome e problema e calcular a soma do excedente
-        df_grouped = df.groupby(["motivo_nome", "problema"]).agg({"excedente": "sum"}).reset_index()
-        # Ordenar por excedente
-        df_grouped = df_grouped.sort_values("excedente", ascending=False).head(8)
-
-        # ---------- df problema ---------- #
-        # Remover linhas onde motivo_nome é igual ao problema
-        df = df[df["motivo_nome"] != df["problema"]]
-        # Agrupar por problema
-        df_problema = (
-            df.groupby("problema")["excedente"]
-            .sum()
-            .sort_values(ascending=False)
-            .head(5)
-            .reset_index()
-        )
-
-        # Motivo
-        motive_bar = go.Bar(
-            name="Motivo",
-            x=df_motivo["motivo_nome"],
-            y=df_motivo["excedente"],
-            marker_color=self.grey_600_color,
-        )
-
-        motive_bar.update(
-            hovertemplate="<b>Motivo</b>: %{x}<br><b>Tempo Perdido</b>: %{y:.0f} min<br>",
-        )
-
-        # Problema
-
-        # Cria uma paleta de cores com os valores únicos na coluna 'problema'
-        palette = sns.dark_palette("lightgray", df_grouped["problema"].nunique())
-
-        # Converte as cores RGB para hexadecimal
-        palette_hex = [mcolors.to_hex(color) for color in palette]
-
-        # Cria um dicionário que mapeia cada valor único na coluna 'problema' para uma cor na paleta
-        color_map = dict(zip(df_grouped["problema"].unique(), palette_hex))
-
-        # Mapeia os valores na coluna 'problema' para as cores correspondentes
-        df_grouped["color"] = df_grouped["problema"].map(color_map)
-
-        problem_bar = go.Bar(
-            name="Problema",
-            x=df_problema["problema"],
-            y=df_problema["excedente"],
-            marker_color=self.grey_500_color,
-            hovertemplate="<b>Problema</b>: %{x}<br><b>Tempo Perdido</b>: %{y:.0f} min<br>",
-        )
-
-        # Group
-        group_bar = go.Bar(
-            name="Motivo/Problema",
-            x=df_grouped["motivo_nome"],
-            y=df_grouped["excedente"],
-            customdata=df_grouped["problema"],
-            hovertemplate="<b>Motivo</b>: %{customdata}<br><b>Tempo Perdido</b>: %{y:.0f} min<br>",
-            marker_color=self.grey_500_color,
-        )
-
-        # Gráfico de barras
-        fig = (
-            go.Figure(data=[motive_bar, problem_bar])
-            if not checked
-            else go.Figure(data=[group_bar])
-        )
-
-        fig.update_layout(
-            title=f"Tempo Perdido que mais impacta a Eficiência - {turn_map[turn]}",
-            xaxis_title="Motivo/Problema",
-            yaxis_title="Tempo Perdido",
-            title_x=0.5,
-            margin=dict({"t": 80, "b": 40, "l": 40, "r": 40}),
-            template="plotly_white",
-            font=dict({"family": "Inter"}),
-            showlegend=False,
-        )
-
-        if not checked:
-            fig.update_layout(showlegend=True)
-
-        return fig
-
-    def get_heat_turn(
-        self,
-        df_pivot: pd.DataFrame,
-        indicator: IndicatorType,
-        annotations: list,
-        meta: int = 4,
-    ) -> go.Figure:
-        """
-        Este método é responsável por criar o gráfico de reparos e performance, por turno.
-
-        Parâmetros:
-        dataframe (pd.DataFrame): DataFrame contendo os dados para o gráfico.
-                                Deve incluir as colunas 'data_registro', 'turno' e o indicador.
-        meta (int): Meta de eficiência a ser alcançada. Padrão: 4.
-        annotations (bool): Se True, adiciona anotações com a média.
-
-        Retorna:
-        fig: Objeto plotly.graph_objects.Figure.
-
-        O gráfico é um heatmap que mostra a média por maquina e data.
-        A é colorida de verde se estiver abaixo de 4% e
-        de vermelho se estiver acima de 4%.
-        """
-
-        indicator = indicator.value
-        ind_capitalized = str(indicator).capitalize()
-
-        # Criar escala de cores personalizada - cores do bootstrap
-        colors = [
-            [0, self.success_color],
-            [0.04, self.success_color],
-            [0.04, self.danger_color],
-            [1, self.danger_color],
-        ]
-
-        # Extrair apenas o dia da data
-        df_pivot.columns = pd.to_datetime(df_pivot.columns).day
-
-        # Criar o gráfico de calor
-        fig = go.Figure(
-            data=go.Heatmap(
-                z=df_pivot.values,
-                x=df_pivot.columns,
-                y=df_pivot.index,
-                colorscale=colors,
-                name="Heatmap",
-                zmin=0,
-                zmax=1,
-                hoverongaps=False,
-                hovertemplate="Linha: %{y}<br>Dia: %{x}<br>Valor: %{z:.1%}",
-                showscale=False,
-                xgap=1,
-                ygap=1,
-            )
-        )
-
-        # Definir o título do gráfico
-        fig.update_layout(
-            title=f"{ind_capitalized} - Meta {meta}%",
-            xaxis_title="Dia",
-            yaxis_title="Linha",
-            annotations=annotations,
-            title_x=0.5,
-            xaxis_nticks=31,
-            xaxis=dict(
-                tickmode="linear",
-                tickvals=list(range(1, 32)),
-                ticktext=list(range(1, 32)),
-            ),
-            yaxis=dict(
-                tickmode="linear",
-                ticksuffix=" ",  # Adicionar um espaço no final
-            ),
-            plot_bgcolor="white",
-            margin=dict({"t": 40, "b": 40, "l": 40, "r": 40}),
-            font=dict({"family": "Inter"}),
-        )
-
-        fig.update_yaxes(
-            autorange="reversed",
-        )
-
-        return fig
-
-    def get_bar_turn(
-        self, dataframe: pd.DataFrame, indicator: IndicatorType, meta: int = 4
-    ) -> go.Figure:
-        """
-        Este método é responsável por criar o gráfico, por turno.
-
-        Parâmetros:
-        dataframe (pd.DataFrame): DataFrame contendo os dados para o gráfico.
-                                Deve incluir as colunas 'linha', 'turno',
-                                'afeta o indicador.
-        meta (int): Meta de eficiência a ser alcançada. Padrão: 4.
-
-        Retorna:
-        fig: Objeto plotly.graph_objects.Figure com o gráfico de eficiência.
-        """
-
-        indicator = indicator.value
-
-        # Definir a ordem desejada para 'turno'
-        turno_order = ["NOT", "MAT", "VES"]
-
-        # Converter 'turno' para uma variável categórica com a ordem desejada
-        dataframe["turno"] = pd.Categorical(
-            dataframe["turno"], categories=turno_order, ordered=True
-        )
-
-        # Agrupar, agregar e redefinir o índice
-        df_grouped = (
-            dataframe.groupby(["linha", "turno"], observed=True)
-            .agg({indicator: "mean", "afeta": "sum"})
-            .reset_index()
-        )
-
-        # Ordenar o DataFrame por 'linha' e 'turno'
-        df_grouped = df_grouped.sort_values(["linha", "turno"])
-
-        # Gráfico de barras
-        fig = px.bar(
-            df_grouped,
-            orientation="h",
-            x=indicator,
-            y="linha",
-            color="turno",
-            barmode="group",
-            hover_data={
-                "afeta": True,
-                "linha": False,
-                indicator: False,
-            },
-            color_discrete_map={
-                "NOT": self.grey_500_color,
-                "MAT": self.grey_600_color,
-                "VES": self.grey_900_color,
-            },
-            labels={indicator: f"{indicator.capitalize()}"},
-        )
-
-        # Ajustar hover
-        fig.update_traces(
-            hovertemplate="<b>Linha</b>: %{y}<br>"
-            "<b>Valor</b>: %{x:.1%}<br>"
-            "<b>Tempo</b>: %{customdata[0]} min<br>",
-        )
-
-        # Definir o título do gráfico
-        fig.update_layout(
-            title=f"{indicator.capitalize()} por Linhas",
-            xaxis_title=f"{indicator.capitalize()}",
-            yaxis_title="Linha",
-            title_x=0.5,
-            margin=dict({"t": 80, "b": 40, "l": 40, "r": 40}),
-            legend=dict(
-                {
-                    "title_text": "Turno",
-                    "x": 0,
-                    "y": 1,
-                    "traceorder": "normal",
-                    "font": {"family": "Inter", "size": 12},
-                },
-            ),
-            template="plotly_white",
-            font=dict({"family": "Inter"}),
-        )
-
-        # Ajustar valores de x para porcentagem e inverter o eixo x
-        fig.update_xaxes(tickformat=".0%", autorange="reversed")
-
-        # Ajustar para aparecer todas as linhas e or para a direita
-        fig.update_yaxes(
-            autorange="reversed",
-            tickvals=df_grouped["linha"].unique(),
-            side="right",
-        )
-
-        # Calcular a média geral
-        avg_efficiency = df_grouped[indicator].mean()
-
-        # Adicionar linha de média geral
-        fig.add_trace(
-            go.Scatter(
-                x=[avg_efficiency] * len(df_grouped["linha"]),
-                y=df_grouped["linha"],
-                mode="lines",
-                name="Média Geral",
-                line=dict(dash="dash", color="black"),
-                hovertemplate="<b>Média Geral</b>: %{x:.1%}<br>",
-            )
-        )
-
-        # Adicionar linha de meta
-        fig.add_trace(
-            go.Scatter(
-                x=[meta / 100] * len(df_grouped["linha"]),
-                y=df_grouped["linha"],
-                mode="lines",
-                name="Meta",
-                line=dict(dash="dash", color="blue"),
-                hovertemplate="<b>Meta</b>: %{x:.1%}<br>",
-            )
-        )
-
-        # Adicionar anotação
-        fig.add_annotation(
-            x=0.15,  # Posição x da anotação
-            y=0.95,  # Posição y da anotação
-            xref="paper",
-            yref="paper",
-            text=f"Meta: Abaixo de {meta}%",  # Texto da anotação
-            showarrow=False,
-            font=dict(size=12, color="black", family="Inter"),
-            align="left",
-            ax=20,
-            ay=-30,
-            bordercolor="#c7c7c7",
-            borderwidth=2,
-            borderpad=4,
-            bgcolor="#ff7f0e",
-            opacity=0.6,
-        )
-
-        return fig
-
-    def get_bar_lost(
-        self,
-        df: pd.DataFrame,
-        turn: str,
-        indicator: IndicatorType,
-        checked: bool = False,
-    ) -> go.Figure:
-        """
-        Retorna um gráfico de barras representando o tempo perdido que mais impacta.
-
-        Parâmetros:
-        - df: DataFrame contendo os dados necessários para a criação do gráfico.
-        - checked: Se True, retorna o gráfico de barras agrupado por motivo_nome e problema.
-
-        Retorno:
-        - fig: Objeto go.Figure contendo o gráfico de barras.
-        """
-        # Turno Map
-        turn_map = {
-            "NOT": "Noturno",
-            "MAT": "Matutino",
-            "VES": "Vespertino",
-            "TOT": "Total",
-        }
-
-        df = self.adjust_df_for_bar_lost(df, indicator)
-
-        # Preencher onde motivo_id for 12 e problema for nulo
-        df.loc[
-            (df["motivo_id"] == 12) & (df["problema"].isnull()),
-            "problema",
-        ] = "Parada Programada"
-
-        # Preencher onde problema for nulo e motivo_id for 3
-        df.loc[
-            (df["motivo_id"] == 3) & (df["problema"].isnull()),
-            "problema",
-        ] = "Refeição"
-
-        # Preencher onde problema for nulo
-        df.loc[:, "problema"] = df["problema"].fillna("Problema não informado")
-
-        # ---------- df motivo ---------- #
-        # Agrupar motivo_nome
-        df_motivo = (
-            df.groupby("motivo_nome")["excedente"]
-            .sum()
-            .sort_values(ascending=False)
-            .head(5)
-            .reset_index()
-        )
-
-        # ---------- df group ---------- #
-        # Agrupar por motivo_nome e problema e calcular a soma do excedente
-        df_grouped = df.groupby(["motivo_nome", "problema"]).agg({"excedente": "sum"}).reset_index()
-        # Ordenar por excedente
-        df_grouped = df_grouped.sort_values("excedente", ascending=False).head(8)
-
-        # ---------- df problema ---------- #
-        # Remover linhas onde motivo_nome é igual ao problema
-        df = df[df["motivo_nome"] != df["problema"]]
-        # Agrupar por problema
-        df_problema = (
-            df.groupby("problema")["excedente"]
-            .sum()
-            .sort_values(ascending=False)
-            .head(5)
-            .reset_index()
-        )
-
-        # Motivo
-        motive_bar = go.Bar(
-            name="Motivo",
-            x=df_motivo["motivo_nome"],
-            y=df_motivo["excedente"],
-            marker_color=self.grey_600_color,
-        )
-
-        motive_bar.update(
-            hovertemplate="<b>Motivo</b>: %{x}<br><b>Tempo Perdido</b>: %{y:.0f} min<br>",
-        )
-
-        # Cria uma paleta de cores com os valores únicos na coluna 'problema'
-        palette = sns.dark_palette("lightgray", df_grouped["problema"].nunique())
-
-        # Converte as cores RGB para hexadecimal
-        palette_hex = [mcolors.to_hex(color) for color in palette]
-
-        # Cria um dicionário que mapeia cada valor único na coluna 'problema' para uma cor na paleta
-        color_map = dict(zip(df_grouped["problema"].unique(), palette_hex))
-
-        # Mapeia os valores na coluna 'problema' para as cores correspondentes
-        df_grouped["color"] = df_grouped["problema"].map(color_map)
-
-        # Problema
-        problem_bar = go.Bar(
-            name="Problema",
-            x=df_problema["problema"],
-            y=df_problema["excedente"],
-            marker_color=self.grey_500_color,
-            hovertemplate="<b>Problema</b>: %{x}<br><b>Tempo Perdido</b>: %{y:.0f} min<br>",
-        )
-
-        # Group
-        group_bar = go.Bar(
-            name="Motivo/Problema",
-            x=df_grouped["motivo_nome"],
-            y=df_grouped["excedente"],
-            customdata=df_grouped["problema"],
-            hovertemplate="<b>Motivo</b>: %{customdata}<br><b>Tempo Perdido</b>: %{y:.0f} min<br>",
-            marker_color=self.grey_500_color,
-        )
-
-        # Gráfico de barras
-        fig = (
-            go.Figure(data=[motive_bar, problem_bar])
-            if not checked
-            else go.Figure(data=[group_bar])
-        )
-
-        fig.update_layout(
-            title=f"Maior impacto em {indicator.value.capitalize()} - {turn_map[turn]}",
-            xaxis_title="Motivo/Problema",
-            yaxis_title="Tempo Perdido",
-            title_x=0.5,
-            margin=dict({"t": 80, "b": 40, "l": 40, "r": 40}),
-            template="plotly_white",
-            font=dict({"family": "Inter"}),
-            showlegend=False,
-        )
-
-        if not checked:
-            fig.update_layout(showlegend=True)
-
-        return fig
+    # def get_eff_bar_lost(self, df: pd.DataFrame, turn: str, checked: bool = False) -> go.Figure:
+    #     """
+    #     Retorna um gráfico de barras representando o tempo perdido que mais impacta a eficiência.
+
+    #     Parâmetros:
+    #     - df: DataFrame contendo os dados necessários para a criação do gráfico.
+    #     - checked: Se True, retorna o gráfico de barras agrupado por motivo_nome e problema.
+
+    #     Retorno:
+    #     - fig: Objeto go.Figure contendo o gráfico de barras.
+    #     """
+    #     # Turno Map
+    #     turn_map = {
+    #         "NOT": "Noturno",
+    #         "MAT": "Matutino",
+    #         "VES": "Vespertino",
+    #         "TOT": "Total",
+    #     }
+
+    #     # Remover linhas que não afetam a eficiência
+    #     df = self.adjust_df_for_bar_lost(df, IndicatorType.EFFICIENCY)
+
+    #     # ---------- df motivo ---------- #
+    #     # Agrupar motivo_nome
+    #     df_motivo = (
+    #         df.groupby("motivo_nome")["excedente"]
+    #         .sum()
+    #         .sort_values(ascending=False)
+    #         .head(5)
+    #         .reset_index()
+    #     )
+
+    #     # Preencher onde motivo_id for 3 e problema for nulo
+    #     df.loc[
+    #         (df["motivo_id"] == 3) & (df["problema"].isnull()),
+    #         "problema",
+    #     ] = "Refeição"
+
+    #     # Preencher onde problema for nulo
+    #     df.loc[:, "problema"] = df["problema"].fillna("Problema não informado")
+
+    #     # ---------- df group ---------- #
+    #     # Agrupar por motivo_nome e problema e calcular a soma do excedente
+    #     df_grouped = df.groupby(["motivo_nome", "problema"])
+    #       .agg({"excedente": "sum"}).reset_index()
+    #     # Ordenar por excedente
+    #     df_grouped = df_grouped.sort_values("excedente", ascending=False).head(8)
+
+    #     # ---------- df problema ---------- #
+    #     # Remover linhas onde motivo_nome é igual ao problema
+    #     df = df[df["motivo_nome"] != df["problema"]]
+    #     # Agrupar por problema
+    #     df_problema = (
+    #         df.groupby("problema")["excedente"]
+    #         .sum()
+    #         .sort_values(ascending=False)
+    #         .head(5)
+    #         .reset_index()
+    #     )
+
+    #     # Motivo
+    #     motive_bar = go.Bar(
+    #         name="Motivo",
+    #         x=df_motivo["motivo_nome"],
+    #         y=df_motivo["excedente"],
+    #         marker_color=self.grey_600_color,
+    #     )
+
+    #     motive_bar.update(
+    #         hovertemplate="<b>Motivo</b>: %{x}<br><b>Tempo Perdido</b>: %{y:.0f} min<br>",
+    #     )
+
+    #     # Problema
+
+    #     # Cria uma paleta de cores com os valores únicos na coluna 'problema'
+    #     palette = sns.dark_palette("lightgray", df_grouped["problema"].nunique())
+
+    #     # Converte as cores RGB para hexadecimal
+    #     palette_hex = [mcolors.to_hex(color) for color in palette]
+
+    #     # Cria um dicionário que mapeia cada valor único na coluna 'problema'
+    #     # para uma cor na paleta
+    #     color_map = dict(zip(df_grouped["problema"].unique(), palette_hex))
+
+    #     # Mapeia os valores na coluna 'problema' para as cores correspondentes
+    #     df_grouped["color"] = df_grouped["problema"].map(color_map)
+
+    #     problem_bar = go.Bar(
+    #         name="Problema",
+    #         x=df_problema["problema"],
+    #         y=df_problema["excedente"],
+    #         marker_color=self.grey_500_color,
+    #         hovertemplate="<b>Problema</b>: %{x}<br><b>Tempo Perdido</b>: %{y:.0f} min<br>",
+    #     )
+
+    #     # Group
+    #     group_bar = go.Bar(
+    #         name="Motivo/Problema",
+    #         x=df_grouped["motivo_nome"],
+    #         y=df_grouped["excedente"],
+    #         customdata=df_grouped["problema"],
+    #         hovertemplate="<b>Motivo</b>: %{customdata}<br>
+    # <b>Tempo Perdido</b>: %{y:.0f} min<br>",
+    #         marker_color=self.grey_500_color,
+    #     )
+
+    #     # Gráfico de barras
+    #     fig = (
+    #         go.Figure(data=[motive_bar, problem_bar])
+    #         if not checked
+    #         else go.Figure(data=[group_bar])
+    #     )
+
+    #     fig.update_layout(
+    #         title=f"Tempo Perdido que mais impacta a Eficiência - {turn_map[turn]}",
+    #         xaxis_title="Motivo/Problema",
+    #         yaxis_title="Tempo Perdido",
+    #         title_x=0.5,
+    #         margin=dict({"t": 80, "b": 40, "l": 40, "r": 40}),
+    #         template="plotly_white",
+    #         font=dict({"family": "Inter"}),
+    #         showlegend=False,
+    #     )
+
+    #     if not checked:
+    #         fig.update_layout(showlegend=True)
+
+    #     return fig
+
+    # def get_heat_turn(
+    #     self,
+    #     df_pivot: pd.DataFrame,
+    #     indicator: IndicatorType,
+    #     annotations: list,
+    #     meta: int = 4,
+    # ) -> go.Figure:
+    #     """
+    #     Este método é responsável por criar o gráfico de reparos e performance, por turno.
+
+    #     Parâmetros:
+    #     dataframe (pd.DataFrame): DataFrame contendo os dados para o gráfico.
+    #                             Deve incluir as colunas 'data_registro', 'turno' e o indicador.
+    #     meta (int): Meta de eficiência a ser alcançada. Padrão: 4.
+    #     annotations (bool): Se True, adiciona anotações com a média.
+
+    #     Retorna:
+    #     fig: Objeto plotly.graph_objects.Figure.
+
+    #     O gráfico é um heatmap que mostra a média por maquina e data.
+    #     A é colorida de verde se estiver abaixo de 4% e
+    #     de vermelho se estiver acima de 4%.
+    #     """
+
+    #     indicator = indicator.value
+    #     ind_capitalized = str(indicator).capitalize()
+
+    #     # Criar escala de cores personalizada - cores do bootstrap
+    #     colors = [
+    #         [0, self.success_color],
+    #         [0.04, self.success_color],
+    #         [0.04, self.danger_color],
+    #         [1, self.danger_color],
+    #     ]
+
+    #     # Extrair apenas o dia da data
+    #     df_pivot.columns = pd.to_datetime(df_pivot.columns).day
+
+    #     # Criar o gráfico de calor
+    #     fig = go.Figure(
+    #         data=go.Heatmap(
+    #             z=df_pivot.values,
+    #             x=df_pivot.columns,
+    #             y=df_pivot.index,
+    #             colorscale=colors,
+    #             name="Heatmap",
+    #             zmin=0,
+    #             zmax=1,
+    #             hoverongaps=False,
+    #             hovertemplate="Linha: %{y}<br>Dia: %{x}<br>Valor: %{z:.1%}",
+    #             showscale=False,
+    #             xgap=1,
+    #             ygap=1,
+    #         )
+    #     )
+
+    #     # Definir o título do gráfico
+    #     fig.update_layout(
+    #         title=f"{ind_capitalized} - Meta {meta}%",
+    #         xaxis_title="Dia",
+    #         yaxis_title="Linha",
+    #         annotations=annotations,
+    #         title_x=0.5,
+    #         xaxis_nticks=31,
+    #         xaxis=dict(
+    #             tickmode="linear",
+    #             tickvals=list(range(1, 32)),
+    #             ticktext=list(range(1, 32)),
+    #         ),
+    #         yaxis=dict(
+    #             tickmode="linear",
+    #             ticksuffix=" ",  # Adicionar um espaço no final
+    #         ),
+    #         plot_bgcolor="white",
+    #         margin=dict({"t": 40, "b": 40, "l": 40, "r": 40}),
+    #         font=dict({"family": "Inter"}),
+    #     )
+
+    #     fig.update_yaxes(
+    #         autorange="reversed",
+    #     )
+
+    #     return fig
+
+    # def get_bar_turn(
+    #     self, dataframe: pd.DataFrame, indicator: IndicatorType, meta: int = 4
+    # ) -> go.Figure:
+    #     """
+    #     Este método é responsável por criar o gráfico, por turno.
+
+    #     Parâmetros:
+    #     dataframe (pd.DataFrame): DataFrame contendo os dados para o gráfico.
+    #                             Deve incluir as colunas 'linha', 'turno',
+    #                             'afeta o indicador.
+    #     meta (int): Meta de eficiência a ser alcançada. Padrão: 4.
+
+    #     Retorna:
+    #     fig: Objeto plotly.graph_objects.Figure com o gráfico de eficiência.
+    #     """
+
+    #     indicator = indicator.value
+
+    #     # Definir a ordem desejada para 'turno'
+    #     turno_order = ["NOT", "MAT", "VES"]
+
+    #     # Converter 'turno' para uma variável categórica com a ordem desejada
+    #     dataframe["turno"] = pd.Categorical(
+    #         dataframe["turno"], categories=turno_order, ordered=True
+    #     )
+
+    #     # Agrupar, agregar e redefinir o índice
+    #     df_grouped = (
+    #         dataframe.groupby(["linha", "turno"], observed=True)
+    #         .agg({indicator: "mean", "afeta": "sum"})
+    #         .reset_index()
+    #     )
+
+    #     # Ordenar o DataFrame por 'linha' e 'turno'
+    #     df_grouped = df_grouped.sort_values(["linha", "turno"])
+
+    #     # Gráfico de barras
+    #     fig = px.bar(
+    #         df_grouped,
+    #         orientation="h",
+    #         x=indicator,
+    #         y="linha",
+    #         color="turno",
+    #         barmode="group",
+    #         hover_data={
+    #             "afeta": True,
+    #             "linha": False,
+    #             indicator: False,
+    #         },
+    #         color_discrete_map={
+    #             "NOT": self.grey_500_color,
+    #             "MAT": self.grey_600_color,
+    #             "VES": self.grey_900_color,
+    #         },
+    #         labels={indicator: f"{indicator.capitalize()}"},
+    #     )
+
+    #     # Ajustar hover
+    #     fig.update_traces(
+    #         hovertemplate="<b>Linha</b>: %{y}<br>"
+    #         "<b>Valor</b>: %{x:.1%}<br>"
+    #         "<b>Tempo</b>: %{customdata[0]} min<br>",
+    #     )
+
+    #     # Definir o título do gráfico
+    #     fig.update_layout(
+    #         title=f"{indicator.capitalize()} por Linhas",
+    #         xaxis_title=f"{indicator.capitalize()}",
+    #         yaxis_title="Linha",
+    #         title_x=0.5,
+    #         margin=dict({"t": 80, "b": 40, "l": 40, "r": 40}),
+    #         legend=dict(
+    #             {
+    #                 "title_text": "Turno",
+    #                 "x": 0,
+    #                 "y": 1,
+    #                 "traceorder": "normal",
+    #                 "font": {"family": "Inter", "size": 12},
+    #             },
+    #         ),
+    #         template="plotly_white",
+    #         font=dict({"family": "Inter"}),
+    #     )
+
+    #     # Ajustar valores de x para porcentagem e inverter o eixo x
+    #     fig.update_xaxes(tickformat=".0%", autorange="reversed")
+
+    #     # Ajustar para aparecer todas as linhas e or para a direita
+    #     fig.update_yaxes(
+    #         autorange="reversed",
+    #         tickvals=df_grouped["linha"].unique(),
+    #         side="right",
+    #     )
+
+    #     # Calcular a média geral
+    #     avg_efficiency = df_grouped[indicator].mean()
+
+    #     # Adicionar linha de média geral
+    #     fig.add_trace(
+    #         go.Scatter(
+    #             x=[avg_efficiency] * len(df_grouped["linha"]),
+    #             y=df_grouped["linha"],
+    #             mode="lines",
+    #             name="Média Geral",
+    #             line=dict(dash="dash", color="black"),
+    #             hovertemplate="<b>Média Geral</b>: %{x:.1%}<br>",
+    #         )
+    #     )
+
+    #     # Adicionar linha de meta
+    #     fig.add_trace(
+    #         go.Scatter(
+    #             x=[meta / 100] * len(df_grouped["linha"]),
+    #             y=df_grouped["linha"],
+    #             mode="lines",
+    #             name="Meta",
+    #             line=dict(dash="dash", color="blue"),
+    #             hovertemplate="<b>Meta</b>: %{x:.1%}<br>",
+    #         )
+    #     )
+
+    #     # Adicionar anotação
+    #     fig.add_annotation(
+    #         x=0.15,  # Posição x da anotação
+    #         y=0.95,  # Posição y da anotação
+    #         xref="paper",
+    #         yref="paper",
+    #         text=f"Meta: Abaixo de {meta}%",  # Texto da anotação
+    #         showarrow=False,
+    #         font=dict(size=12, color="black", family="Inter"),
+    #         align="left",
+    #         ax=20,
+    #         ay=-30,
+    #         bordercolor="#c7c7c7",
+    #         borderwidth=2,
+    #         borderpad=4,
+    #         bgcolor="#ff7f0e",
+    #         opacity=0.6,
+    #     )
+
+    #     return fig
+
+    # def get_bar_lost(
+    #     self,
+    #     df: pd.DataFrame,
+    #     turn: str,
+    #     indicator: IndicatorType,
+    #     checked: bool = False,
+    # ) -> go.Figure:
+    #     """
+    #     Retorna um gráfico de barras representando o tempo perdido que mais impacta.
+
+    #     Parâmetros:
+    #     - df: DataFrame contendo os dados necessários para a criação do gráfico.
+    #     - checked: Se True, retorna o gráfico de barras agrupado por motivo_nome e problema.
+
+    #     Retorno:
+    #     - fig: Objeto go.Figure contendo o gráfico de barras.
+    #     """
+    #     # Turno Map
+    #     turn_map = {
+    #         "NOT": "Noturno",
+    #         "MAT": "Matutino",
+    #         "VES": "Vespertino",
+    #         "TOT": "Total",
+    #     }
+
+    #     df = self.adjust_df_for_bar_lost(df, indicator)
+
+    #     # Preencher onde motivo_id for 12 e problema for nulo
+    #     df.loc[
+    #         (df["motivo_id"] == 12) & (df["problema"].isnull()),
+    #         "problema",
+    #     ] = "Parada Programada"
+
+    #     # Preencher onde problema for nulo e motivo_id for 3
+    #     df.loc[
+    #         (df["motivo_id"] == 3) & (df["problema"].isnull()),
+    #         "problema",
+    #     ] = "Refeição"
+
+    #     # Preencher onde problema for nulo
+    #     df.loc[:, "problema"] = df["problema"].fillna("Problema não informado")
+
+    #     # ---------- df motivo ---------- #
+    #     # Agrupar motivo_nome
+    #     df_motivo = (
+    #         df.groupby("motivo_nome")["excedente"]
+    #         .sum()
+    #         .sort_values(ascending=False)
+    #         .head(5)
+    #         .reset_index()
+    #     )
+
+    #     # ---------- df group ---------- #
+    #     # Agrupar por motivo_nome e problema e calcular a soma do excedente
+    #     df_grouped = df.groupby(["motivo_nome", "problema"])
+    # .agg({"excedente": "sum"}).reset_index()
+    #     # Ordenar por excedente
+    #     df_grouped = df_grouped.sort_values("excedente", ascending=False).head(8)
+
+    #     # ---------- df problema ---------- #
+    #     # Remover linhas onde motivo_nome é igual ao problema
+    #     df = df[df["motivo_nome"] != df["problema"]]
+    #     # Agrupar por problema
+    #     df_problema = (
+    #         df.groupby("problema")["excedente"]
+    #         .sum()
+    #         .sort_values(ascending=False)
+    #         .head(5)
+    #         .reset_index()
+    #     )
+
+    #     # Motivo
+    #     motive_bar = go.Bar(
+    #         name="Motivo",
+    #         x=df_motivo["motivo_nome"],
+    #         y=df_motivo["excedente"],
+    #         marker_color=self.grey_600_color,
+    #     )
+
+    #     motive_bar.update(
+    #         hovertemplate="<b>Motivo</b>: %{x}<br><b>Tempo Perdido</b>: %{y:.0f} min<br>",
+    #     )
+
+    #     # Cria uma paleta de cores com os valores únicos na coluna 'problema'
+    #     palette = sns.dark_palette("lightgray", df_grouped["problema"].nunique())
+
+    #     # Converte as cores RGB para hexadecimal
+    #     palette_hex = [mcolors.to_hex(color) for color in palette]
+
+    #     # Cria um dicionário que mapeia cada valor único na coluna 'problema'
+    # para uma cor na paleta
+    #     color_map = dict(zip(df_grouped["problema"].unique(), palette_hex))
+
+    #     # Mapeia os valores na coluna 'problema' para as cores correspondentes
+    #     df_grouped["color"] = df_grouped["problema"].map(color_map)
+
+    #     # Problema
+    #     problem_bar = go.Bar(
+    #         name="Problema",
+    #         x=df_problema["problema"],
+    #         y=df_problema["excedente"],
+    #         marker_color=self.grey_500_color,
+    #         hovertemplate="<b>Problema</b>: %{x}<br><b>Tempo Perdido</b>: %{y:.0f} min<br>",
+    #     )
+
+    #     # Group
+    #     group_bar = go.Bar(
+    #         name="Motivo/Problema",
+    #         x=df_grouped["motivo_nome"],
+    #         y=df_grouped["excedente"],
+    #         customdata=df_grouped["problema"],
+    #         hovertemplate="<b>Motivo</b>: %{customdata}<br>
+    # <b>Tempo Perdido</b>: %{y:.0f} min<br>",
+    #         marker_color=self.grey_500_color,
+    #     )
+
+    #     # Gráfico de barras
+    #     fig = (
+    #         go.Figure(data=[motive_bar, problem_bar])
+    #         if not checked
+    #         else go.Figure(data=[group_bar])
+    #     )
+
+    #     fig.update_layout(
+    #         title=f"Maior impacto em {indicator.value.capitalize()} - {turn_map[turn]}",
+    #         xaxis_title="Motivo/Problema",
+    #         yaxis_title="Tempo Perdido",
+    #         title_x=0.5,
+    #         margin=dict({"t": 80, "b": 40, "l": 40, "r": 40}),
+    #         template="plotly_white",
+    #         font=dict({"family": "Inter"}),
+    #         showlegend=False,
+    #     )
+
+    #     if not checked:
+    #         fig.update_layout(showlegend=True)
+
+    #     return fig
 
     def get_bar_stack_stops(self, df: pd.DataFrame, data) -> go.Figure:
         """

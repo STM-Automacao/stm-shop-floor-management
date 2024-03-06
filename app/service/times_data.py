@@ -565,7 +565,8 @@ class TimesData:
             df_info (pd.DataFrame): The input DataFrame containing information.
             ind_type (IndicatorType): The type of indicator.
             turn (str): The turn to filter the data.
-            working_minutes (pd.DataFrame, optional): The DataFrame with working minutes. Defaults to None.
+            working_minutes (pd.DataFrame, optional): The DataFrame with working minutes.
+            Defaults to None.
 
         Returns:
             pd.DataFrame: The DataFrame with the calculated time lost.
@@ -637,13 +638,15 @@ class TimesData:
         working: pd.DataFrame = None,
     ) -> pd.DataFrame:
         """
-        Adjusts the given dataframe for bar lost based on the specified indicator, turn, and working data.
+        Adjusts the given dataframe for bar lost based on the specified indicator,
+        turn, and working data.
 
         Args:
             dataframe (pd.DataFrame): The input dataframe to be adjusted.
             indicator (IndicatorType): The type of indicator to be used for adjustment.
             turn (str): The turn to consider for adjustment.
-            working (pd.DataFrame, optional): The working data to be used for adjustment. Defaults to None.
+            working (pd.DataFrame, optional): The working data to be used for adjustment.
+            Defaults to None.
 
         Returns:
             pd.DataFrame: The adjusted dataframe.

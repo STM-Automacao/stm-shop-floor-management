@@ -10,8 +10,15 @@ from io import StringIO
 import dash_bootstrap_components as dbc
 import dash_mantine_components as dmc
 import pandas as pd
-from components import (bar_chart_general, btn_modal, heatmap, line_graph,
-                        production_cards, production_grid)
+from components import (
+    bar_chart_general,
+    bar_chart_lost,
+    btn_modal,
+    heatmap,
+    line_graph,
+    production_cards,
+    production_grid,
+)
 from dash import Input, Output, callback, html
 from dash.exceptions import PreventUpdate
 from dash_bootstrap_templates import ThemeSwitchAIO
@@ -52,6 +59,7 @@ layout = [
                     dbc.Col(dbc.Card(id="eff-lost", class_name="p-1"), md=6),
                 ]
             ),
+            dbc.Collapse(id="details-collapse-eff", class_name="mb-3"),
         ]
     ),
     dbc.ModalFooter(
@@ -267,6 +275,7 @@ def efficiency_general(df_eff, toggle_theme):
 
     return bcg.create_bar_chart_gen(df, IndicatorType.EFFICIENCY, template, 90)
 
+
 # --------------------- Efficiency Lost --------------------- #
 @callback(
     Output("eff-lost", "children"),
@@ -277,9 +286,50 @@ def efficiency_general(df_eff, toggle_theme):
     ],
 )
 def efficiency_lost(info, turn, toggle_theme):
-   
+    """
+    Calculates the efficiency lost based on the provided information.
+
+    Args:
+        info (str): A JSON string containing the information.
+        turn (int): The turn number.
+        toggle_theme (bool): A flag indicating whether to use a light or dark template.
+
+    Returns:
+        dict: A dictionary containing the bar chart lost data.
+
+    Raises:
+        PreventUpdate: If the info parameter is empty.
+    """
+
     if not info:
         raise PreventUpdate
 
     template = TemplateType.LIGHT if toggle_theme else TemplateType.DARK
-    
+    bcl = bar_chart_lost.BarChartLost()
+
+    # Carrega o string json em um dataframe
+    df_info = pd.read_json(StringIO(info), orient="split")
+
+    return bcl.create_bar_chart_lost(df_info, IndicatorType.EFFICIENCY, template, turn)
+
+
+# --------------------- Collapse Details Btn --------------------- #
+
+
+@callback(
+    [
+        Output("details-collapse-eff", "is_open"),
+        Output(f"details-button-{IndicatorType.EFFICIENCY.value}", "active"),
+    ],
+    [
+        Input(f"details-button-{IndicatorType.EFFICIENCY.value}", "n_clicks"),
+        Input("details-collapse-eff", "is_open"),
+    ],
+)
+def toggle_collapse_details(n, is_open):
+    """
+    Função que abre e fecha o collapse do detalhes.
+    """
+    if n:
+        return not is_open, not is_open
+    return is_open, is_open
