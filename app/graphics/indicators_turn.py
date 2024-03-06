@@ -16,7 +16,6 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import seaborn as sns
-
 # pylint: disable=E0401
 from helpers.types import BSColorsEnum, IndicatorType
 from service.times_data import TimesData
@@ -872,25 +871,25 @@ class IndicatorsTurn:
         df = df.drop(columns="sort")
 
         color_dict = {
-            "5min ou menos": BSColorsEnum.GREY_500_COLOR.value,
-            "Motivo não apontado": BSColorsEnum.GREY_600_COLOR.value,
-            "Ajustes": BSColorsEnum.GRAY_COLOR.value,
-            "Troca de Bobina": BSColorsEnum.GREY_400_COLOR.value,
-            "Refeição": BSColorsEnum.ORANGE_COLOR.value,
-            "Reunião": BSColorsEnum.SECONDARY_COLOR.value,
-            "Café e Ginástica Laboral": BSColorsEnum.PRIMARY_COLOR.value,
-            "Limpeza": BSColorsEnum.GREY_700_COLOR.value,
+            "5min ou menos": BSColorsEnum.GRAY_COLOR.value,
+            "Motivo não apontado": BSColorsEnum.GREY_400_COLOR.value,
+            "Ajustes": BSColorsEnum.GREY_500_COLOR.value,
+            "Troca de Bobina": BSColorsEnum.GREY_600_COLOR.value,
+            "Refeição": BSColorsEnum.INFO_COLOR.value,
+            "Reunião": BSColorsEnum.INDIGO_COLOR.value,
+            "Café e Ginástica Laboral": BSColorsEnum.PINK_COLOR.value,
+            "Limpeza": BSColorsEnum.PURPLE_COLOR.value,
             "Manutenção Elétrica": BSColorsEnum.BLUE_DELFT_COLOR.value,
             "Manutenção Mecânica": BSColorsEnum.SPACE_CADET_COLOR.value,
-            "Material em Falta": BSColorsEnum.GREY_900_COLOR.value,
-            "Setup de Sabor": BSColorsEnum.PURPLE_COLOR.value,
-            "Setup de Tamanho": BSColorsEnum.PINK_COLOR.value,
+            "Material em Falta": BSColorsEnum.ORANGE_COLOR.value,
+            "Setup de Sabor": BSColorsEnum.GREY_700_COLOR.value,
+            "Setup de Tamanho": BSColorsEnum.GREY_800_COLOR.value,
             "Parada Programada": BSColorsEnum.DANGER_COLOR.value,
-            "Intervenção de Qualidade": BSColorsEnum.INDIGO_COLOR.value,
+            "Intervenção de Qualidade": BSColorsEnum.PRIMARY_COLOR.value,
             "Linha Cheia": BSColorsEnum.TEAL_COLOR.value,
-            "Treinamento": BSColorsEnum.INFO_COLOR.value,
+            "Treinamento": BSColorsEnum.SECONDARY_COLOR.value,
             "Limpeza Industrial": BSColorsEnum.WARNING_COLOR.value,
-            "Troca de Filme": BSColorsEnum.GREY_800_COLOR.value,
+            "Troca de Filme": BSColorsEnum.GREY_900_COLOR.value,
             "Rodando": BSColorsEnum.SUCCESS_COLOR.value,
         }
 

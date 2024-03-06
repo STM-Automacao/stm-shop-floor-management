@@ -30,8 +30,7 @@ from app import app
 times_data = TimesData()
 indicators = IndicatorsTurn()
 indicators_geral = Indicators()
-today = pd.Timestamp.now().date()
-first_day = pd.Timestamp(today.year, today.month, 1).date()
+
 
 # ========================================= Modal Layout ======================================== #
 layout = [
@@ -115,8 +114,6 @@ layout = [
                                                 inputFormat="dddd - D MMM, YYYY",
                                                 locale="pt-br",
                                                 firstDayOfWeek="sunday",
-                                                minDate=first_day,
-                                                maxDate=today,
                                                 clearable=True,
                                                 className="inter",
                                                 icon=DashIconify(icon="clarity:date-line"),
@@ -179,6 +176,29 @@ def toggle_modal_history(n, is_open):
     if n:
         return not is_open
     return is_open
+
+
+# ---------------------- Date Picker ---------------------- #
+@callback(
+    [
+        Output("date-picker-eficiencia", "minDate"),
+        Output("date-picker-eficiencia", "maxDate"),
+    ],
+    [Input("store-info", "data")],
+)
+def update_date_picker(data_info):
+    """
+    Função que atualiza o date picker.
+    """
+    if data_info is None:
+        raise PreventUpdate
+
+    df_maq_info_cadastro = pd.read_json(stringIO(data_info), orient="split")
+
+    min_date = pd.to_datetime(df_maq_info_cadastro["data_hora_registro"]).min().date()
+    max_date = pd.to_datetime(df_maq_info_cadastro["data_hora_registro"]).max().date()
+
+    return min_date, max_date
 
 
 # ---------------------- Heatmap ---------------------- #
