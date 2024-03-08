@@ -10,18 +10,9 @@ from io import StringIO
 import dash_bootstrap_components as dbc
 import dash_mantine_components as dmc
 import pandas as pd
-from components import (
-    bar_chart_details,
-    bar_chart_general,
-    bar_chart_lost,
-    btn_modal,
-    grid_occ,
-    heatmap,
-    line_graph,
-    modal_history,
-    production_cards,
-    production_grid,
-)
+from components import (bar_chart_details, bar_chart_general, bar_chart_lost,
+                        btn_modal, grid_occ, heatmap, line_graph,
+                        modal_history, production_cards, production_grid)
 from dash import Input, Output, State, callback, html
 from dash.exceptions import PreventUpdate
 from dash_bootstrap_templates import ThemeSwitchAIO
@@ -117,6 +108,7 @@ layout = [
         children=modal_history.layout,
         id="modal-history-eff",
         size="xl",
+        fullscreen="lg-down",
         scrollable=True,
         modal_class_name="inter",
         is_open=False,

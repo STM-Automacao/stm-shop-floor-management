@@ -68,7 +68,11 @@ def update_graph_history_modal(_, light_theme):
     )
 
     # Cria uma paleta de cores com os valores únicos na coluna 'problema'
-    palette = sns.dark_palette("lightgray", df_top_stops["problema"].nunique())
+    palette = (
+        sns.dark_palette("gray", df_top_stops["problema"].nunique(), reverse=True)
+        if light_theme
+        else sns.light_palette("darkgray", df_top_stops["problema"].nunique(), reverse=True)
+    )
 
     # Converte as cores RGB para hexadecimal
     palette_hex = [mcolors.to_hex(color) for color in palette]
