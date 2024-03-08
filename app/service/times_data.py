@@ -657,7 +657,9 @@ class TimesData:
         indicator_actions = {
             IndicatorType.PERFORMANCE: lambda df: df[~df["motivo_id"].isin(self.not_af_perf)],
             IndicatorType.REPAIR: lambda df: df[df["motivo_id"].isin(self.af_rep)],
-            IndicatorType.EFFICIENCY: lambda df: df[~df["motivo_id"].isin(self.not_af_eff)],
+            IndicatorType.EFFICIENCY: lambda df: (
+                df[~df["motivo_id"].isin(self.not_af_eff)] if working is None else df
+            ),
         }
 
         if indicator in indicator_actions:

@@ -116,12 +116,16 @@ class BarChartLost:
                 ]
             )
 
+        tick_color = "gray" if template == TemplateType.LIGHT else "lightgray"
+
         # Layout
         figure.update_layout(
             title=f"Top 10 Motivos/Problemas de Perda de Tempo - {turn_map[turn]}",
             title_x=0.5,
             xaxis_title="Motivo/Problema",
             yaxis_title="Tempo Perdido (min)",
+            xaxis=dict(tickfont=dict(color=tick_color)),
+            yaxis=dict(tickfont=dict(color=tick_color)),
             template=template.value,
             plot_bgcolor="RGBA(0,0,0,0.01)",
             font=dict(family="Inter"),

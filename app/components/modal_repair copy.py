@@ -10,15 +10,15 @@ import dash_mantine_components as dmc
 # pylint: disable=E0401
 from service.times_data import TimesData
 
-from app import app
-
 times_data = TimesData()
+
+from app import app
 
 # ========================================= Modal Layout ======================================== #
 
 layout = [
     dbc.ModalHeader("Reparos por Turno", class_name="inter"),
-    dbc.ModalBody([]),
+    dbc.ModalBody(),
     dbc.ModalFooter(
         dmc.Image(
             # pylint: disable=E1101

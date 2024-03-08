@@ -102,8 +102,8 @@ class LastMonthInd:
 
         # ------- Top 5 motivos de paradas e seu tempo total ------ #
         # Se motivo nome for null, substitui por "Motivo não apontado"
-        df_info["motivo_nome"].fillna("Motivo não apontado", inplace=True)
-        df_info["problema"].fillna("Problema não apontado", inplace=True)
+        df_info["motivo_nome"] = df_info["motivo_nome"].fillna("Motivo não apontado")
+        df_info["problema"] = df_info["problema"].fillna("Problema não apontado")
         df_info["problema"] = np.where(
             df_info["problema"] == "None", "Problema não apontado", df_info["problema"]
         )

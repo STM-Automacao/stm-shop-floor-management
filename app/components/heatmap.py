@@ -85,6 +85,8 @@ class Heatmap:
             else f"Linha: %{{y}}<br>Dia: %{{x}}<br>{indicator.value.capitalize()}: %{{z:.1%}}"
         )
 
+        tick_color = "gray" if template == TemplateType.LIGHT else "lightgray"
+
         # Cria o heatmap
         figure = go.Figure(
             data=go.Heatmap(
@@ -106,14 +108,14 @@ class Heatmap:
                 title_x=0.5,
                 xaxis=dict(
                     title="Dia do Mês",
-                    tickfont=dict(color="lightgray"),
+                    tickfont=dict(color=tick_color),
                     tickmode="linear",
                     nticks=31,
                     tickvals=list(range(1, 32)),
                     ticktext=list(range(1, 32)),
                     tickangle=0,
                 ),
-                yaxis=dict(title="Turno", tickfont=dict(color="lightgray"), ticksuffix=" "),
+                yaxis=dict(title="Turno", tickfont=dict(color=tick_color), ticksuffix=" "),
                 font=dict(family="Inter"),
                 margin=dict(t=40, b=40, l=40, r=40),
                 annotations=annotations,
