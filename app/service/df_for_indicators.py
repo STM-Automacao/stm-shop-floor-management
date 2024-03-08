@@ -4,7 +4,6 @@ Data: 31/01/2024
 Este módulo é responsável por criar DataFrames para os indicadores.
 """
 
-# pylint: disable=import-error
 from datetime import datetime, timedelta
 from itertools import product
 
@@ -13,7 +12,7 @@ import pandas as pd
 from helpers.types import IndicatorType
 from service.times_data import TimesData
 
-# cSpell: words eficiencia ndenumerate producao
+# cSpell: words eficiencia producao
 
 
 class DFIndicators:

@@ -2,12 +2,10 @@
     Este módulo é o responsável por trazer dados do grafana(maquina_tela) para a aplicação Dash.
 """
 
-# cSpell:words grafana eficiencia
+# cSpell:words eficiencia
 import dash_bootstrap_components as dbc
 from dash import callback, dcc, html
 from dash.dependencies import Input, Output
-
-# pylint: disable=E0401
 from database.get_data import GetData
 from helpers.types import get_color
 

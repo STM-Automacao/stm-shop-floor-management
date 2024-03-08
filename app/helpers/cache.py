@@ -10,8 +10,6 @@ from threading import Lock
 
 import numpy as np
 import pandas as pd
-
-# pylint: disable=E0401
 from database.get_data import GetData
 from flask_caching import Cache
 from helpers.types import IndicatorType

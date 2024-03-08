@@ -6,8 +6,6 @@
 """
 
 import pandas as pd
-
-# pylint: disable=E0401
 from database.db_read import Read
 from service.clean_data import CleanData
 from service.join_data import JoinData

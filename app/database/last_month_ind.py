@@ -8,8 +8,6 @@ Este módulo cria dados do mês anterior.
 
 import numpy as np
 import pandas as pd
-
-# pylint: disable=E0401
 from database.get_data import GetData
 from helpers.path_config import DF_HISTORY, EFF_LAST, PERF_LAST, REPAIR_LAST, TOP_STOPS
 from service.times_data import TimesData

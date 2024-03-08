@@ -9,8 +9,6 @@ from datetime import time
 # cSpell:words usuario, solucao, dayofweek, sabado
 import numpy as np
 import pandas as pd
-
-# pylint: disable=E0401
 from helpers.path_config import FERIADOS
 
 

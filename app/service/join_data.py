@@ -9,7 +9,7 @@ import pandas as pd
 from fuzzywuzzy import process
 
 
-# cSpell: words solucao, usuario, sabado, idxmin, skipna
+# cSpell: words solucao, usuario, sabado
 class JoinData:
     """
     Classe para unir os dados de cadastro, info e ocorrência

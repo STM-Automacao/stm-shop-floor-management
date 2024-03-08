@@ -8,8 +8,6 @@
 """
 
 import os
-
-# cSpell: words apscheduler, grafana
 from threading import Lock
 
 import dash_bootstrap_components as dbc

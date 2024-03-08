@@ -10,7 +10,7 @@ import numpy as np
 import pandas as pd
 from helpers.types import CICLOS_ESPERADOS, IndicatorType
 
-# cSpell: words solucao, usuario, producao, eficiencia
+# cSpell: words producao
 
 
 class TimesData:
