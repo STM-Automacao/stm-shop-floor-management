@@ -41,7 +41,7 @@ def create_btn_opt_modal(modal):
             ),
             dbc.Button(
                 "Detalhes",
-                id=f"detalhes-button-{modal}",
+                id=f"details-button-{modal}",
                 className="mb-3",
                 outline=True,
                 active=False,

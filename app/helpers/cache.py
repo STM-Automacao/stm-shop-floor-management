@@ -1,3 +1,10 @@
+"""
+@Author: Bruno Tomaz
+@Data: 31/01/2024
+
+Este módulo cria um cache para armazenar os dados do banco de dados.
+"""
+
 import json
 from threading import Lock
 
@@ -7,7 +14,9 @@ import pandas as pd
 # pylint: disable=E0401
 from database.get_data import GetData
 from flask_caching import Cache
+from helpers.types import IndicatorType
 from service.df_for_indicators import DFIndicators
+from service.times_data import TimesData
 
 from app import app
 
@@ -57,51 +66,43 @@ def update_cache():
     """
     with lock:
         # Carregar os dados do banco de dados e criar os DataFrames
-        df1, df2, df3 = get_data.get_cleaned_data()
+        df1, df2, df_working_time = get_data.get_cleaned_data()
         df_ind = DFIndicators(df1, df2)
-        df_eff = df_ind.get_eff_data()
-        df_perf = df_ind.get_perf_data()
-        df_repair = df_ind.get_repair_data()
-        df_eff_heatmap = df_ind.get_eff_data_heatmap()
-        df_eff_heatmap_tuple = df_ind.get_eff_data_heatmap_turn()
-        annotations_eff_turn_list_tuple = df_ind.get_eff_annotations_turn()
-        df_perf_repair_heat_tuple = df_ind.get_perf_repair_heatmap()
-        annotations_list_tuple = df_ind.get_annotations()
-        df_perf_heat_turn_tuple = df_ind.get_perf_heatmap_turn()
-        df_repair_heat_turn_tuple = df_ind.get_repair_heatmap_turn()
-        annotations_perf_turn_list_tuple = df_ind.get_perf_annotations_turn()
-        annotations_repair_turn_list_tuple = df_ind.get_repair_annotations_turn()
+        times_data = TimesData()
+        df_eff = times_data.get_eff_data(df1, df2)
+        df_perf = times_data.get_perf_data(df1, df2)
+        df_repair = times_data.get_repair_data(df1, df2)
+        df_eff_heatmap_tuple = df_ind.get_heatmap_data(IndicatorType.EFFICIENCY)
+        annotations_eff_list_tuple = df_ind.get_annotations(IndicatorType.EFFICIENCY)
+        df_perf_heatmap_tuple = df_ind.get_heatmap_data(IndicatorType.PERFORMANCE)
+        annotations_perf_list_tuple = df_ind.get_annotations(IndicatorType.PERFORMANCE)
+        df_repair_heatmap_tuple = df_ind.get_heatmap_data(IndicatorType.REPAIR)
+        annotations_repair_list_tuple = df_ind.get_annotations(IndicatorType.REPAIR)
 
         # Atualizar o cache
         cache.set("df1", df1.to_json(date_format="iso", orient="split"))
         cache.set("df2", df2.to_json(date_format="iso", orient="split"))
-        cache.set("df_working_time", df3.to_json(date_format="iso", orient="split"))
+
+        cache.set("df_working_time", df_working_time.to_json(date_format="iso", orient="split"))
+
         cache.set("df_eff", df_eff.to_json(date_format="iso", orient="split"))
         cache.set("df_perf", df_perf.to_json(date_format="iso", orient="split"))
         cache.set("df_repair", df_repair.to_json(date_format="iso", orient="split"))
-        cache.set("df_eff_heatmap", df_eff_heatmap.to_json(date_format="iso", orient="split"))
+
         cache.set("df_eff_heatmap_tuple", json.dumps(tuple_to_list(df_eff_heatmap_tuple)))
         cache.set(
-            "annotations_eff_turn_list_tuple",
-            json.dumps(tuple_list_to_list(annotations_eff_turn_list_tuple)),
+            "annotations_eff_list_tuple",
+            json.dumps(tuple_list_to_list(annotations_eff_list_tuple)),
         )
-        cache.set("df_perf_repair_heat_tuple", json.dumps(tuple_to_list(df_perf_repair_heat_tuple)))
-        cache.set("annotations_list_tuple", json.dumps(tuple_list_to_list(annotations_list_tuple)))
+        cache.set("df_perf_heatmap_tuple", json.dumps(tuple_to_list(df_perf_heatmap_tuple)))
         cache.set(
-            "df_perf_heat_turn_tuple",
-            json.dumps(tuple_to_list(df_perf_heat_turn_tuple)),
+            "annotations_perf_list_tuple",
+            json.dumps(tuple_list_to_list(annotations_perf_list_tuple)),
         )
+        cache.set("df_repair_heatmap_tuple", json.dumps(tuple_to_list(df_repair_heatmap_tuple)))
         cache.set(
-            "df_repair_heat_turn_tuple",
-            json.dumps(tuple_to_list(df_repair_heat_turn_tuple)),
-        )
-        cache.set(
-            "annotations_perf_turn_list_tuple",
-            json.dumps(tuple_list_to_list(annotations_perf_turn_list_tuple)),
-        )
-        cache.set(
-            "annotations_repair_turn_list_tuple",
-            json.dumps(tuple_list_to_list(annotations_repair_turn_list_tuple)),
+            "annotations_repair_list_tuple",
+            json.dumps(tuple_list_to_list(annotations_repair_list_tuple)),
         )
 
         print(f"========== Cache atualizado ==========  {pd.to_datetime('today')}")

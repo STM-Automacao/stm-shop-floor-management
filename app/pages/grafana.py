@@ -57,7 +57,7 @@ def update_grafana(_n, _n_intervals):
                     dbc.Col(
                         dbc.Card(
                             [
-                                dbc.CardHeader("Linha"),
+                                dbc.CardHeader("Linha", class_name="truncate"),
                                 dbc.CardBody(
                                     f"{row[1]['linha']}",
                                     class_name="card-body-modal-style fs-3",

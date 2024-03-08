@@ -2,9 +2,9 @@
     Este módulo é o responsável por criar o layout do modal de histórico.
 """
 
-import dash_ag_grid as dag
+import textwrap
 
-# cSpell: words mcolors lightgray customdata eficiencia applymap
+import dash_ag_grid as dag
 import dash_bootstrap_components as dbc
 import dash_mantine_components as dmc
 import matplotlib.colors as mcolors
@@ -13,14 +13,15 @@ import plotly.express as px
 import seaborn as sns
 from dash import Input, Output, callback, dcc, html
 from dash.exceptions import PreventUpdate
-
-# pylint: disable=E0401
+from dash_bootstrap_templates import ThemeSwitchAIO
 from database.last_month_ind import LastMonthInd
+from helpers.types import TemplateType
 
 from app import app
 
 last_month = LastMonthInd()
 
+# ============================================ Layout =========================================== #
 layout = [
     dbc.ModalHeader("Histórico"),
     dbc.ModalBody(
@@ -42,11 +43,12 @@ layout = [
 ]
 
 
+# ========================================= Callbacks ========================================= #
 @callback(
     [Output("graph-history-modal-perdas", "figure"), Output("table-history-modal", "children")],
-    [Input("store-info", "data")],
+    [Input("store-info", "data"), Input(ThemeSwitchAIO.ids.switch("theme"), "value")],
 )
-def update_graph_history_modal(_):
+def update_graph_history_modal(_, light_theme):
     """
     Função que atualiza o gráfico de perdas do modal de histórico.
     """
@@ -56,6 +58,14 @@ def update_graph_history_modal(_):
         raise PreventUpdate
 
     # -------------------- Gráfico de Perdas -------------------- #
+
+    # Limita o problema a 5 palavras
+    df_top_stops["problema"] = df_top_stops["problema"].apply(lambda x: " ".join(x.split()[:4]))
+
+    # Adiciona quebra de linha no eixo x para melhor visualização
+    df_top_stops["motivo_nome"] = df_top_stops["motivo_nome"].apply(
+        lambda x: "<br>".join(textwrap.wrap(x, width=10))
+    )
 
     # Cria uma paleta de cores com os valores únicos na coluna 'problema'
     palette = sns.dark_palette("lightgray", df_top_stops["problema"].nunique())
@@ -74,7 +84,7 @@ def update_graph_history_modal(_):
         color_discrete_map=color_map,
         title="Principais Paradas",
         labels={"motivo_nome": "Motivo", "tempo_registro_min": "Tempo Perdido (min)"},
-        template="plotly_white",
+        template=TemplateType.LIGHT.value if light_theme else TemplateType.DARK.value,
         barmode="stack",
     )
 
@@ -82,6 +92,8 @@ def update_graph_history_modal(_):
         title_x=0.5,
         font=dict(family="Inter"),
         showlegend=True,
+        plot_bgcolor="RGBA(0,0,0,0.01)",
+        margin=dict({"t": 80, "b": 40, "l": 40, "r": 40}),
     )
 
     # -------------------- Tabela de Desempenho Mensal -------------------- #
@@ -118,5 +130,6 @@ def update_graph_history_modal(_):
         columnSize="responsiveSizeToFit",
         dashGridOptions={"pagination": True, "paginationAutoPageSize": True},
         style={"height": "600px"},
+        className="ag-theme-quartz-dark" if light_theme is False else "ag-theme-quartz",
     )
     return fig, table

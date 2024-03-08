@@ -8,6 +8,7 @@ from datetime import datetime
 
 import numpy as np
 import pandas as pd
+from helpers.types import CICLOS_ESPERADOS, IndicatorType
 
 # cSpell: words solucao, usuario, producao, eficiencia
 
@@ -173,7 +174,7 @@ class TimesData:
 
         df_eff_times_desc = self.get_times_discount(df_info, self.desc_eff)
         df_prod_total = df_prod.copy()
-        ciclo_ideal = 10.6
+        ciclo_ideal = CICLOS_ESPERADOS
 
         # Descartar colunas desnecessárias de df_prod
         df_prod_total.drop(columns=["total_ciclos"], inplace=True)
@@ -246,7 +247,7 @@ class TimesData:
         # Se eficiencia for nula, substituir por 0
         df_eff_times_desc.loc[df_eff_times_desc["eficiencia"].isnull(), "eficiencia"] = 0
 
-        # Se a produção esperada for 0 e a eficiência for 0, substituir por 1
+        # Se a produção esperada for 0 e a eficiência for 0, tornar a eficiência np.nan
         df_eff_times_desc.loc[
             (df_eff_times_desc["producao_esperada"] == 0),
             "eficiencia",
@@ -549,3 +550,119 @@ class TimesData:
         df_rep_times_desc.reset_index(drop=True, inplace=True)
 
         return df_rep_times_desc
+
+    def __get_time_lost(
+        self,
+        df_info: pd.DataFrame,
+        ind_type: IndicatorType,
+        turn: str,
+        working_minutes: pd.DataFrame = None,
+    ) -> pd.DataFrame:
+        """
+        Calculates the time lost based on the given parameters.
+
+        Args:
+            df_info (pd.DataFrame): The input DataFrame containing information.
+            ind_type (IndicatorType): The type of indicator.
+            turn (str): The turn to filter the data.
+            working_minutes (pd.DataFrame, optional): The DataFrame with working minutes.
+            Defaults to None.
+
+        Returns:
+            pd.DataFrame: The DataFrame with the calculated time lost.
+
+        """
+        # Mapear pelo tipo do indicador
+        ind_type_map = {
+            IndicatorType.EFFICIENCY: self.desc_eff,
+            IndicatorType.REPAIR: self.desc_rep,
+            IndicatorType.PERFORMANCE: self.desc_perf,
+        }
+
+        # Conseguindo dataframe com tempos ajustados
+        df_info_desc_times = self.get_times_discount(df_info, ind_type_map[ind_type])
+
+        # Unir df_info_desc_times com working_minutes.
+        if working_minutes is not None:
+            df_info_desc_times = pd.concat(
+                [df_info_desc_times, working_minutes], ignore_index=True, sort=False
+            )
+
+        # Filtrar por turno
+        df_info_desc_times = (
+            df_info_desc_times[df_info_desc_times["turno"] == turn]
+            if turn != "TOT"
+            else df_info_desc_times
+        )
+
+        # Se coluna "excedente" for nula, substituir pelo valor de "tempo_registro_min"
+        df_info_desc_times.loc[df_info_desc_times["excedente"].isnull(), "excedente"] = (
+            df_info_desc_times["tempo_registro_min"]
+        )
+
+        # Se o problema for uma string "None" substituir por "Não Informado"
+        df_info_desc_times["problema"] = df_info_desc_times["problema"].replace(
+            "None", "Problema não Informado"
+        )
+
+        # Se motivo id for nulo e excedente for menor que 5 substituir motivo_nome por
+        # "5min ou menos"
+        df_info_desc_times.loc[
+            (df_info_desc_times["motivo_id"].isnull()) & (df_info_desc_times["excedente"] <= 5),
+            ["motivo_nome", "problema"],
+        ] = ["5min ou menos", "Não apontado - 5min ou menos"]
+
+        # Preencher onde motivo_nome for nulo
+        df_info_desc_times["motivo_nome"] = df_info_desc_times["motivo_nome"].fillna(
+            "Motivo não apontado"
+        )
+
+        df_info_desc_times.loc[
+            (df_info_desc_times["motivo_id"] == 12)
+            & (df_info_desc_times["problema"] == "Parada programada"),
+            "problema",
+        ] = "Parada Programada"
+
+        # data_hora_final para datetime
+        df_info_desc_times["data_hora_final"] = pd.to_datetime(
+            df_info_desc_times["data_hora_final"]
+        )
+
+        return df_info_desc_times
+
+    def adjust_df_for_bar_lost(
+        self,
+        dataframe: pd.DataFrame,
+        indicator: IndicatorType,
+        turn: str,
+        working: pd.DataFrame = None,
+    ) -> pd.DataFrame:
+        """
+        Adjusts the given dataframe for bar lost based on the specified indicator,
+        turn, and working data.
+
+        Args:
+            dataframe (pd.DataFrame): The input dataframe to be adjusted.
+            indicator (IndicatorType): The type of indicator to be used for adjustment.
+            turn (str): The turn to consider for adjustment.
+            working (pd.DataFrame, optional): The working data to be used for adjustment.
+            Defaults to None.
+
+        Returns:
+            pd.DataFrame: The adjusted dataframe.
+
+        """
+        df = self.__get_time_lost(dataframe, indicator, turn, working)
+
+        indicator_actions = {
+            IndicatorType.PERFORMANCE: lambda df: df[~df["motivo_id"].isin(self.not_af_perf)],
+            IndicatorType.REPAIR: lambda df: df[df["motivo_id"].isin(self.af_rep)],
+            IndicatorType.EFFICIENCY: lambda df: (
+                df[~df["motivo_id"].isin(self.not_af_eff)] if working is None else df
+            ),
+        }
+
+        if indicator in indicator_actions:
+            df = indicator_actions[indicator](df)
+
+        return df
