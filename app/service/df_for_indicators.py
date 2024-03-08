@@ -5,7 +5,7 @@ Este módulo é responsável por criar DataFrames para os indicadores.
 """
 
 # pylint: disable=import-error
-from datetime import datetime
+from datetime import datetime, timedelta
 from itertools import product
 
 import numpy as np
@@ -25,122 +25,90 @@ class DFIndicators:
         self.times_data = TimesData()
         self.df_info = df_info
         self.df_prod = df_prod
+        self.indicator_functions = {
+            IndicatorType.EFFICIENCY: self.times_data.get_eff_data,
+            IndicatorType.PERFORMANCE: self.times_data.get_perf_data,
+            IndicatorType.REPAIR: self.times_data.get_repair_data,
+        }
 
-        # df_perf_data = self.times_data.get_perf_data(df_info, df_prod)
-        # df_repair_data = self.times_data.get_repair_data(df_info, df_prod)
+    # ---------------------------------- HEATMAP ---------------------------------- #
 
-    # ---------------------------- Indicadores de Eficiência ---------------------------- #
-    def get_eff_data(self):
-        """
-        Função que retorna um DataFrame com os dados de eficiência.
-        """
-        return self.times_data.get_eff_data(self.df_info, self.df_prod)
+    def __adjust_heatmap_data(
+        self, indicator: IndicatorType, turn: str = None, main: bool = False
+    ) -> pd.DataFrame:
 
-    def get_eff_data_heatmap(self) -> pd.DataFrame:
-        """
-        Função que retorna um DataFrame com os dados de eficiência para o heatmap.
-        """
-        df_eff = self.get_eff_data()
+        # Cria um dataframe vazio
+        dataframe = pd.DataFrame()
 
-        # Converter 'data_registro' para datetime e criar uma nova coluna 'data_turno'
-        df_eff["data_registro"] = pd.to_datetime(df_eff["data_registro"])
-        df_eff["data_turno"] = df_eff["data_registro"].dt.strftime("%Y-%m-%d")
+        # Verifica se o indicador está no dicionário, se sim, chama a função do indicador
+        if indicator in self.indicator_functions:
+            dataframe = self.indicator_functions[indicator](self.df_info, self.df_prod)
 
-        # Agrupar por 'data_turno' e 'turno' e calcular a média da eficiência
-        df_grouped = (
-            df_eff.groupby(["data_turno", "turno"], observed=False)["eficiencia"]
-            .mean()
-            .reset_index()
-        )
-
-        # Encontra a data de hoje e o primeiro e último dia do mês
-        today = datetime.now()
-        start_date = today.replace(day=1).strftime("%Y-%m-%d")
-        end_date = (
-            today.replace(month=today.month % 12 + 1, day=1) - pd.Timedelta(days=1)
-        ).strftime("%Y-%m-%d")
-
-        # Cria um DataFrame com todas as datas possíveis
-        all_dates = pd.date_range(start=start_date, end=end_date).strftime("%Y-%m-%d")
-        all_turns = df_eff["turno"].unique()
-        all_dates_df = pd.DataFrame(
-            list(product(all_dates, all_turns)), columns=["data_turno", "turno"]
-        )
-
-        # Mescla com o DataFrame original
-        df_grouped = df_grouped.merge(all_dates_df, on=["data_turno", "turno"], how="right")
-
-        # Se a data é no futuro, definir a eficiência como NaN
-        df_grouped.loc[df_grouped["data_turno"] > today.strftime("%Y-%m-%d"), "eficiencia"] = np.nan
-
-        # Remodelar os dados para o formato de heatmap
-        df_pivot = df_grouped.pivot(index="turno", columns="data_turno", values="eficiencia")
-
-        # Reordenar o índice do DataFrame
-        df_pivot = df_pivot.reindex(["VES", "MAT", "NOT"])
-
-        return df_pivot
-
-    def __adjust_eff_data_heatmap_turn(self, turn: str = None) -> pd.DataFrame:
-        """
-        Função que retorna um DataFrame com os dados de eficiência para o heatmap.
-        """
-        df_eff = self.get_eff_data()
-
+        # Se o turno for diferente de nulo, filtra o dataframe
         if turn:
-            df_eff = df_eff[df_eff["turno"] == turn]
+            dataframe = dataframe[dataframe["turno"] == turn]
 
-        # Converter 'data_registro' para datetime e criar uma nova coluna 'data_turno'
-        df_eff["data_registro"] = pd.to_datetime(df_eff["data_registro"])
-        df_eff["data_turno"] = df_eff["data_registro"].dt.strftime("%Y-%m-%d")
+        # Converter 'data_registro' para datetime
+        dataframe["data_registro"] = pd.to_datetime(dataframe["data_registro"])
 
-        # Agrupar por 'data_turno' e 'turno' e calcular a média da eficiência
+        # Criar coluna 'data_turno' para agrupar por dia e turno
+        dataframe["data_turno"] = dataframe["data_registro"].dt.strftime("%Y-%m-%d")
+
+        # Coluna para agrupar por linha ou turno
+        group_col = ["data_turno", "linha"] if not main else ["data_turno", "turno"]
+
+        # Agrupar por data_turno e turno e calcular a média do indicador
         df_grouped = (
-            df_eff.groupby(["data_turno", "linha"], observed=False)["eficiencia"]
-            .mean()
-            .reset_index()
+            dataframe.groupby(group_col, observed=False)[indicator.value].mean().reset_index()
         )
 
-        # Encontra a data de hoje e o primeiro e último dia do mês
+        # ------------ dataframe com datas possíveis ------------ #
+        # Obter a data de início e fim do mês
         today = datetime.now()
         start_date = today.replace(day=1).strftime("%Y-%m-%d")
-        end_date = (
-            today.replace(month=today.month % 12 + 1, day=1) - pd.Timedelta(days=1)
-        ).strftime("%Y-%m-%d")
-
-        # Cria um dataframe com todas as datas possíveis
-        all_dates = pd.date_range(start=start_date, end=end_date).strftime("%Y-%m-%d")
-        all_lines = df_eff["linha"].unique()
-        all_dates_df = pd.DataFrame(
-            list(product(all_dates, all_lines)), columns=["data_turno", "linha"]
+        end_date = (today.replace(month=today.month % 12 + 1, day=1) - timedelta(days=1)).strftime(
+            "%Y-%m-%d"
         )
 
-        # Mescla com o DataFrame original
-        df_grouped = df_grouped.merge(all_dates_df, on=["data_turno", "linha"], how="right")
+        # Criar um dataframe com as datas possíveis
+        all_dates = pd.date_range(start=start_date, end=end_date).strftime("%Y-%m-%d")
+        all_lines = dataframe["linha"].unique() if not main else dataframe["turno"].unique()
+        all_dates_lines = pd.DataFrame(list(product(all_dates, all_lines)), columns=group_col)
 
-        # Se a data é no futuro, definir a eficiência como NaN
-        df_grouped.loc[df_grouped["data_turno"] > today.strftime("%Y-%m-%d"), "eficiencia"] = np.nan
+        # Merge com o dataframe agrupado
+        df_grouped = pd.merge(all_dates_lines, df_grouped, on=group_col, how="left")
 
-        # Ordenar por linha e data
-        df_grouped = df_grouped.sort_values(["linha", "data_turno"], ascending=[True, True])
+        # Se a data é futura, o indicador é np.nan
+        df_grouped.loc[df_grouped["data_turno"] > today.strftime("%Y-%m-%d"), indicator.value] = (
+            np.nan
+        )
 
-        # Remodelar os dados para o formato de heatmap
-        df_pivot = df_grouped.pivot(index="linha", columns="data_turno", values="eficiencia")
+        # Pivotar o dataframe
+        if main:
+            df_pivot = df_grouped.pivot(index="turno", columns="data_turno", values=indicator.value)
+            df_pivot = df_pivot.reindex(["VES", "MAT", "NOT"])
+        else:
+            df_grouped = df_grouped.sort_values(by=["linha", "data_turno"], ascending=True)
+            df_pivot = df_grouped.pivot(index="linha", columns="data_turno", values=indicator.value)
+
+        # Remover a linha 0
+        df_pivot = df_pivot[df_pivot.index != 0]
 
         return df_pivot
 
-    def get_eff_data_heatmap_turn(self) -> tuple:
+    def get_heatmap_data(self, indicator: IndicatorType) -> tuple:
         """
         Função que retorna um DataFrame com os dados de eficiência para o heatmap.
         Filtrado por turno.
         """
 
-        noturno = self.__adjust_eff_data_heatmap_turn(turn="NOT")
-        matutino = self.__adjust_eff_data_heatmap_turn(turn="MAT")
-        vespertino = self.__adjust_eff_data_heatmap_turn(turn="VES")
-        total = self.__adjust_eff_data_heatmap_turn()
+        noturno = self.__adjust_heatmap_data(indicator, turn="NOT")
+        matutino = self.__adjust_heatmap_data(indicator, turn="MAT")
+        vespertino = self.__adjust_heatmap_data(indicator, turn="VES")
+        total = self.__adjust_heatmap_data(indicator)
+        main = self.__adjust_heatmap_data(indicator, main=True)
 
-        return noturno, matutino, vespertino, total
+        return noturno, matutino, vespertino, total, main
 
     # ---------------------------------------- Anotações ---------------------------------------- #
 
@@ -158,226 +126,22 @@ class DFIndicators:
                 )
             )
 
+        # Remover a anotação com texto "nan%"
+        annotations = [annotation for annotation in annotations if "nan%" not in annotation["text"]]
+
         return annotations
 
-    def get_eff_annotations_turn(self) -> tuple:
+    def get_annotations(self, indicator: IndicatorType) -> tuple:
         """
         Função que retorna um DataFrame com as anotações de eficiência.
         Filtrado por turno.
         """
-        noturno, matutino, vespertino, total = self.get_eff_data_heatmap_turn()
+        noturno, matutino, vespertino, total, main = self.get_heatmap_data(indicator)
 
         return (
             self.__annotations_list(noturno),
             self.__annotations_list(matutino),
             self.__annotations_list(vespertino),
             self.__annotations_list(total),
-        )
-
-    # -------------------------- Indicadores de Performance e Reparos --------------------------- #
-
-    def get_perf_data(self) -> pd.DataFrame:
-        """
-        Função que retorna um DataFrame com os dados de performance.
-        """
-        return self.times_data.get_perf_data(self.df_info, self.df_prod)
-
-    def get_repair_data(self) -> pd.DataFrame:
-        """
-        Função que retorna um DataFrame com os dados de reparo.
-        """
-        return self.times_data.get_repair_data(self.df_info, self.df_prod)
-
-    def __heatmap_perf_repair(self, indicador: IndicatorType) -> pd.DataFrame:
-        """
-        Função que retorna o DataFrame de reparo e performance para o heatmap.
-        """
-        dataframe = pd.DataFrame()
-
-        if indicador == IndicatorType.PERFORMANCE:
-            dataframe = self.get_perf_data()
-
-        if indicador == IndicatorType.REPAIR:
-            dataframe = self.get_repair_data()
-
-        # Converter 'data_registro' para datetime e criar uma nova coluna 'data_turno'
-        dataframe["data_registro"] = pd.to_datetime(dataframe["data_registro"])
-        dataframe["data_turno"] = dataframe["data_registro"].dt.strftime("%Y-%m-%d")
-
-        # Agrupar por 'data_turno' e 'turno' e calcular a média da eficiência
-        df_grouped = (
-            dataframe.groupby(["data_turno", "turno"], observed=False)[indicador.value]
-            .mean()
-            .reset_index()
-        )
-
-        # Encontra a data de hoje e o primeiro e último dia do mês
-        today = datetime.now()
-        start_date = today.replace(day=1).strftime("%Y-%m-%d")
-        end_date = (
-            today.replace(month=today.month % 12 + 1, day=1) - pd.Timedelta(days=1)
-        ).strftime("%Y-%m-%d")
-
-        # Cria um DataFrame com todas as datas possíveis
-        all_dates = pd.date_range(start=start_date, end=end_date).strftime("%Y-%m-%d")
-        all_turns = dataframe["turno"].unique()
-        all_dates_df = pd.DataFrame(
-            list(product(all_dates, all_turns)), columns=["data_turno", "turno"]
-        )
-
-        # Mescla com o DataFrame original
-        df_grouped = df_grouped.merge(all_dates_df, on=["data_turno", "turno"], how="right")
-
-        # Se a data é no futuro, definir a eficiência como NaN
-        df_grouped.loc[df_grouped["data_turno"] > today.strftime("%Y-%m-%d"), indicador.value] = (
-            np.nan
-        )
-
-        # Remodelar os dados para o formato de heatmap
-        df_pivot = df_grouped.pivot(index="turno", columns="data_turno", values=indicador.value)
-
-        # Reordenar o índice do DataFrame
-        df_pivot = df_pivot.reindex(["VES", "MAT", "NOT"])
-
-        return df_pivot
-
-    def get_perf_repair_heatmap(self) -> tuple:
-        """
-        Função que retorna um DataFrame com os dados de performance e reparo para o heatmap.
-        """
-        return (
-            self.__heatmap_perf_repair(IndicatorType.PERFORMANCE),
-            self.__heatmap_perf_repair(IndicatorType.REPAIR),
-        )
-
-    # ---------------------------------------- Anotações ---------------------------------------- #
-
-    def get_annotations(self) -> tuple:
-        """
-        Função que retorna um DataFrame com as anotações de performance e reparo.
-        """
-        perf, repair = self.get_perf_repair_heatmap()
-        eff = self.get_eff_data_heatmap()
-
-        return (
-            self.__annotations_list(eff),
-            self.__annotations_list(perf),
-            self.__annotations_list(repair),
-        )
-
-    # -------------------------- Heatmap Performance e Repair by turn -------------------------- #
-
-    def __heatmap_perf_repair_turn(
-        self, indicador: IndicatorType, turn: str = None
-    ) -> pd.DataFrame:
-        """
-        Função que retorna um DataFrame com os dados de performance e reparo para o heatmap.
-        Filtrado por turno.
-        """
-
-        dataframe = pd.DataFrame()
-
-        if indicador == IndicatorType.PERFORMANCE:
-            dataframe = self.get_perf_data()
-
-        if indicador == IndicatorType.REPAIR:
-            dataframe = self.get_repair_data()
-
-        dataframe = dataframe[dataframe["turno"] == turn] if turn else dataframe
-
-        indicator = indicador.value
-
-        # Converter 'data_registro' para datetime e criar uma nova coluna 'data_turno'
-        dataframe["data_registro"] = pd.to_datetime(dataframe["data_registro"])
-        dataframe["data_turno"] = dataframe["data_registro"].dt.strftime("%Y-%m-%d")
-
-        # Agrupar por 'data_turno' e 'turno' e calcular a média
-        df_grouped = (
-            dataframe.groupby(["data_turno", "linha"], observed=False)[indicator]
-            .mean()
-            .reset_index()
-        )
-
-        # Encontra a data de hoje e o primeiro e último dia do mês
-        today = datetime.now()
-        start_date = today.replace(day=1).strftime("%Y-%m-%d")
-        end_date = (
-            today.replace(month=today.month % 12 + 1, day=1) - pd.Timedelta(days=1)
-        ).strftime("%Y-%m-%d")
-
-        # Cria um DataFrame com todas as datas possíveis
-        all_dates = pd.date_range(start=start_date, end=end_date).strftime("%Y-%m-%d")
-        all_lines = dataframe["linha"].unique()
-        all_dates_df = pd.DataFrame(
-            list(product(all_dates, all_lines)), columns=["data_turno", "linha"]
-        )
-
-        # Mescla com o DataFrame original
-        df_grouped = df_grouped.merge(all_dates_df, on=["data_turno", "linha"], how="right")
-
-        # Se a data é no futuro, definir a eficiência como NaN
-        df_grouped.loc[df_grouped["data_turno"] > today.strftime("%Y-%m-%d"), indicator] = np.nan
-
-        # Ordenar por linha e data
-        df_grouped = df_grouped.sort_values(["linha", "data_turno"], ascending=[True, True])
-
-        # Remodelar os dados para o formato de heatmap
-        df_pivot = df_grouped.pivot(index="linha", columns="data_turno", values=indicator)
-
-        return df_pivot
-
-    def get_perf_heatmap_turn(self) -> tuple:
-        """
-        Função que retorna um DataFrame com os dados de performance para o heatmap.
-        Filtrado por turno.
-        """
-        noturno = self.__heatmap_perf_repair_turn(IndicatorType.PERFORMANCE, turn="NOT")
-        matutino = self.__heatmap_perf_repair_turn(IndicatorType.PERFORMANCE, turn="MAT")
-        vespertino = self.__heatmap_perf_repair_turn(IndicatorType.PERFORMANCE, turn="VES")
-        total = self.__heatmap_perf_repair_turn(IndicatorType.PERFORMANCE)
-
-        return noturno, matutino, vespertino, total
-
-    def get_repair_heatmap_turn(self) -> tuple:
-        """
-        Função que retorna um DataFrame com os dados de reparo para o heatmap.
-        Filtrado por turno.
-        """
-        noturno = self.__heatmap_perf_repair_turn(IndicatorType.REPAIR, turn="NOT")
-        matutino = self.__heatmap_perf_repair_turn(IndicatorType.REPAIR, turn="MAT")
-        vespertino = self.__heatmap_perf_repair_turn(IndicatorType.REPAIR, turn="VES")
-        total = self.__heatmap_perf_repair_turn(IndicatorType.REPAIR)
-
-        return noturno, matutino, vespertino, total
-
-    # ---------------------------------------- Anotações ---------------------------------------- #
-
-    def get_perf_annotations_turn(self):
-        """
-        Função que retorna um DataFrame com as anotações de performance.
-        Filtrado por turno.
-        """
-
-        noturno, matutino, vespertino, total = self.get_perf_heatmap_turn()
-
-        return (
-            self.__annotations_list(noturno),
-            self.__annotations_list(matutino),
-            self.__annotations_list(vespertino),
-            self.__annotations_list(total),
-        )
-
-    def get_repair_annotations_turn(self):
-        """
-        Função que retorna um DataFrame com as anotações de reparo.
-        Filtrado por turno.
-        """
-
-        noturno, matutino, vespertino, total = self.get_repair_heatmap_turn()
-
-        return (
-            self.__annotations_list(noturno),
-            self.__annotations_list(matutino),
-            self.__annotations_list(vespertino),
-            self.__annotations_list(total),
+            self.__annotations_list(main),
         )

@@ -13,10 +13,12 @@ import os
 from threading import Lock
 
 import dash_bootstrap_components as dbc
+import dash_mantine_components as dmc
 from apscheduler.schedulers.background import BackgroundScheduler
 from dash import callback, dcc, html
 from dash.dependencies import Input, Output
 from dash.exceptions import PreventUpdate
+from dash_bootstrap_templates import ThemeSwitchAIO
 
 # pylint: disable=E0401
 from database.last_month_ind import LastMonthInd
@@ -26,17 +28,12 @@ from waitress import serve
 
 from app import app
 
-# from dash_bootstrap_templates import ThemeSwitchAIO
-
-
 lock = Lock()
 last_month_ind = LastMonthInd()
 
 # Seleção de temas para o App - Variáveis:
-# template_boots = "bootstrap"  # para o gráfico
-# template_darkly = "darkly"
-# url_boots = dbc.themes.BOOTSTRAP  # para o switch
-# url_darkly = dbc.themes.DARKLY
+URL_BOOTS = dbc.themes.BOOTSTRAP  # para o switch
+URL_DARKY = dbc.themes.DARKLY
 
 
 # ========================================= Background ========================================= #
@@ -67,32 +64,29 @@ app.layout = dbc.Container(
         dcc.Store(id="store-df-eff"),
         dcc.Store(id="store-df-perf"),
         dcc.Store(id="store-df-repair"),
-        dcc.Store(id="store-df-eff-heatmap"),
-        dcc.Store(id="store-df-eff-heatmap-tuple"),
-        dcc.Store(id="store-annotations_eff_turn_list_tuple"),
-        dcc.Store(id="store-df-perf_repair_heat_tuple"),
-        dcc.Store(id="store-annotations_list_tuple"),
-        dcc.Store(id="store-df_perf_heat_turn_tuple"),
-        dcc.Store(id="store-df-repair_heat_turn_tuple"),
-        dcc.Store(id="store-annotations_perf_turn_list_tuple"),
-        dcc.Store(id="store-annotations_repair_turn_list_tuple"),
+        dcc.Store(id="store-df_eff_heatmap_tuple"),
+        dcc.Store(id="store-annotations_eff_list_tuple"),
+        dcc.Store(id="store-df_perf_heatmap_tuple"),
+        dcc.Store(id="store-annotations_perf_list_tuple"),
+        dcc.Store(id="store-df_repair_heatmap_tuple"),
+        dcc.Store(id="store-annotations_repair_list_tuple"),
         dcc.Store(id="store-df_working_time"),
         dcc.Store(id="is-data-store", storage_type="session", data=False),
         # ---------------------- Main Layout ---------------------- #
         dbc.Row(
+            dbc.Col(
+                ThemeSwitchAIO(
+                    aio_id="theme",
+                    themes=[URL_BOOTS, URL_DARKY],
+                ),
+                class_name="h-100 d-flex align-items-center justify-content-end",
+            ),
+        ),
+        dbc.Row(
             [
                 dbc.Col(
                     html.H1("Shop Floor Management", className="text-center"),
-                    # md=11,
                 ),
-                # dbc.Col(
-                #     ThemeSwitchAIO(
-                #         aio_id="theme",
-                #         themes=[url_boots, url_darkly],
-                #     ),
-                #     class_name="h-100 d-flex align-items-center justify-content-end",
-                #     md=1,
-                # ),
             ],
         ),
         html.Hr(),
@@ -100,12 +94,25 @@ app.layout = dbc.Container(
             dbc.Tabs(
                 [
                     dbc.Tab(grafana.layout, label="Ao Vivo"),
-                    dbc.Tab(
-                        main_page.layout,
-                        label="SFM Dashboard",
-                    ),
-                ]
+                    dbc.Tab(main_page.layout, label="SFM Dashboard"),
+                ],
             ),
+            class_name="mb-5",
+        ),
+        dmc.Footer(
+            dmc.Center(
+                children=dmc.Image(
+                    # pylint: disable=E1101
+                    src=app.get_asset_url("Logo Horizontal.png"),
+                    width="125px",
+                    withPlaceholder=True,
+                ),
+                p=5,
+            ),
+            height=32,
+            fixed=True,
+            className="bg-light",
+            id="footer",
         ),
     ],
     fluid=True,
@@ -116,21 +123,35 @@ app.layout = dbc.Container(
 
 # ========================================= Callbacks ========================================= #
 @callback(
+    Output("footer", "className"),
+    Input(ThemeSwitchAIO.ids.switch("theme"), "value"),
+)
+def update_footer_class_name(light_theme):
+    """
+    Atualiza o nome da classe do rodapé com base no tema de cores.
+
+    Parâmetros:
+    light_theme (bool): Indica se o tema de cores é claro ou escuro.
+
+    Retorna:
+    str: O nome da classe do rodapé atualizado.
+    """
+    return "bg-dark" if not light_theme else "bg-light"
+
+
+@callback(
     [
         Output("store-info", "data"),
         Output("store-prod", "data"),
         Output("store-df-eff", "data"),
         Output("store-df-perf", "data"),
         Output("store-df-repair", "data"),
-        Output("store-df-eff-heatmap", "data"),
-        Output("store-df-eff-heatmap-tuple", "data"),
-        Output("store-annotations_eff_turn_list_tuple", "data"),
-        Output("store-df-perf_repair_heat_tuple", "data"),
-        Output("store-annotations_list_tuple", "data"),
-        Output("store-df_perf_heat_turn_tuple", "data"),
-        Output("store-df-repair_heat_turn_tuple", "data"),
-        Output("store-annotations_perf_turn_list_tuple", "data"),
-        Output("store-annotations_repair_turn_list_tuple", "data"),
+        Output("store-df_eff_heatmap_tuple", "data"),
+        Output("store-annotations_eff_list_tuple", "data"),
+        Output("store-df_perf_heatmap_tuple", "data"),
+        Output("store-annotations_perf_list_tuple", "data"),
+        Output("store-df_repair_heatmap_tuple", "data"),
+        Output("store-annotations_repair_list_tuple", "data"),
         Output("store-df_working_time", "data"),
     ],
     Input("store-info", "data"),
@@ -148,15 +169,12 @@ def update_store(_data):
     df_eff = cache.get("df_eff")
     df_perf = cache.get("df_perf")
     df_repair = cache.get("df_repair")
-    df_eff_heatmap = cache.get("df_eff_heatmap")
     df_eff_heatmap_tuple = cache.get("df_eff_heatmap_tuple")
-    annotations_eff_turn_list_tuple = cache.get("annotations_eff_turn_list_tuple")
-    df_perf_repair_heat_tuple = cache.get("df_perf_repair_heat_tuple")
-    annotations_list_tuple = cache.get("annotations_list_tuple")
-    df_perf_heat_turn_tuple = cache.get("df_perf_heat_turn_tuple")
-    df_repair_heat_turn_tuple = cache.get("df_repair_heat_turn_tuple")
-    annotations_perf_turn_list_tuple = cache.get("annotations_perf_turn_list_tuple")
-    annotations_repair_turn_list_tuple = cache.get("annotations_repair_turn_list_tuple")
+    annotations_eff_turn_list_tuple = cache.get("annotations_eff_list_tuple")
+    df_perf_heatmap_tuple = cache.get("df_perf_heatmap_tuple")
+    annotations_perf_turn_list_tuple = cache.get("annotations_perf_list_tuple")
+    df_repair_heatmap_tuple = cache.get("df_repair_heatmap_tuple")
+    annotations_repair_turn_list_tuple = cache.get("annotations_repair_list_tuple")
     df_working_time = cache.get("df_working_time")
 
     print("========== Store atualizado ==========")
@@ -166,14 +184,11 @@ def update_store(_data):
         df_eff,
         df_perf,
         df_repair,
-        df_eff_heatmap,
         df_eff_heatmap_tuple,
         annotations_eff_turn_list_tuple,
-        df_perf_repair_heat_tuple,
-        annotations_list_tuple,
-        df_perf_heat_turn_tuple,
-        df_repair_heat_turn_tuple,
+        df_perf_heatmap_tuple,
         annotations_perf_turn_list_tuple,
+        df_repair_heatmap_tuple,
         annotations_repair_turn_list_tuple,
         df_working_time,
     )

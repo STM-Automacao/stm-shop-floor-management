@@ -11,7 +11,6 @@ import pandas as pd
 
 # pylint: disable=E0401
 from database.get_data import GetData
-from graphics.indicators import Indicators
 from helpers.path_config import DF_HISTORY, EFF_LAST, PERF_LAST, REPAIR_LAST, TOP_STOPS
 from service.times_data import TimesData
 
@@ -24,7 +23,6 @@ class LastMonthInd:
     def __init__(self):
         self.times_data = TimesData()
         self.get_data = GetData()
-        self.indicators = Indicators()
 
     def save_last_month_data(self):
         """
@@ -104,8 +102,8 @@ class LastMonthInd:
 
         # ------- Top 5 motivos de paradas e seu tempo total ------ #
         # Se motivo nome for null, substitui por "Motivo não apontado"
-        df_info["motivo_nome"].fillna("Motivo não apontado", inplace=True)
-        df_info["problema"].fillna("Problema não apontado", inplace=True)
+        df_info["motivo_nome"] = df_info["motivo_nome"].fillna("Motivo não apontado")
+        df_info["problema"] = df_info["problema"].fillna("Problema não apontado")
         df_info["problema"] = np.where(
             df_info["problema"] == "None", "Problema não apontado", df_info["problema"]
         )

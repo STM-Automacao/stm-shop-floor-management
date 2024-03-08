@@ -33,8 +33,8 @@ sqlalchemy = "^2.0.25"
 kaleido = {version = "0.2.1", optional = true}
 waitress = "^2.1.2"
 dash-bootstrap-templates = "^1.1.2"
-dash-ag-grid = "^2.4.0"
 streamlit = "^1.31.0"
+dash-ag-grid = "^31.0.1"
 pylint = "^3.0.3"
 
 

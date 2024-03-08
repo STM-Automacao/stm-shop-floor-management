@@ -1,81 +1,47 @@
 """
-Autor: Bruno Tomaz
-Data: 25/01/2024
-Módulo que contém o layout e as funções de callback do Modal de Reparos.
+Modal Module Reparos
+Criado por: Bruno Tomaz
+Data: 23/01/2024
 """
 
 import json
-from io import StringIO as stringIO
+from io import StringIO
 
-import dash_ag_grid as dag
 import dash_bootstrap_components as dbc
 import dash_mantine_components as dmc
 import pandas as pd
-
-# pylint: disable=E0401
-from components import btn_modal
-from dash import callback, dcc, html
-from dash.dependencies import Input, Output
+from components import bar_chart_general, bar_chart_lost, btn_modal, grid_occ, heatmap, line_graph
+from dash import Input, Output, callback, html
 from dash.exceptions import PreventUpdate
-from graphics.indicators import Indicators
-from graphics.indicators_turn import IndicatorsTurn
-from helpers.types import IndicatorType
-from service.times_data import TimesData
+from dash_bootstrap_templates import ThemeSwitchAIO
+from helpers.types import IndicatorType, TemplateType
 
 from app import app
 
-times_data = TimesData()
-indicators = IndicatorsTurn()
-indicators_geral = Indicators()
-
-# ========================================= Modal Layout ======================================== #
+# ======================================== Modal Layout ======================================== #
 
 layout = [
     dbc.ModalHeader("Reparos por Turno", class_name="inter"),
     dbc.ModalBody(
         [
             dbc.Row(
-                [
-                    dbc.Col(
-                        btn_modal.radio_btn_repair,
-                        class_name="radio-group",
-                    ),
-                ],
+                dbc.Col(
+                    btn_modal.radio_btn_repair,
+                    class_name="radio-group",
+                    md=4,
+                ),
             ),
-            dbc.Spinner(
-                children=dcc.Graph(id="graph-repair-modal"),
-                color="danger",
-                size="lg",
-            ),
-            dcc.Graph(
-                id="graph-line-modal-3",
-                style={"height": "80px"},
-            ),
+            dbc.Spinner(id="heatmap-line-spinner-repair"),
             html.Hr(),
             dbc.Row(
                 [
-                    dbc.Col(dcc.Graph(id="graph-repair-modal-2"), md=6),
-                    dbc.Col(
-                        [
-                            dbc.Row(
-                                [
-                                    dbc.Switch(
-                                        id="perdas-switch-repair",
-                                        label="Agrupado",
-                                        className="mb-1 inter",
-                                        value=False,
-                                    ),
-                                    dcc.Graph(id="graph-repair-modal-perdas"),
-                                ]
-                            ),
-                            dbc.Row(),  # Terá um input de ações
-                        ],
-                        md=6,
-                    ),
+                    dbc.Col(dbc.Card(id="repair-general", class_name="p-1"), md=6),
+                    dbc.Col(dbc.Card(id="repair-lost", class_name="p-1"), md=6),
                 ],
+                class_name="mb-3",
             ),
             html.Hr(),
-            dbc.Row(id="grid-repair-modal", children=[]),
+            dbc.Row(id="grid-occ-modal-repair"),
         ]
     ),
     dbc.ModalFooter(
@@ -88,232 +54,185 @@ layout = [
     ),
 ]
 
-# ======================================== Modal Callbacks ======================================= #
+# ======================================= Modal Callbacks ======================================= #
 
 
+# --------------------- Spinner --------------------- #
 @callback(
-    Output("graph-repair-modal", "figure"),
+    Output("heatmap-line-spinner-repair", "children"),
     [
         Input(f"radio-items-{IndicatorType.REPAIR.value}", "value"),
-        Input("store-df-repair_heat_turn_tuple", "data"),
-        Input("store-annotations_repair_turn_list_tuple", "data"),
+        Input("store-df_repair_heatmap_tuple", "data"),
+        Input("store-annotations_repair_list_tuple", "data"),
+        Input("store-df-repair", "data"),
+        Input(ThemeSwitchAIO.ids.switch("theme"), "value"),
     ],
 )
-def update_graph_repair_modal(value, df_tuple, ann_tuple):
+def spinner_repair(turn, df_heatmap, annotations, df_repair, toggle_theme):
     """
-    Função que atualiza o gráfico de reparos por turno.
+    Generates a card containing a heatmap and a line graph based on the provided data.
+
+    Args:
+        turn (str): The selected turn ('NOT', 'MAT', 'VES', 'TOT').
+        df_heatmap (str): The JSON string representing the heatmap data.
+        annotations (str): The JSON string representing the annotations data.
+        df_repair (str): The JSON string representing the line graph data.
+        toggle_theme (bool): A flag indicating whether to use a light or dark template.
+
+    Returns:
+        dbc.Card: A Bootstrap Card component containing the heatmap and line graph.
     """
-    if not df_tuple:
+
+    if not df_heatmap or not df_repair:
         raise PreventUpdate
 
-    # Carregue a string JSON em uma lista
-    df_list_json = json.loads(df_tuple)
-    ann_tuple_json = json.loads(ann_tuple)
+    template = TemplateType.LIGHT if toggle_theme else TemplateType.DARK
+    hm = heatmap.Heatmap()
+    lg = line_graph.LineGraph()
 
-    # Converta cada elemento da lista de volta em um DataFrame
-    df_list = [pd.read_json(stringIO(df_json), orient="split") for df_json in df_list_json]
-    annotations_list_tuple = [json.loads(lst_json) for lst_json in ann_tuple_json]
+    # ---------Heatmap--------- #
+    # Carrega o string json em uma lista
+    list_heat_json = json.loads(df_heatmap)
+    list_ann_json = json.loads(annotations)
 
-    # Converta a lista em uma tupla e desempacote
-    noturno, matutino, vespertino, total = tuple(df_list)
-    ann_not, ann_mat, ann_ves, ann_total = tuple(annotations_list_tuple)
+    # Converte o string json em um dataframe e um dicionário
+    df_tuple = [pd.read_json(StringIO(x), orient="split") for x in list_heat_json]
+    ann_tuple = [json.loads(x) for x in list_ann_json]
 
-    # Criar um dicionário com os DataFrames
-    df_dict = {"NOT": noturno, "MAT": matutino, "VES": vespertino, "TOT": total}
-    list_dict = {"NOT": ann_not, "MAT": ann_mat, "VES": ann_ves, "TOT": ann_total}
+    # Converte em tuplas e desempacota
+    noturno, matutino, vespertino, total, _ = tuple(df_tuple)
+    ann_noturno, ann_matutino, ann_vespertino, ann_total, _ = tuple(ann_tuple)
 
-    # Selecionar o DataFrame correto
-    df = df_dict[value]
-    annotations = list_dict[value]
+    # Cria um dicionário com os dataframes e as anotações
+    repair_heatmap_dict = {
+        "NOT": (noturno, ann_noturno),
+        "MAT": (matutino, ann_matutino),
+        "VES": (vespertino, ann_vespertino),
+        "TOT": (total, ann_total),
+    }
 
-    fig = indicators.get_heat_turn(df, IndicatorType.REPAIR, annotations)
+    # Seleciona o dataframe e as anotações com base no turno
+    df_heatmap, annotations = repair_heatmap_dict[turn]
 
-    return fig
+    # ---------Line--------- #
+    # Carrega o string json em um dataframe
+    df_line = pd.read_json(StringIO(df_repair), orient="split")
+
+    # Se df_line não tiver o turn na coluna turno, previne a atualização
+    if turn not in df_line["turno"].unique():
+        raise PreventUpdate
+
+    return dbc.Card(
+        [
+            hm.create_heatmap(df_heatmap, annotations, IndicatorType.REPAIR, 4, template, turn),
+            lg.create_line_graph(df_line, IndicatorType.REPAIR, 4, template, turn),
+        ],
+        class_name="p-1",
+    )
 
 
-# ---------------------- Line Chart ---------------------- #
+# --------------------- Repair General --------------------- #
 @callback(
-    Output("graph-line-modal-3", "figure"),
+    Output("repair-general", "children"),
     [
         Input("store-df-repair", "data"),
-        Input(f"radio-items-{IndicatorType.REPAIR.value}", "value"),
+        Input(ThemeSwitchAIO.ids.switch("theme"), "value"),
     ],
 )
-def update_graph_line_modal_1(data, turn):
+def repair_general(df_repair, toggle_theme):
     """
-    Função que atualiza o gráfico de linha do modal.
+    Calculates and returns a bar chart representing the repair of a process.
+
+    Args:
+        df_repair (str): A JSON string representing the repair data.
+        toggle_theme (bool):
+        A boolean indicating whether to use a light or dark template for the chart.
+
+    Returns:
+        dict: A dictionary representing the generated bar chart.
+
+    Raises:
+        PreventUpdate: If the `df_repair` parameter is empty or None.
+
     """
-    if data is None:
+    if not df_repair:
         raise PreventUpdate
 
-    df = pd.read_json(stringIO(data), orient="split")
+    template = TemplateType.LIGHT if toggle_theme else TemplateType.DARK
+    bcg = bar_chart_general.BarChartGeneral()
 
-    figure = indicators_geral.plot_daily_efficiency(df, IndicatorType.REPAIR, 4, turn)
+    # Carrega o string json em um dataframe
+    df = pd.read_json(StringIO(df_repair), orient="split")
 
-    return figure
+    return bcg.create_bar_chart_gen(df, IndicatorType.REPAIR, template, 4)
 
 
+# --------------------- Efficiency Lost --------------------- #
 @callback(
-    Output("graph-repair-modal-2", "figure"),
+    Output("repair-lost", "children"),
     [
         Input("store-info", "data"),
-        Input("store-prod", "data"),
-    ],
-)
-def update_graph_repair_modal_2(info, prod):
-    """
-    Função que atualiza o gráfico de reparos por turno.
-    """
-    if not info or not prod:
-        raise PreventUpdate
-
-    df_maq_info_cadastro = pd.read_json(stringIO(info), orient="split")
-    df_maq_info_prod_cad = pd.read_json(stringIO(prod), orient="split")
-
-    df = times_data.get_repair_data(df_maq_info_cadastro, df_maq_info_prod_cad)
-
-    fig = indicators.get_bar_turn(df, IndicatorType.REPAIR)
-
-    return fig
-
-
-@callback(
-    Output("graph-repair-modal-perdas", "figure"),
-    [
-        Input("store-info", "data"),
-        Input("perdas-switch-repair", "value"),
         Input(f"radio-items-{IndicatorType.REPAIR.value}", "value"),
+        Input(ThemeSwitchAIO.ids.switch("theme"), "value"),
     ],
 )
-def update_graph_repair_modal_perdas(info, checked, turn):
+def repair_lost(info, turn, toggle_theme):
     """
-    Função que atualiza o gráfico de perdas por turno.
+    Calculates the repair lost based on the provided information.
+
+    Args:
+        info (str): A JSON string containing the information.
+        turn (int): The turn number.
+        toggle_theme (bool): A flag indicating whether to use a light or dark template.
+
+    Returns:
+        dict: A dictionary containing the bar chart lost data.
+
+    Raises:
+        PreventUpdate: If the info parameter is empty.
     """
+
     if not info:
         raise PreventUpdate
 
-    df_maq_info_cadastro = pd.read_json(stringIO(info), orient="split")
+    template = TemplateType.LIGHT if toggle_theme else TemplateType.DARK
+    bcl = bar_chart_lost.BarChartLost()
 
-    df = indicators.get_time_lost(df_maq_info_cadastro, IndicatorType.REPAIR, turn)
+    # Carrega o string json em um dataframe
+    df_info = pd.read_json(StringIO(info), orient="split")
 
-    fig = indicators.get_bar_lost(df, turn, IndicatorType.REPAIR, checked)
-
-    return fig
+    return bcl.create_bar_chart_lost(df_info, IndicatorType.REPAIR, template, turn)
 
 
+# ---------------------- Grid ---------------------- #
 @callback(
-    Output("grid-repair-modal", "children"),
+    Output("grid-occ-modal-repair", "children"),
     [
         Input("store-info", "data"),
         Input(f"radio-items-{IndicatorType.REPAIR.value}", "value"),
+        Input(ThemeSwitchAIO.ids.switch("theme"), "value"),
     ],
 )
-def update_grid_repair_modal(data_info, turn):
+def update_grid_occ_modal_repair(info, turn, theme):
     """
     Função que atualiza o grid de eficiência do modal.
     """
-    if data_info is None:
+    if info is None:
         raise PreventUpdate
 
+    goe = grid_occ.GridOcc()
+
     # Carregue a string JSON em um DataFrame
-    df_maq_info_cadastro = pd.read_json(stringIO(data_info), orient="split")
+    df_info = pd.read_json(StringIO(info), orient="split")
 
-    # Crie o DataFrame
-    df = indicators.get_time_lost(df_maq_info_cadastro, IndicatorType.REPAIR, turn)
-    df = indicators.adjust_df_for_bar_lost(df, IndicatorType.REPAIR)
+    turns = {
+        "NOT": "Noturno",
+        "MAT": "Matutino",
+        "VES": "Vespertino",
+        "TOT": "Geral",
+    }
 
-    # Ordenar por linha, data_hora_registro
-    df = df.sort_values(by=["linha", "data_hora_registro"])
-
-    column_defs = [
-        {
-            "field": "fabrica",
-            "sortable": True,
-            "resizable": True,
-            "cellClass": "center-aligned-cell",
-            "headerClass": "center-aligned-header",
-            "flex": 1,
-        },
-        {
-            "field": "linha",
-            "filter": True,
-            "sortable": True,
-            "resizable": True,
-            "cellClass": "center-aligned-cell",
-            "headerClass": "center-aligned-header",
-            "flex": 1,
-        },
-        {
-            "field": "maquina_id",
-            "filter": True,
-            "sortable": True,
-            "resizable": True,
-            "cellClass": "center-aligned-cell",
-            "headerClass": "center-aligned-header",
-            "flex": 1,
-        },
-        {
-            "field": "motivo_nome",
-            "headerName": "Motivo",
-            "filter": True,
-            "resizable": True,
-            "sortable": True,
-            "flex": 2,
-        },
-        {
-            "field": "problema",
-            "sortable": True,
-            "resizable": True,
-            "tooltipField": "problema",
-            "flex": 2,
-        },
-        {
-            "field": "tempo_registro_min",
-            "headerName": "Tempo Parada",
-            "sortable": True,
-            "resizable": True,
-            "flex": 1,
-        },
-        {
-            "field": "desconto_min",
-            "headerName": "Tempo descontado",
-            "sortable": True,
-            "resizable": True,
-            "cellClass": "center-aligned-cell",
-            "headerClass": "center-aligned-header",
-            "flex": 1,
-        },
-        {
-            "field": "excedente",
-            "headerName": "Tempo que afeta",
-            "sortable": True,
-            "resizable": True,
-            "cellClass": "center-aligned-cell",
-            "headerClass": "center-aligned-header",
-            "flex": 1,
-        },
-        {
-            "field": "data_hora_registro",
-            "headerName": "Inicio Parada",
-            "sortable": True,
-            "resizable": True,
-            "flex": 2,
-        },
-        {
-            "field": "data_hora_final",
-            "headerName": "Fim Parada",
-            "sortable": True,
-            "resizable": True,
-            "flex": 2,
-        },
+    return [
+        html.H5(f"Ocorrências - {turns[turn]}", className="text-center"),
+        goe.create_grid_occ(df_info, IndicatorType.REPAIR, turn, theme),
     ]
-    grid = dag.AgGrid(
-        id="AgGrid-repair-modal",
-        columnDefs=column_defs,
-        rowData=df.to_dict("records"),
-        columnSize="responsiveSizeToFit",
-        dashGridOptions={"pagination": True, "paginationAutoPageSize": True},
-        style={"height": "600px"},
-    )
-
-    return grid
