@@ -129,7 +129,7 @@ class BarChartLost:
             template=template.value,
             plot_bgcolor="RGBA(0,0,0,0.01)",
             font=dict(family="Inter"),
-            margin=dict(l=40, r=40, t=40, b=40),
+            margin=dict(l=40, r=10, t=80, b=40),
             showlegend=False,
         )
 
