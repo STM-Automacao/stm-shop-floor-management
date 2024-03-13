@@ -1,7 +1,7 @@
 """
-@Docstring: A class representing a line chart.
-@Author: Bruno D. Tomaz
-@Date: 28/02/2024
+    A class representing a line chart.
+    - Autor: Bruno Tomaz
+    - Data de criação: 28/02/2024
 """
 
 import pandas as pd

@@ -1,7 +1,7 @@
 """
-Module for bar lost chart component.
-@Author: Bruno Tomaz
-@Date: 04/03/2024
+    Module for bar lost chart component.
+    - Autor: Bruno Tomaz
+    - Data de criação: 04/03/2024
 """
 
 import textwrap

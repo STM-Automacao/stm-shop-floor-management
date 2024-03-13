@@ -21,7 +21,7 @@ from dash_bootstrap_templates import ThemeSwitchAIO
 # pylint: disable=E0401
 from database.last_month_ind import LastMonthInd
 from helpers.cache import cache, update_cache
-from pages import grafana, main_page
+from pages import grafana, main_page, management
 from waitress import serve
 
 from app import app
@@ -93,6 +93,7 @@ app.layout = dbc.Container(
                 [
                     dbc.Tab(grafana.layout, label="Ao Vivo"),
                     dbc.Tab(main_page.layout, label="SFM Dashboard"),
+                    dbc.Tab(management.layout, label="Gestão de Produção"),
                 ],
             ),
             class_name="mb-5",

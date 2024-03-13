@@ -1,7 +1,7 @@
 """
     Página Principal do dashboard
-    @autor: Bruno Tomaz
-    @data: 15/01/2024
+    - Autor: Bruno Tomaz
+    - Data de Criação: 15/01/2024
 """
 
 import json

@@ -1,7 +1,7 @@
 """
-Module for production cards
-@created: Bruno Tomaz
-@date: 01/03/2024
+    Module for production cards
+    - Autor: Bruno Tomaz
+    - Data de criação: 01/03/2024
 """
 
 # cSpell: words producao
