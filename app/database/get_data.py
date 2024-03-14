@@ -244,3 +244,19 @@ class GetData:
         df = self.db_read.get_automacao_data(query)
 
         return df
+
+    # cSpell: words fabr emissao hrrpbg ccca
+    def get_protheus_caixas_data(self):
+
+        self.db_read.create_totvsdb_query(
+            select=(
+                " CYB_X_FABR AS FABRICA,"
+                " T9_NOME AS MAQUINA,"
+                " B1_DESC AS PRODUTO,"
+                " D3_QUANT AS QTD,"
+                " D3_UM AS UNIDADE,"
+                " D3_EMISSAO AS EMISSAO,"
+                " CYV_HRRPBG AS HORA,"
+                " CYV_CCCA05 AS LOTE"
+            ),  # TODO: Continuar criação da query
+        )

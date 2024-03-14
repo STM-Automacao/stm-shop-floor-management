@@ -48,7 +48,9 @@
     "nunique",
     "OBDC",
     "odbc",
+    "pcards",
     "plotly",
+    "protheus",
     "PYMSSQL",
     "pyodbc",
     "recno",
@@ -70,6 +72,9 @@
     "ticksuffix",
     "ticktext",
     "tickvals",
+    "Totvs",
+    "totvsdb",
+    "TOTVSDB",
     "traceorder",
     "tseries",
     "updatemode",
@@ -86,4 +91,7 @@
     "zmin"
   ],
   "terminal.integrated.fontFamily": "'Hasklug Nerd Font' ,'Hack Nerd Font Mono'",
+  "workbench.editorAssociations": {
+    "file:/**/*.csv": "jupyter-data-wrangler"
+  },
 }

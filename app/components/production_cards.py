@@ -12,6 +12,8 @@ import pandas as pd
 from dash import html
 from helpers.types import CICLOS_ESPERADOS
 
+pd.options.mode.copy_on_write = True
+
 
 class ProductionCards:
     """
@@ -45,7 +47,7 @@ class ProductionCards:
 
         # Produção total
         df_prod.loc[:, "total_produzido"] = np.floor(df_prod["total_produzido"] / 10)  # caixas
-        df_prod["total_produzido"] = df_prod["total_produzido"].astype(int)
+        df_prod.loc[:, "total_produzido"] = df_prod["total_produzido"].astype(int)
 
         # Produção por turno
         df_prod_mat = df_prod[df_prod["turno"] == "MAT"]

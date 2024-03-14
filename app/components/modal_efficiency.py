@@ -19,7 +19,6 @@ from components import (
     heatmap,
     line_graph,
     modal_history,
-    production_cards,
     production_grid,
 )
 from dash import Input, Output, State, callback, html
@@ -277,14 +276,10 @@ def collapse_content(info, prod, turn, toggle_theme):
     if not info or not prod:
         raise PreventUpdate
 
-    pcd = production_cards.ProductionCards()
     pgd = production_grid.ProductionGrid()
 
-    # ------------- Cards ------------- #
-    maq_info = pd.read_json(StringIO(info), orient="split")
     maq_prod = pd.read_json(StringIO(prod), orient="split")
 
-    df_info = pd.DataFrame(maq_info)
     df_prod = pd.DataFrame(maq_prod)
 
     turno = {
@@ -301,10 +296,6 @@ def collapse_content(info, prod, turn, toggle_theme):
             dbc.CardHeader("Produção"),
             dbc.CardBody(
                 [
-                    dbc.Row(pcd.create_card(df_info, df_prod.copy())),
-                    html.Hr(),
-                    dbc.Row(pcd.create_card(df_info, df_prod.copy(), today=True)),
-                    html.Hr(),
                     html.H5(f"Tabela de {turno[turn]}", className="text-center"),
                     dbc.Row(pgd.create_production_grid(df_prod, turn, toggle_theme)),
                 ]
