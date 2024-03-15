@@ -40,6 +40,7 @@ class Read(Connection):
         pandas dataframe
             Dataframe with the query result
         """
+        connection = None
         try:
             connection = self.get_connection_automacao()
             data = pd.read_sql(query, connection)
@@ -48,6 +49,9 @@ class Read(Connection):
         except Exception as e:
             print(f"Erro ao buscar dados: {e}")
             return None
+        finally:
+            if connection:
+                connection.dispose()
 
     def create_automacao_query(self, table: str, where: str = None, orderby: str = None) -> str:
         """
@@ -79,7 +83,7 @@ class Read(Connection):
 
     def get_totvsdb_data(self, query: str) -> pd.DataFrame:
         """
-        Retrieves data from the Totvs database based on the provided query.
+        Retrieves data from the TotvsDB database using the provided SQL query.
 
         Args:
             query (str): The SQL query to execute.
@@ -88,9 +92,10 @@ class Read(Connection):
             pd.DataFrame: A pandas DataFrame containing the retrieved data.
 
         Raises:
-            Exception: If an error occurs while fetching the data.
+            Exception: If an error occurs while retrieving the data.
 
         """
+        connection = None
         try:
             connection = self.get_connection_totvsdb()
             data = pd.read_sql(query, connection)
@@ -99,6 +104,9 @@ class Read(Connection):
         except Exception as e:
             print(f"Erro ao buscar dados: {e}")
             return None
+        finally:
+            if connection:
+                connection.dispose()
 
     def create_totvsdb_query(
         self, select: str, table: str, join: str = None, where: str = None, orderby: str = None

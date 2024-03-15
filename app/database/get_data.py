@@ -235,9 +235,12 @@ class GetData:
         # Retorno dos dados
         return df_maq_info_cadastro, df_maq_info_prod_cad_cleaned
 
-    def get_maq_tela(self):
+    def get_maq_tela(self) -> pd.DataFrame:
         """
-        Retorna os dados da tabela maquina_tela
+        Retrieves data from the 'maquina_tela' table in the AUTOMACAO database.
+
+        Returns:
+            DataFrame: A pandas DataFrame containing the retrieved data.
         """
         query = "SELECT * FROM AUTOMACAO.dbo.maquina_tela"
 
@@ -245,18 +248,49 @@ class GetData:
 
         return df
 
-    # cSpell: words fabr emissao hrrpbg ccca
-    def get_protheus_caixas_data(self):
+    # cSpell: words fabr emissao hrrpbg ccca nrrpet cdmq codbem
+    def get_protheus_caixas_data(self) -> pd.DataFrame:
+        """
+        Retrieves data from the Protheus system for caixas.
 
-        self.db_read.create_totvsdb_query(
+        Returns:
+            pandas.DataFrame: The retrieved data from the Protheus system.
+        """
+        query = self.db_read.create_totvsdb_query(
             select=(
-                " CYB_X_FABR AS FABRICA,"
-                " T9_NOME AS MAQUINA,"
-                " B1_DESC AS PRODUTO,"
-                " D3_QUANT AS QTD,"
-                " D3_UM AS UNIDADE,"
-                " D3_EMISSAO AS EMISSAO,"
-                " CYV_HRRPBG AS HORA,"
-                " CYV_CCCA05 AS LOTE"
-            ),  # TODO: Continuar criação da query
+                "CYB_X_FABR AS FABRICA, "
+                "T9_NOME AS MAQUINA, "
+                "B1_DESC AS PRODUTO, "
+                "D3_QUANT AS QTD, "
+                "D3_UM AS UNIDADE, "
+                "D3_EMISSAO AS EMISSAO, "
+                "CYV_HRRPBG AS HORA, "
+                "CYV_CCCA05 AS LOTE "
+            ),
+            table="SD3000 SD3 WITH (NOLOCK)",
+            join=(
+                "LEFT JOIN SB1000 SB1 WITH (NOLOCK) "
+                "ON B1_FILIAL='01' and B1_COD=D3_COD AND SB1.D_E_L_E_T_<>'*' "
+                "LEFT JOIN CYV000 CYV WITH (NOLOCK) "
+                "ON CYV_FILIAL=D3_FILIAL and CYV_NRRPET=D3_IDENT and CYV.D_E_L_E_T_<>'*' "
+                "LEFT JOIN CYB000 CYB WITH (NOLOCK) "
+                "ON CYB_FILIAL=D3_FILIAL and CYB_CDMQ=CYV_CDMQ and CYB.D_E_L_E_T_<>'*' "
+                "LEFT JOIN ST9000 ST9 WITH (NOLOCK) "
+                "ON CYV_CDMQ=T9_CODBEM and ST9.D_E_L_E_T_<>'*'"
+            ),
+            where=(
+                "D3_FILIAL = '0101' AND D3_LOCAL='CF' AND B1_TIPO = 'PA' AND D3_CF = 'PR0' "
+                "AND D3_ESTORNO <> 'S' AND D3_EMISSAO >= '20240301' AND SD3.D_E_L_E_T_<>'*'"
+            ),
+            orderby="D3_EMISSAO DESC, CYV_HRRPBG DESC",
         )
+
+        print("=============== Baixando dados TOTVSDB ===============")
+        df = self.db_read.get_totvsdb_data(query)
+
+        if df.empty:
+            print("=============== TOTVSDB ERRO ===============")
+        else:
+            print("Ok...")
+
+        return df

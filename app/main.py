@@ -69,6 +69,7 @@ app.layout = dbc.Container(
         dcc.Store(id="store-df_repair_heatmap_tuple"),
         dcc.Store(id="store-annotations_repair_list_tuple"),
         dcc.Store(id="store-df_working_time"),
+        dcc.Store(id="store-df-caixas-cf"),
         dcc.Store(id="is-data-store", storage_type="session", data=False),
         # ---------------------- Main Layout ---------------------- #
         dbc.Row(
@@ -152,6 +153,7 @@ def update_footer_class_name(light_theme):
         Output("store-df_repair_heatmap_tuple", "data"),
         Output("store-annotations_repair_list_tuple", "data"),
         Output("store-df_working_time", "data"),
+        Output("store-df-caixas-cf", "data"),
     ],
     Input("store-info", "data"),
 )
@@ -175,6 +177,7 @@ def update_store(_data):
     df_repair_heatmap_tuple = cache.get("df_repair_heatmap_tuple")
     annotations_repair_turn_list_tuple = cache.get("annotations_repair_list_tuple")
     df_working_time = cache.get("df_working_time")
+    df_caixas_cf = cache.get("df_caixas_cf")
 
     print("========== Store atualizado ==========")
     return (
@@ -190,6 +193,7 @@ def update_store(_data):
         df_repair_heatmap_tuple,
         annotations_repair_turn_list_tuple,
         df_working_time,
+        df_caixas_cf,
     )
 
 

@@ -63,12 +63,19 @@ class GridOcc:
             "cellClass": "center-aligned-cell",
             "headerClass": "center-aligned-header",
             "cellDataType": "number",
+            "filter": "agNumberColumnFilter",
+            "filterParams": {"buttons": ["apply", "reset"], "closeOnApply": "true"},
+            "flex": 1,
         }
 
         filter_columns = {"flex": 2, "cellDataType": "string", "filter": True}
 
         columns_defs = [
-            {"field": "fabrica", "headerName": "Fábrica", **number_columns},
+            {
+                "field": "fabrica",
+                "headerName": "Fábrica",
+                **number_columns,
+            },
             {"field": "linha", "headerName": "Linha", **number_columns},
             {"field": "maquina_id", "headerName": "Máquina", "cellDataType": "string"},
             {"field": "motivo_nome", "headerName": "Motivo", **filter_columns},

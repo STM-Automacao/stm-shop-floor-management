@@ -90,7 +90,7 @@ class Connection:
                 f"UID={self.__user};"
                 f"PWD={self.__password};"
             )
-            conexao_totvsdb = create_engine(f"mssql+pyodbc:///?odbc_connect={params}")
+            conexao_totvsdb = create_engine(f"mssql+pyodbc:///?odbc_connect={params}", pool_size=2)
             return conexao_totvsdb
         # pylint: disable=broad-except
         except Exception as error:

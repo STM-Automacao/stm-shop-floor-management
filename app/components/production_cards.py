@@ -12,8 +12,6 @@ import pandas as pd
 from dash import html
 from helpers.types import CICLOS_ESPERADOS
 
-pd.options.mode.copy_on_write = True
-
 
 class ProductionCards:
     """
@@ -95,7 +93,7 @@ class ProductionCards:
         return [
             dbc.Row(
                 html.H5(
-                    "Produção Total" if not today else "Produção de Hoje",
+                    "Produção do Mês Atual" if not today else "Produção de Hoje",
                     className="text-center inter",
                 ),
                 class_name="p-1",
