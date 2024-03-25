@@ -65,17 +65,16 @@ class GridOcc:
             "cellDataType": "number",
             "filter": "agNumberColumnFilter",
             "filterParams": {"buttons": ["apply", "reset"], "closeOnApply": "true"},
-            "flex": 1,
         }
 
-        filter_columns = {"flex": 2, "cellDataType": "string", "filter": True}
+        filter_columns = {
+            "cellDataType": "string",
+            "filter": True,
+            "filterParams": {"buttons": ["apply", "reset"], "closeOnApply": "true"},
+        }
 
         columns_defs = [
-            {
-                "field": "fabrica",
-                "headerName": "Fábrica",
-                **number_columns,
-            },
+            {"field": "fabrica", "headerName": "Fábrica", **number_columns},
             {"field": "linha", "headerName": "Linha", **number_columns},
             {"field": "maquina_id", "headerName": "Máquina", "cellDataType": "string"},
             {"field": "motivo_nome", "headerName": "Motivo", **filter_columns},
@@ -88,8 +87,8 @@ class GridOcc:
             {"field": "tempo_registro_min", "headerName": "Tempo Parada", **number_columns},
             {"field": "desconto_min", "headerName": "Tempo descontado", **number_columns},
             {"field": "excedente", "headerName": "Tempo que afeta", **number_columns},
-            {"field": "data_hora_registro", "headerName": "Início", "flex": 2},
-            {"field": "data_hora_final", "headerName": "Fim", "flex": 2},
+            {"field": "data_hora_registro", "headerName": "Início"},
+            {"field": "data_hora_final", "headerName": "Fim"},
         ]
 
         return dag.AgGrid(

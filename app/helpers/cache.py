@@ -65,9 +65,7 @@ def update_cache():
     with lock:
         # Carregar os dados do banco de dados e criar os DataFrames
         df1, df2, df_working_time = get_data.get_cleaned_data()
-        # TODO: Separar a operação do protheus e criar uma timer para
-        # atualizar os dados ao fim de cada turno
-        # df_caixas_cf = get_data.get_protheus_caixas_data()
+        df_caixas_cf = get_data.get_protheus_caixas_data()
         df_ind = DFIndicators(df1, df2)
         times_data = TimesData()
         df_eff = times_data.get_eff_data(df1, df2)
@@ -85,8 +83,7 @@ def update_cache():
         cache.set("df2", df2.to_json(date_format="iso", orient="split"))
 
         cache.set("df_working_time", df_working_time.to_json(date_format="iso", orient="split"))
-        # FIXME: Atualizar o cache em outro momento conforme explicado acima em TODO
-        # cache.set("df_caixas_cf", df_caixas_cf.to_json(date_format="iso", orient="split"))
+        cache.set("df_caixas_cf", df_caixas_cf.to_json(date_format="iso", orient="split"))
 
         cache.set("df_eff", df_eff.to_json(date_format="iso", orient="split"))
         cache.set("df_perf", df_perf.to_json(date_format="iso", orient="split"))

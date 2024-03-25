@@ -256,6 +256,16 @@ class GetData:
         Returns:
             pandas.DataFrame: The retrieved data from the Protheus system.
         """
+
+        # Dia de hoje
+        now = pd.to_datetime("today")
+
+        # Encontrando primeiro dia do mês atual
+        first_day = now.replace(day=1)
+
+        # Mantendo apenas a data
+        first_day = first_day.strftime("%Y-%m-%d")
+
         query = self.db_read.create_totvsdb_query(
             select=(
                 "CYB_X_FABR AS FABRICA, "
@@ -280,7 +290,7 @@ class GetData:
             ),
             where=(
                 "D3_FILIAL = '0101' AND D3_LOCAL='CF' AND B1_TIPO = 'PA' AND D3_CF = 'PR0' "
-                "AND D3_ESTORNO <> 'S' AND D3_EMISSAO >= '20240301' AND SD3.D_E_L_E_T_<>'*'"
+                f"AND D3_ESTORNO <> 'S' AND D3_EMISSAO >= '{first_day}' AND SD3.D_E_L_E_T_<>'*'"
             ),
             orderby="D3_EMISSAO DESC, CYV_HRRPBG DESC",
         )

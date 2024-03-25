@@ -4,7 +4,7 @@
     - Data de criação: 01/03/2024
 """
 
-# cSpell: words producao
+# cSpell: words producao emissao
 
 import dash_bootstrap_components as dbc
 import numpy as np
@@ -18,8 +18,94 @@ class ProductionCards:
     A class representing production cards.
     """
 
+    def __strings(self, df_prod: pd.DataFrame) -> tuple:
+        """
+        Returns a tuple of production strings for different shifts.
+
+        Args:
+            df_prod (pd.DataFrame): DataFrame containing production data.
+
+        Returns:
+            tuple: A tuple of production strings for total,
+            morning shift, afternoon shift, and night shift.
+        """
+
+        df_prod_mat = df_prod[df_prod["turno"] == "MAT"]
+        df_prod_ves = df_prod[df_prod["turno"] == "VES"]
+        df_prod_not = df_prod[df_prod["turno"] == "NOT"]
+
+        producao_total = f"{df_prod['total_produzido'].sum():,} caixas".replace(",", ".")
+        producao_mat = f"{df_prod_mat['total_produzido'].sum():,} caixas".replace(",", ".")
+        producao_ves = f"{df_prod_ves['total_produzido'].sum():,} caixas".replace(",", ".")
+        producao_not = f"{df_prod_not['total_produzido'].sum():,} caixas".replace(",", ".")
+
+        return producao_total, producao_mat, producao_ves, producao_not
+
+    def prepare_prod_data(self, df_prod: pd.DataFrame) -> tuple:
+        """
+        Prepare production data for display.
+
+        Args:
+            df_prod (pd.DataFrame): The input DataFrame containing production data.
+
+        Returns:
+            tuple: A tuple containing the following production information:
+                - producao_total (str): Total production in boxes.
+                - producao_mat (str): Production in the morning shift in boxes.
+                - producao_ves (str): Production in the afternoon shift in boxes.
+                - producao_not (str): Production in the night shift in boxes.
+        """
+
+        # Produção total
+        df_prod.loc[:, "total_produzido"] = np.floor(df_prod["total_produzido"] / 10)  # caixas
+        df_prod.loc[:, "total_produzido"] = df_prod["total_produzido"].astype(int)
+
+        # Strings
+        producao_total, producao_mat, producao_ves, producao_not = self.__strings(df_prod)
+
+        return producao_total, producao_mat, producao_ves, producao_not
+
+    def prepare_cxs_data(self, df_cxs: pd.DataFrame) -> tuple:
+        """
+        Prepares the data for CXS (Card X System) production cards.
+
+        Args:
+            df_cxs (pd.DataFrame): The input DataFrame containing the production data.
+
+        Returns:
+            tuple: A tuple containing the following production values:
+                - producao_total (str): The total production value.
+                - producao_mat (str): The production value for the morning shift.
+                - producao_ves (str): The production value for the afternoon shift.
+                - producao_not (str): The production value for the night shift.
+        """
+
+        # Identifica o turno
+        df_cxs.loc[:, "HORA"] = pd.to_datetime(df_cxs["HORA"], format="%H:%M:%S").dt.hour
+        df_cxs.loc[:, "TURNO"] = pd.cut(
+            df_cxs["HORA"],
+            bins=[0, 8, 16, 24],
+            labels=["NOT", "MAT", "VES"],
+            right=False,
+        )
+
+        # Agrupa a produção por turno
+        df_cxs = df_cxs.groupby("EMISSAO", "TURNO").agg({"QTD": "sum"}).reset_index()
+
+        # Ajuste no nome das colunas
+        df_cxs.columns = ["EMISSAO", "turno", "total_produzido"]
+
+        # Strings
+        producao_total, producao_mat, producao_ves, producao_not = self.__strings(df_cxs)
+
+        return producao_total, producao_mat, producao_ves, producao_not
+
     def create_card(
-        self, df_info: pd.DataFrame, df_prod: pd.DataFrame, today: bool = False
+        self,
+        df_info: pd.DataFrame,
+        df_prod: pd.DataFrame,
+        today: bool = False,
+        cf: bool = False,
     ) -> list:
         """
         Creates production cards based on the provided dataframes.
@@ -38,19 +124,19 @@ class ProductionCards:
         date_today = pd.to_datetime("today").strftime("%Y-%m-%d")
 
         if today:
-            df_prod = df_prod[pd.to_datetime(df_prod["data_registro"]) == date_today]
+            df_prod = (
+                df_prod[pd.to_datetime(df_prod["data_registro"]) == date_today] if not cf else None
+            )
             df_info = df_info[
                 pd.to_datetime(df_info["data_hora_registro"]).dt.strftime("%Y-%m-%d") == date_today
             ]
+            df_cxs = df_prod[pd.to_datetime(df_prod["EMISSAO"]) == date_today] if cf else None
 
-        # Produção total
-        df_prod.loc[:, "total_produzido"] = np.floor(df_prod["total_produzido"] / 10)  # caixas
-        df_prod.loc[:, "total_produzido"] = df_prod["total_produzido"].astype(int)
-
-        # Produção por turno
-        df_prod_mat = df_prod[df_prod["turno"] == "MAT"]
-        df_prod_ves = df_prod[df_prod["turno"] == "VES"]
-        df_prod_not = df_prod[df_prod["turno"] == "NOT"]
+        # Encontra os valores de produção
+        if not cf:
+            prod_total, prod_mat, prod_ves, prod_not = self.prepare_prod_data(df_prod)
+        else:
+            prod_total, prod_mat, prod_ves, prod_not = self.prepare_cxs_data(df_cxs)
 
         # Tempo total de parada programada
         df_info = df_info[df_info["motivo_id"] == 12]
@@ -59,19 +145,15 @@ class ProductionCards:
         potencial = np.floor(df_info["tempo_registro_min"].sum() * (CICLOS_ESPERADOS * 2) / 10)
 
         # Strings
-        producao_total = f"{df_prod['total_produzido'].sum():,} caixas".replace(",", ".")
-        producao_mat = f"{df_prod_mat['total_produzido'].sum():,} caixas".replace(",", ".")
-        producao_ves = f"{df_prod_ves['total_produzido'].sum():,} caixas".replace(",", ".")
-        producao_not = f"{df_prod_not['total_produzido'].sum():,} caixas".replace(",", ".")
         total_programada = f"{df_info['tempo_registro_min'].sum():,} min".replace(",", ".")
         caixas_potencial = f"{potencial:,.0f} cxs".replace(",", ".")
 
         # Cards
         all_production = [
-            (producao_total, "Produção Total"),
-            (producao_not, "Produção Noturno"),
-            (producao_mat, "Produção Matutino"),
-            (producao_ves, "Produção Vespertino"),
+            (prod_total, "Produção Total"),
+            (prod_not, "Produção Noturno"),
+            (prod_mat, "Produção Matutino"),
+            (prod_ves, "Produção Vespertino"),
         ]
         cols = [
             dbc.Col(

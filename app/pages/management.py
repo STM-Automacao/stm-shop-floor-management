@@ -29,9 +29,10 @@ layout = html.Div(
     [
         Input("store-info", "data"),
         Input("store-prod", "data"),
+        Input("store-df-caixas-cf", "data"),
     ],
 )
-def update_production_card(store_info, store_prod):
+def update_production_card(store_info, store_prod, store_caixas):
     """
     Update the production card based on the given store information and store production data.
 
@@ -52,6 +53,8 @@ def update_production_card(store_info, store_prod):
 
     df_maq_info = pd.DataFrame(pd.read_json(StringIO(store_info), orient="split"))
     df_maq_prod = pd.DataFrame(pd.read_json(StringIO(store_prod), orient="split"))
+    df_caixas = pd.DataFrame(pd.read_json(StringIO(store_caixas), orient="split"))
+    print(df_caixas.head())
 
     return [
         dbc.CardHeader("Produção"),
