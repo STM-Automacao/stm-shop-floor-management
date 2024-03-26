@@ -59,7 +59,7 @@ def update_production_card(store_info, store_prod, store_caixas):
         dbc.CardHeader("Produção"),
         dbc.CardBody(
             [
-                dbc.Row(pcards.create_card(df_maq_info, df_maq_prod.copy())),
+                dbc.Row(pcards.create_card(df_maq_info, df_maq_prod)),
                 html.Hr(),
                 dbc.Row(pcards.create_card(df_maq_info, df_maq_prod, today=True)),
                 html.Hr(),

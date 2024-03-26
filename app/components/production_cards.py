@@ -81,16 +81,28 @@ class ProductionCards:
         """
 
         # Identifica o turno
-        df_cxs.loc[:, "HORA"] = pd.to_datetime(df_cxs["HORA"], format="%H:%M:%S").dt.hour
-        df_cxs.loc[:, "TURNO"] = pd.cut(
-            df_cxs["HORA"],
-            bins=[0, 8, 16, 24],
-            labels=["NOT", "MAT", "VES"],
-            right=False,
+        # df_cxs.loc[:, "HORA"] = pd.to_datetime(df_cxs["HORA"], format="%H:%M:%S").dt.hour
+        # df_cxs.loc[:, "TURNO"] = pd.cut(
+        #     df_cxs["HORA"],
+        #     bins=[0, 8, 16, 24],
+        #     labels=["NOT", "MAT", "VES"],
+        #     right=False,
+        # )
+
+        df_cxs = df_cxs.assign(
+            HORA=pd.to_datetime(df_cxs["HORA"], format="%H:%M:%S").dt.hour,
+            TURNO=pd.cut(
+                pd.to_datetime(df_cxs["HORA"], format="%H:%M:%S").dt.hour,
+                bins=[0, 8, 16, 24],
+                labels=["NOT", "MAT", "VES"],
+                right=False,
+            ),
         )
 
         # Agrupa a produção por turno
-        df_cxs = df_cxs.groupby("EMISSAO", "TURNO").agg({"QTD": "sum"}).reset_index()
+        df_cxs = (
+            df_cxs.groupby(["EMISSAO", "TURNO"], observed=False).agg({"QTD": "sum"}).reset_index()
+        )
 
         # Ajuste no nome das colunas
         df_cxs.columns = ["EMISSAO", "turno", "total_produzido"]
@@ -103,7 +115,7 @@ class ProductionCards:
     def create_card(
         self,
         df_info: pd.DataFrame,
-        df_prod: pd.DataFrame,
+        dataframe: pd.DataFrame,
         today: bool = False,
         cf: bool = False,
     ) -> list:
@@ -123,14 +135,25 @@ class ProductionCards:
         # Conseguir a data de hoje
         date_today = pd.to_datetime("today").strftime("%Y-%m-%d")
 
+        # Criar df_prod
+        df_prod = dataframe.copy() if not cf else None
+
         if today:
             df_prod = (
-                df_prod[pd.to_datetime(df_prod["data_registro"]) == date_today] if not cf else None
+                dataframe[pd.to_datetime(dataframe["data_registro"]) == date_today]
+                if not cf
+                else None
             )
             df_info = df_info[
                 pd.to_datetime(df_info["data_hora_registro"]).dt.strftime("%Y-%m-%d") == date_today
             ]
-            df_cxs = df_prod[pd.to_datetime(df_prod["EMISSAO"]) == date_today] if cf else None
+
+        if cf:
+            dataframe["EMISSAO"] = dataframe["EMISSAO"].astype(str)
+            dataframe.loc[:, "EMISSAO"] = pd.to_datetime(dataframe["EMISSAO"], format="%Y%m%d")
+
+        # Incluir só as caixas que entram na câmara fria hoje
+        df_cxs = dataframe[pd.to_datetime(dataframe["EMISSAO"]) == date_today] if cf else None
 
         # Encontra os valores de produção
         if not cf:

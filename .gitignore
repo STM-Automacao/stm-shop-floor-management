@@ -161,4 +161,4 @@ cython_debug/
 #.idea/
 
 # Cache
-/app/cache-directory
+/cache-directory/
