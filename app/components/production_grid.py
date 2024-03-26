@@ -1,7 +1,7 @@
 """
-Module for the production grid component
-@autor: Bruno Tomaz
-@date: 23/01/2024
+    Module for the production grid component
+    - Autor: Bruno Tomaz
+    - Data de criação: 23/01/2024
 """
 
 import dash_ag_grid as dag

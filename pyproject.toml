@@ -11,7 +11,7 @@ packages = [{include = "app", from = "."}]
 python = "^3.12"
 black = "^23.12.1"
 seaborn = "^0.13.1"
-pandas = "^2.1.4"
+pandas = "^2.2.1"
 dash = "^2.14.2"
 dash-bootstrap-components = "^1.5.0"
 dash-html-components = "^2.0.0"

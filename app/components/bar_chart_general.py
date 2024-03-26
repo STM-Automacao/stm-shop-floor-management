@@ -1,7 +1,7 @@
 """
-Module for the bar chart general component.
-@Author: Bruno Tomaz
-@Date: 23/01/2024
+    Module for the bar chart general component.
+    - Autor: Bruno Tomaz
+    - Data de criação: 23/01/2024
 """
 
 import pandas as pd
