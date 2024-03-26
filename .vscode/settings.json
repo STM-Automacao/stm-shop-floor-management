@@ -43,6 +43,7 @@
     "MTTF",
     "MTTR",
     "ndenumerate",
+    "NOLOCK",
     "notna",
     "nticks",
     "nunique",

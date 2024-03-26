@@ -54,7 +54,6 @@ def update_production_card(store_info, store_prod, store_caixas):
     df_maq_info = pd.DataFrame(pd.read_json(StringIO(store_info), orient="split"))
     df_maq_prod = pd.DataFrame(pd.read_json(StringIO(store_prod), orient="split"))
     df_caixas = pd.DataFrame(pd.read_json(StringIO(store_caixas), orient="split"))
-    print(df_caixas.head())
 
     return [
         dbc.CardHeader("Produção"),
@@ -63,6 +62,8 @@ def update_production_card(store_info, store_prod, store_caixas):
                 dbc.Row(pcards.create_card(df_maq_info, df_maq_prod.copy())),
                 html.Hr(),
                 dbc.Row(pcards.create_card(df_maq_info, df_maq_prod, today=True)),
+                html.Hr(),
+                dbc.Row(pcards.create_card(df_maq_info, df_caixas, cf=True)),
             ]
         ),
     ]

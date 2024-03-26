@@ -172,10 +172,12 @@ class ProductionCards:
             for prod, title in all_production
         ]
 
+        title = "Produção do Mês Atual" if not today else "Produção de Hoje"
+
         return [
             dbc.Row(
                 html.H5(
-                    "Produção do Mês Atual" if not today else "Produção de Hoje",
+                    "Entradas na Câmara Fria" if cf else title,
                     className="text-center inter",
                 ),
                 class_name="p-1",
@@ -183,27 +185,31 @@ class ProductionCards:
             dbc.Row(
                 [
                     *cols,
-                    dbc.Col(
-                        dbc.Card(
-                            [
-                                dbc.CardHeader("Parada Programada"),
-                                dbc.CardBody(
-                                    [
-                                        html.P(
-                                            f"Parada Programada --> {total_programada}",
-                                            className="fs-5 align-self-center",
-                                        ),
-                                        html.P(
-                                            f"Potencial de Produção --> {caixas_potencial}",
-                                            className="fs-5 align-self-center",
-                                        ),
-                                    ],
-                                    class_name="d-flex flex-column justify-content-center",
-                                ),
-                            ],
-                            class_name="h-100 inter",
-                        ),
-                        md=4,
+                    (
+                        None
+                        if cf
+                        else dbc.Col(
+                            dbc.Card(
+                                [
+                                    dbc.CardHeader("Parada Programada"),
+                                    dbc.CardBody(
+                                        [
+                                            html.P(
+                                                f"Parada Programada --> {total_programada}",
+                                                className="fs-5 align-self-center",
+                                            ),
+                                            html.P(
+                                                f"Potencial de Produção --> {caixas_potencial}",
+                                                className="fs-5 align-self-center",
+                                            ),
+                                        ],
+                                        class_name="d-flex flex-column justify-content-center",
+                                    ),
+                                ],
+                                class_name="h-100 inter",
+                            ),
+                            md=4,
+                        )
                     ),
                 ]
             ),
