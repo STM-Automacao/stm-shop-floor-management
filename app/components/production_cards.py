@@ -200,7 +200,7 @@ class ProductionCards:
         return [
             dbc.Row(
                 html.H5(
-                    "Entradas na Câmara Fria" if cf else title,
+                    "Entradas na Câmara Fria de Hoje" if cf else title,
                     className="text-center inter",
                 ),
                 class_name="p-1",
