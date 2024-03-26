@@ -1,6 +1,7 @@
 # Shop Floor Management
 
 Controle de processos de produção com o objetivo de melhorar constantemente os indicadores-chave de desempenho, bem como os processos que são realizados.
+Inclui aba de Gestão de Produção.
 
 
 
