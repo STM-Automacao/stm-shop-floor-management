@@ -103,6 +103,9 @@ As seguintes ferramentas foram usadas na construção do projeto:
 │   │   ├── modal_efficiency.py
 │   │   ├── modal_performance.py
 │   │   ├── modal_repair.py
+│   │   ├── bar_chart.py
+│   │   ├── grid.py
+│   │   ├── cards.py
 │   ├── database
 │   │   ├── connection.py
 │   │   ├── db_ready.py
