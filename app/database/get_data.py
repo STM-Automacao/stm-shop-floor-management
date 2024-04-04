@@ -11,7 +11,7 @@ from service.clean_data import CleanData
 from service.join_data import JoinData
 
 
-# cSpell: words automacao, ocorrencia dateadd datediff
+# cSpell: words automacao, ocorrencia dateadd datediff locpad
 class GetData:
     """
     Essa classe é responsável por realizar a leitura dos dados do banco de dados.
@@ -293,6 +293,37 @@ class GetData:
                 f"AND D3_ESTORNO <> 'S' AND D3_EMISSAO >= '{first_day}' AND SD3.D_E_L_E_T_<>'*'"
             ),
             orderby="D3_EMISSAO DESC, CYV_HRRPBG DESC",
+        )
+
+        print("=============== Baixando dados TOTVSDB ===============")
+        df = self.db_read.get_totvsdb_data(query)
+
+        if df.empty:
+            print("=============== TOTVSDB ERRO ===============")
+        else:
+            print("Ok...")
+
+        return df
+
+    def get_protheus_total_caixas(self) -> pd.DataFrame:
+        """
+        Retrieves the total number of boxes from the Protheus database.
+
+        Returns:
+            pd.DataFrame: A DataFrame containing the product name and the total quantity of boxes.
+        """
+        query = self.db_read.create_totvsdb_query(
+            select="B1_DESC AS PRODUTO, SUM(D3_QUANT) AS QTD",
+            table="SB2000 SB2 WITH (NOLOCK)",
+            join=(
+                "INNER JOIN SB1000 WITH (NOLOCK) "
+                "ON B1_FILIAL='01' AND B1_COD=B2_COD AND SB1.D_E_L_E_T_<>'*'"
+            ),
+            where=(
+                "B2_FILIAL='0101' AND B2_LOCAL='CF' AND B1_TIPO='PA' "
+                "AND B1_LOCPAD='CF' AND SB2.D_E_L_E_T_<>'*'"
+            ),
+            orderby="B2_COD",
         )
 
         print("=============== Baixando dados TOTVSDB ===============")
