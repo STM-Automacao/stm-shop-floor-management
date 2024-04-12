@@ -17,6 +17,7 @@ layout = html.Div(
     [
         dbc.Row(dbc.Col(btn_modal.btn_opt, md=3), className="mt-2"),
         dbc.Card(id="production-card", class_name="mb-3 mt-2"),
+        # Incluir detalhes de produção
         # ---------------- Modal History ---------------- #
         dbc.Modal(
             children=modal_history.layout,
