@@ -57,6 +57,13 @@ def tuple_list_to_list(tuple_list: tuple) -> list[str]:
     return [json.dumps(lst, cls=MyEncoder) for lst in tuple_list]
 
 
+def cache_daily_data():
+    with lock:
+        df_caixas_cf_tot = get_data.get_protheus_total_caixas()
+
+        cache.set("df_caixas_cf_tot", df_caixas_cf_tot.to_json(date_format="iso", orient="split"))
+
+
 def update_cache():
     """
     Função que atualiza o cache com os dados do banco de dados.

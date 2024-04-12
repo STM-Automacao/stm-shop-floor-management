@@ -11,7 +11,7 @@ from service.clean_data import CleanData
 from service.join_data import JoinData
 
 
-# cSpell: words automacao, ocorrencia dateadd datediff
+# cSpell: words automacao, ocorrencia dateadd datediff locpad
 class GetData:
     """
     Essa classe é responsável por realizar a leitura dos dados do banco de dados.
@@ -68,46 +68,29 @@ class GetData:
 
         # Query para leitura dos dados de de produção
         query_production = (
-            "WITH aux AS ("
-            " SELECT"
-            " t1.maquina_id,"
-            " t1.turno,"
-            " t1.contagem_total_ciclos,"
-            " t1.contagem_total_produzido,"
-            " (SELECT TOP 1 t2.linha FROM AUTOMACAO.dbo.maquina_cadastro t2"
-            " WHERE t2.maquina_id = t1.maquina_id AND"
-            " DATEADD(minute, -1, CAST(t2.data_registro AS DATETIME) +"
-            " CAST(t2.hora_registro AS DATETIME)) <="
-            " CAST(t1.data_registro AS DATETIME) + CAST(t1.hora_registro AS DATETIME)"
-            " ORDER BY t2.data_registro DESC, t2.hora_registro desc) as linha,"
-            " CASE"
-            " WHEN CAST(t1.hora_registro AS TIME) <= '00:01'"
-            " THEN DATEADD(day, -1, CAST(t1.data_registro AS DATETIME))"
-            " ELSE CAST(t1.data_registro AS DATETIME)"
-            " END as data_registro_aux,"
-            " CAST(t1.hora_registro AS TIME) as hora_registro"
-            " FROM"
-            " AUTOMACAO.dbo.maquina_info t1"
-            " ), aux2 AS ("
-            " SELECT *,"
-            " ROW_NUMBER() OVER (PARTITION BY maquina_id, turno, CAST(data_registro_aux AS DATE)"
-            " ORDER BY ABS(DATEDIFF(minute, hora_registro,"
-            " CASE turno WHEN 'NOT' THEN '07:59:59'"
-            " WHEN 'MAT' THEN '15:59:59'"
-            " WHEN 'VES' THEN '23:59:59' END))) as rn"
-            " FROM aux"
-            " )"
-            " SELECT"
-            " maquina_id,"
-            " linha,"
-            " turno,"
-            " contagem_total_ciclos as total_ciclos,"
-            " contagem_total_produzido as total_produzido,"
-            " CAST(data_registro_aux AS DATE) as data_registro,"
-            " hora_registro"
-            " FROM"
-            " aux2"
-            f" WHERE rn = 1 AND data_registro_aux >= '{first_day}'  "
+            "SELECT * "
+            "FROM ( "
+            "SELECT "
+            "(SELECT TOP 1 t2.fabrica FROM AUTOMACAO.dbo.maquina_cadastro t2 "
+            "WHERE t2.maquina_id = t1.maquina_id AND t2.data_registro <= t1.data_registro "
+            "ORDER BY t2.data_registro DESC, t2.hora_registro DESC) as fabrica, "
+            "(SELECT TOP 1 t2.linha FROM AUTOMACAO.dbo.maquina_cadastro t2 "
+            "WHERE t2.maquina_id = t1.maquina_id AND t2.data_registro <= t1.data_registro "
+            "ORDER BY t2.data_registro DESC, t2.hora_registro DESC) as linha, "
+            "t1.maquina_id, "
+            "t1.turno, "
+            "t1.status, "
+            "t1.contagem_total_ciclos as total_ciclos, "
+            "t1.contagem_total_produzido as total_produzido, "
+            "t1.data_registro, "
+            "t1.hora_registro, "
+            "ROW_NUMBER() OVER ( "
+            "PARTITION BY t1.data_registro, t1.turno, t1.maquina_id "
+            "ORDER BY t1.data_registro DESC, t1.hora_registro DESC"
+            ") AS rn "
+            "FROM AUTOMACAO.dbo.maquina_info t1 "
+            ") AS t "
+            f" WHERE rn = 1 AND data_registro >= '{first_day}'  "
             " ORDER BY data_registro DESC, maquina_id, turno"
         )
 
@@ -293,6 +276,37 @@ class GetData:
                 f"AND D3_ESTORNO <> 'S' AND D3_EMISSAO >= '{first_day}' AND SD3.D_E_L_E_T_<>'*'"
             ),
             orderby="D3_EMISSAO DESC, CYV_HRRPBG DESC",
+        )
+
+        print("=============== Baixando dados TOTVSDB ===============")
+        df = self.db_read.get_totvsdb_data(query)
+
+        if df.empty:
+            print("=============== TOTVSDB ERRO ===============")
+        else:
+            print("Ok...")
+
+        return df
+
+    def get_protheus_total_caixas(self) -> pd.DataFrame:
+        """
+        Retrieves the total number of boxes from the Protheus database.
+
+        Returns:
+            pd.DataFrame: A DataFrame containing the product name and the total quantity of boxes.
+        """
+        query = self.db_read.create_totvsdb_query(
+            select="B1_DESC AS PRODUTO, B2_QATU AS QTD",
+            table="SB2000 SB2 WITH (NOLOCK)",
+            join=(
+                "INNER JOIN SB1000 SB1 WITH (NOLOCK) "
+                "ON B1_FILIAL='01' AND B1_COD=B2_COD AND SB1.D_E_L_E_T_<>'*'"
+            ),
+            where=(
+                "B2_FILIAL='0101' AND B2_LOCAL='CF' AND B1_TIPO='PA' "
+                "AND B1_LOCPAD='CF' AND SB2.D_E_L_E_T_<>'*'"
+            ),
+            orderby="B2_COD",
         )
 
         print("=============== Baixando dados TOTVSDB ===============")

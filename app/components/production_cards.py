@@ -118,6 +118,7 @@ class ProductionCards:
         dataframe: pd.DataFrame,
         today: bool = False,
         cf: bool = False,
+        total: int = 0,
     ) -> list:
         """
         Creates production cards based on the provided dataframes.
@@ -170,6 +171,7 @@ class ProductionCards:
         # Strings
         total_programada = f"{df_info['tempo_registro_min'].sum():,} min".replace(",", ".")
         caixas_potencial = f"{potencial:,.0f} cxs".replace(",", ".")
+        total = f"{total:,}".replace(",", ".")
 
         # Cards
         all_production = [
@@ -197,6 +199,27 @@ class ProductionCards:
 
         title = "Produção do Mês Atual" if not today else "Produção de Hoje"
 
+        total_cxs = dbc.Col(
+            dbc.Card(
+                [
+                    dbc.CardHeader("Total de Caixas"),
+                    dbc.CardBody(
+                        [
+                            html.P(
+                                "Caixas na Câmara Fria às 00hs", className="fs-5 align-self-center"
+                            ),
+                            html.P(
+                                f"Total de Caixas --> {total} cxs",
+                                className="fs-5 align-self-center",
+                            ),
+                        ],
+                        class_name="d-flex flex-column justify-content-center",
+                    ),
+                ],
+                class_name="h-100 inter",
+            ),
+        )
+
         return [
             dbc.Row(
                 html.H5(
@@ -209,7 +232,7 @@ class ProductionCards:
                 [
                     *cols,
                     (
-                        None
+                        total_cxs
                         if cf
                         else dbc.Col(
                             dbc.Card(
