@@ -89,7 +89,11 @@ def update_production_card(store_info, store_prod, store_caixas, caixas_cf_tot):
     df_maq_info = pd.DataFrame(pd.read_json(StringIO(store_info), orient="split"))
     df_maq_prod = pd.DataFrame(pd.read_json(StringIO(store_prod), orient="split"))
     df_caixas = pd.DataFrame(pd.read_json(StringIO(store_caixas), orient="split"))
-    df_caixas_cf_tot = pd.DataFrame(pd.read_json(StringIO(caixas_cf_tot), orient="split"))
+    df_caixas_cf_tot = (
+        pd.DataFrame(pd.read_json(StringIO(caixas_cf_tot), orient="split"))
+        if caixas_cf_tot
+        else pd.DataFrame(columns=["QTD"])
+    )
 
     total_estoque = df_caixas_cf_tot["QTD"].sum()
 
