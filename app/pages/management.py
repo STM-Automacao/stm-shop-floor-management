@@ -8,7 +8,7 @@ from io import StringIO
 
 import dash_bootstrap_components as dbc
 import pandas as pd
-from components import btn_modal, modal_history, production_cards
+from components import btn_modal, modal_estoque, modal_history, production_cards
 from dash import Input, Output, State, callback, html
 from dash.exceptions import PreventUpdate
 
@@ -27,6 +27,16 @@ layout = html.Div(
             modal_class_name="inter",
             is_open=False,
         ),
+        # ---------------- Modal Estoque ---------------- #
+        dbc.Modal(
+            children=modal_estoque.layout,
+            id="modal-estoque",
+            size="xl",
+            fullscreen="lg-down",
+            scrollable=True,
+            modal_class_name="inter",
+            is_open=False,
+        ),
     ],
     id="management-content",
 )
@@ -35,7 +45,7 @@ layout = html.Div(
 # --------------------- Modal History --------------------- #
 @callback(
     Output("modal-history-eff", "is_open"),
-    [Input("history-button", "n_clicks")],
+    [Input("history-btn", "n_clicks")],
     [State("modal-history-eff", "is_open")],
 )
 def toggle_modal_history(n, is_open):
@@ -44,6 +54,27 @@ def toggle_modal_history(n, is_open):
 
     Args:
         n (int): The number of clicks on the history button.
+        is_open (bool): The current state of the modal.
+
+    Returns:
+        bool: The new state of the modal.
+    """
+    if n:
+        return not is_open
+    return is_open
+
+
+@callback(
+    Output("modal-estoque", "is_open"),
+    [Input("estoque-btn", "n_clicks")],
+    [State("modal-estoque", "is_open")],
+)
+def toggle_modal_estoque(n, is_open):
+    """
+    Toggles the estoque modal.
+
+    Args:
+        n (int): The number of clicks on the estoque button.
         is_open (bool): The current state of the modal.
 
     Returns:

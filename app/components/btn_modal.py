@@ -68,7 +68,7 @@ def create_btn_opt():
         [
             dbc.Button(
                 "Histórico",
-                id="history-button",
+                id="history-btn",
                 className="mb-3",
                 outline=True,
                 color="secondary",
