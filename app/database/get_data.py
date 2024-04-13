@@ -90,8 +90,8 @@ class GetData:
             ") AS rn "
             "FROM AUTOMACAO.dbo.maquina_info t1 "
             ") AS t "
-            f" WHERE rn = 1 AND data_registro >= '{first_day}'  "
-            " ORDER BY data_registro DESC, maquina_id, turno"
+            f" WHERE rn = 1 AND data_registro >= '{first_day}' AND hora_registro > '00:01'"
+            " ORDER BY data_registro DESC, linha"
         )
 
         print("========== Baixando dados do DB ==========")
