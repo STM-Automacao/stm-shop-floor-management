@@ -1,6 +1,7 @@
 # Shop Floor Management
 
 Controle de processos de produção com o objetivo de melhorar constantemente os indicadores-chave de desempenho, bem como os processos que são realizados.
+Inclui aba de Gestão de Produção.
 
 
 
@@ -103,19 +104,21 @@ As seguintes ferramentas foram usadas na construção do projeto:
 │   │   ├── modal_efficiency.py
 │   │   ├── modal_performance.py
 │   │   ├── modal_repair.py
+│   │   ├── bar_chart.py
+│   │   ├── grid.py
+│   │   ├── cards.py
 │   ├── database
 │   │   ├── connection.py
 │   │   ├── db_ready.py
 │   │   ├── get_data.py
-│   ├── graphics
-│   │   ├── indicators_turn.py
-│   │   ├── indicators.py
-│   │   ├── last_month_ind.py
 │   ├── helpers
+│   │   ├── cache.py
 │   │   ├── path_config.py
 │   │   ├── types.py
 │   ├── pages
 │   │   ├── main_page.py
+│   |   ├── grafana.py
+│   |   ├── management.py
 │   ├── service
 │   │   ├── clean_data.py
 │   │   ├── join_data.py

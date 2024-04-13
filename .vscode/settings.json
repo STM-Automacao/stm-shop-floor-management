@@ -54,6 +54,7 @@
     "protheus",
     "PYMSSQL",
     "pyodbc",
+    "QATU",
     "recno",
     "showarrow",
     "showlegend",

@@ -11,20 +11,17 @@ import dash_bootstrap_components as dbc
 import dash_mantine_components as dmc
 import pandas as pd
 from components import (
-    bar_chart_details,
     bar_chart_general,
     bar_chart_lost,
     btn_modal,
     grid_occ,
     heatmap,
     line_graph,
-    modal_history,
     production_grid,
 )
-from dash import Input, Output, State, callback, html
+from dash import Input, Output, callback, html
 from dash.exceptions import PreventUpdate
 from dash_bootstrap_templates import ThemeSwitchAIO
-from dash_iconify import DashIconify
 from helpers.types import IndicatorType, TemplateType
 
 from app import app
@@ -63,43 +60,6 @@ layout = [
                 ],
                 class_name="mb-3",
             ),
-            dbc.Collapse(
-                dbc.Card(
-                    dbc.CardBody(
-                        [
-                            dbc.Row(
-                                dbc.Col(
-                                    dmc.MantineProvider(
-                                        id="mantine-provider-eff",
-                                        theme={"colorScheme": "light"},
-                                        children=(
-                                            dmc.DatePicker(
-                                                id="date-picker-eff",
-                                                label="Data",
-                                                placeholder="Selecione uma data",
-                                                inputFormat="dddd - D MMM, YYYY",
-                                                locale="pt-br",
-                                                firstDayOfWeek="sunday",
-                                                clearable=True,
-                                                variant="filled",
-                                                icon=DashIconify(icon="clarity:date-line"),
-                                            ),
-                                        ),
-                                    ),
-                                    md=4,
-                                    xl=2,
-                                ),
-                                className="inter",
-                                justify="center",
-                            ),
-                            dbc.Row(id="bar-chart-details-eff"),
-                        ]
-                    ),
-                    class_name="p-1",
-                ),
-                id="details-collapse-eff",
-                class_name="mb-3",
-            ),
             dbc.Row(id="grid-occ-modal-eff"),
         ]
     ),
@@ -111,41 +71,9 @@ layout = [
             withPlaceholder=True,
         ),
     ),
-    # ---------------- Modal History ---------------- #
-    dbc.Modal(
-        children=modal_history.layout,
-        id="modal-history-eff",
-        size="xl",
-        fullscreen="lg-down",
-        scrollable=True,
-        modal_class_name="inter",
-        is_open=False,
-    ),
 ]
 
 # ======================================= Modal Callbacks ======================================= #
-
-
-# --------------------- Modal History --------------------- #
-@callback(
-    Output("modal-history-eff", "is_open"),
-    [Input(f"history-button-{IndicatorType.EFFICIENCY.value}", "n_clicks")],
-    [State("modal-history-eff", "is_open")],
-)
-def toggle_modal_history(n, is_open):
-    """
-    Toggles the history modal.
-
-    Args:
-        n (int): The number of clicks on the history button.
-        is_open (bool): The current state of the modal.
-
-    Returns:
-        bool: The new state of the modal.
-    """
-    if n:
-        return not is_open
-    return is_open
 
 
 # --------------------- Spinner --------------------- #
@@ -378,108 +306,7 @@ def efficiency_lost(info, turn, toggle_theme):
     return bcl.create_bar_chart_lost(df_info, IndicatorType.EFFICIENCY, template, turn)
 
 
-# --------------------- Collapse Details Btn --------------------- #
-
-
-@callback(
-    [
-        Output("details-collapse-eff", "is_open"),
-        Output(f"details-button-{IndicatorType.EFFICIENCY.value}", "active"),
-    ],
-    [
-        Input(f"details-button-{IndicatorType.EFFICIENCY.value}", "n_clicks"),
-        Input("details-collapse-eff", "is_open"),
-    ],
-)
-def toggle_collapse_details(n, is_open):
-    """
-    Função que abre e fecha o collapse do detalhes.
-    """
-    if n:
-        return not is_open, not is_open
-    return is_open, is_open
-
-
 # ________________________ Collapse Details Content ________________________ #
-
-
-@callback(
-    [
-        Output("date-picker-eff", "minDate"),
-        Output("date-picker-eff", "maxDate"),
-        Output("mantine-provider-eff", "theme"),
-    ],
-    [
-        Input("store-info", "data"),
-        Input(ThemeSwitchAIO.ids.switch("theme"), "value"),
-    ],
-)
-def collapse_details_picker(info, toggle_theme):
-    """
-    Creates and returns a date picker component for efficiency indicator.
-
-    Args:
-        info: The information to be used for creating the date picker component.
-
-    Returns:
-        The created date picker component.
-
-    Raises:
-        PreventUpdate: If the info parameter is None.
-    """
-
-    if info is None:
-        raise PreventUpdate
-
-    df = pd.read_json(StringIO(info), orient="split")
-    template = {"colorScheme": "light"} if toggle_theme else {"colorScheme": "dark"}
-
-    min_date = pd.to_datetime(df["data_hora_registro"]).min().date()
-    max_date = pd.to_datetime(df["data_hora_registro"]).max().date()
-    return min_date, max_date, template
-
-
-@callback(
-    Output("bar-chart-details-eff", "children"),
-    [
-        Input("store-info", "data"),
-        Input(f"radio-items-{IndicatorType.EFFICIENCY.value}", "value"),
-        Input("date-picker-eff", "value"),
-        Input("store-df_working_time", "data"),
-        Input(ThemeSwitchAIO.ids.switch("theme"), "value"),
-    ],
-)
-def collapse_details_bar_chart(info, turn, data_picker, working, toggle_theme):
-    """
-    Creates a collapsed bar chart details based on the provided information.
-
-    Args:
-        info (str): The JSON string containing the information for the bar chart.
-        turn (str): The turn value for the bar chart.
-        data_picker (str): The data picker value for the bar chart.
-        working (bool): Indicates whether the bar chart is in working mode or not.
-        toggle_theme (bool): Indicates whether the bar chart should use a light or dark template.
-
-    Returns:
-        dict: The collapsed bar chart details.
-
-    Raises:
-        PreventUpdate: If the info parameter is None.
-    """
-
-    if info is None:
-        raise PreventUpdate
-
-    bcd = bar_chart_details.BarChartDetails()
-    template = TemplateType.LIGHT if toggle_theme else TemplateType.DARK
-
-    # Carrega o string json em um dataframe
-    df_info = pd.read_json(StringIO(info), orient="split")
-    df_working = pd.read_json(StringIO(working), orient="split")
-
-    return bcd.create_bar_chart_details(
-        df_info, IndicatorType.EFFICIENCY, template, turn, data_picker, df_working
-    )
 
 
 # ---------------------- Grid ---------------------- #
@@ -488,12 +315,10 @@ def collapse_details_bar_chart(info, turn, data_picker, working, toggle_theme):
     [
         Input("store-info", "data"),
         Input(f"radio-items-{IndicatorType.EFFICIENCY.value}", "value"),
-        Input("date-picker-eff", "value"),
-        Input("details-collapse-eff", "is_open"),
         Input(ThemeSwitchAIO.ids.switch("theme"), "value"),
     ],
 )
-def update_grid_occ_modal(info, turn, data_picker, open_btn, theme):
+def update_grid_occ_modal(info, turn, theme):
     """
     Função que atualiza o grid de eficiência do modal.
     """
@@ -505,9 +330,6 @@ def update_grid_occ_modal(info, turn, data_picker, open_btn, theme):
     # Carregue a string JSON em um DataFrame
     df_info = pd.read_json(StringIO(info), orient="split")
 
-    if not open_btn:
-        data_picker = None
-
     turns = {
         "NOT": "Noturno",
         "MAT": "Matutino",
@@ -517,5 +339,5 @@ def update_grid_occ_modal(info, turn, data_picker, open_btn, theme):
 
     return [
         html.H5(f"Ocorrências - {turns[turn]}", className="text-center"),
-        goe.create_grid_occ(df_info, IndicatorType.EFFICIENCY, turn, theme, data_picker),
+        goe.create_grid_occ(df_info, IndicatorType.EFFICIENCY, turn, theme),
     ]

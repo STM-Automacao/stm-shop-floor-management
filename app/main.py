@@ -20,7 +20,7 @@ from dash_bootstrap_templates import ThemeSwitchAIO
 
 # pylint: disable=E0401
 from database.last_month_ind import LastMonthInd
-from helpers.cache import cache, update_cache
+from helpers.cache import cache, cache_daily_data, update_cache
 from pages import grafana, main_page, management
 from waitress import serve
 
@@ -47,6 +47,10 @@ def update_last_month():
 
 scheduler = BackgroundScheduler()
 scheduler.add_job(func=update_cache, trigger="interval", seconds=120)  # Atualiza a cada 2 minutos
+scheduler.add_job(
+    func=cache_daily_data, trigger="interval", seconds=120
+)  # FIXME: Manter apenas para testes
+scheduler.add_job(func=cache_daily_data, trigger="cron", hour=0, minute=1)
 scheduler.add_job(func=update_last_month, trigger="cron", hour=1)  # Atualiza a cada 24 horas
 scheduler.start()
 
@@ -70,6 +74,7 @@ app.layout = dbc.Container(
         dcc.Store(id="store-annotations_repair_list_tuple"),
         dcc.Store(id="store-df_working_time"),
         dcc.Store(id="store-df-caixas-cf"),
+        dcc.Store(id="store-df-caixas-cf-tot"),
         dcc.Store(id="is-data-store", storage_type="session", data=False),
         # ---------------------- Main Layout ---------------------- #
         dbc.Row(
@@ -154,6 +159,7 @@ def update_footer_class_name(light_theme):
         Output("store-annotations_repair_list_tuple", "data"),
         Output("store-df_working_time", "data"),
         Output("store-df-caixas-cf", "data"),
+        Output("store-df-caixas-cf-tot", "data"),
     ],
     Input("store-info", "data"),
 )
@@ -178,6 +184,7 @@ def update_store(_data):
     annotations_repair_turn_list_tuple = cache.get("annotations_repair_list_tuple")
     df_working_time = cache.get("df_working_time")
     df_caixas_cf = cache.get("df_caixas_cf")
+    df_caixas_cf_tot = cache.get("df_caixas_cf_tot")
 
     print("========== Store atualizado ==========")
     return (
@@ -194,6 +201,7 @@ def update_store(_data):
         annotations_repair_turn_list_tuple,
         df_working_time,
         df_caixas_cf,
+        df_caixas_cf_tot,
     )
 
 

@@ -23,25 +23,8 @@ def create_btn_opt_modal(modal):
     return dbc.ButtonGroup(
         [
             dbc.Button(
-                "Histórico",
-                id=f"history-button-{modal}",
-                className="mb-3",
-                outline=True,
-                color="secondary",
-                n_clicks=0,
-            ),
-            dbc.Button(
                 "Produção",
                 id=f"production-btn-{modal}",
-                className="mb-3",
-                outline=True,
-                active=False,
-                color="secondary",
-                n_clicks=0,
-            ),
-            dbc.Button(
-                "Detalhes",
-                id=f"details-button-{modal}",
                 className="mb-3",
                 outline=True,
                 active=False,
@@ -55,6 +38,39 @@ def create_btn_opt_modal(modal):
 btn_opt_eff = create_btn_opt_modal(IndicatorType.EFFICIENCY.value)
 btn_opt_perf = create_btn_opt_modal(IndicatorType.PERFORMANCE.value)
 btn_opt_repair = create_btn_opt_modal(IndicatorType.REPAIR.value)
+
+
+def create_btn_opt():
+    """
+    Creates a button group with two buttons: "Histórico" and "Estoque".
+
+    Returns:
+        dbc.ButtonGroup: A button group containing the two buttons.
+    """
+    return dbc.ButtonGroup(
+        [
+            dbc.Button(
+                "Histórico",
+                id="history-btn",
+                className="mb-3",
+                outline=True,
+                color="secondary",
+                n_clicks=0,
+            ),
+            dbc.Button(
+                "Estoque",
+                id="estoque-btn",
+                className="mb-3",
+                outline=True,
+                active=False,
+                color="secondary",
+                n_clicks=0,
+            ),
+        ]
+    )
+
+
+btn_opt = create_btn_opt()
 
 
 def create_radio_btn_turn(modal):
