@@ -12,6 +12,7 @@ import numpy as np
 import pandas as pd
 from database.get_data import GetData
 from flask_caching import Cache
+from helpers.path_config import DF_CAIXAS
 from helpers.types import IndicatorType
 from service.df_for_indicators import DFIndicators
 from service.times_data import TimesData
@@ -61,7 +62,7 @@ def cache_daily_data():
     with lock:
         df_caixas_cf_tot = get_data.get_protheus_total_caixas()
 
-        cache.set("df_caixas_cf_tot", df_caixas_cf_tot.to_json(date_format="iso", orient="split"))
+        df_caixas_cf_tot.to_csv(DF_CAIXAS, index=True)
 
 
 def update_cache():
@@ -71,8 +72,9 @@ def update_cache():
     """
     with lock:
         # Carregar os dados do banco de dados e criar os DataFrames
-        df1, df2, df_working_time = get_data.get_cleaned_data()
+        df1, df2, df_working_time, df_info_pure = get_data.get_cleaned_data()
         df_caixas_cf = get_data.get_protheus_caixas_data()
+        df_caixas_cf_tot = pd.read_csv(DF_CAIXAS, index_col=0)
         df_ind = DFIndicators(df1, df2)
         times_data = TimesData()
         df_eff = times_data.get_eff_data(df1, df2)
@@ -88,9 +90,11 @@ def update_cache():
         # Atualizar o cache
         cache.set("df1", df1.to_json(date_format="iso", orient="split"))
         cache.set("df2", df2.to_json(date_format="iso", orient="split"))
+        cache.set("df_info_pure", df_info_pure.to_json(date_format="iso", orient="split"))
 
         cache.set("df_working_time", df_working_time.to_json(date_format="iso", orient="split"))
         cache.set("df_caixas_cf", df_caixas_cf.to_json(date_format="iso", orient="split"))
+        cache.set("df_caixas_cf_tot", df_caixas_cf_tot.to_json(date_format="iso", orient="split"))
 
         cache.set("df_eff", df_eff.to_json(date_format="iso", orient="split"))
         cache.set("df_perf", df_perf.to_json(date_format="iso", orient="split"))

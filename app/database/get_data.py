@@ -131,7 +131,7 @@ class GetData:
         df_maq_info_cadastro = self.join_df.problems_adjust(df_info_occ)
         print("Ok...")
         # Retorno dos dados
-        return df_maq_info_cadastro, df_maq_info_prod_cad_cleaned, df_working_minutes
+        return df_maq_info_cadastro, df_maq_info_prod_cad_cleaned, df_working_minutes, df_info
 
     def get_last_month_data(self) -> tuple:
         """

@@ -21,7 +21,7 @@ from dash_bootstrap_templates import ThemeSwitchAIO
 # pylint: disable=E0401
 from database.last_month_ind import LastMonthInd
 from helpers.cache import cache, cache_daily_data, update_cache
-from pages import grafana, main_page, management
+from pages import grafana, hour_prod, main_page, management
 from waitress import serve
 
 from app import app
@@ -75,6 +75,7 @@ app.layout = dbc.Container(
         dcc.Store(id="store-df_working_time"),
         dcc.Store(id="store-df-caixas-cf"),
         dcc.Store(id="store-df-caixas-cf-tot"),
+        dcc.Store(id="store-df-info-pure"),
         dcc.Store(id="is-data-store", storage_type="session", data=False),
         # ---------------------- Main Layout ---------------------- #
         dbc.Row(
@@ -100,6 +101,7 @@ app.layout = dbc.Container(
                     dbc.Tab(grafana.layout, label="Ao Vivo"),
                     dbc.Tab(main_page.layout, label="SFM Dashboard"),
                     dbc.Tab(management.layout, label="Gestão de Produção"),
+                    dbc.Tab(hour_prod.layout, label="Produção por Hora"),
                 ],
             ),
             class_name="mb-5",
@@ -160,6 +162,7 @@ def update_footer_class_name(light_theme):
         Output("store-df_working_time", "data"),
         Output("store-df-caixas-cf", "data"),
         Output("store-df-caixas-cf-tot", "data"),
+        Output("store-df-info-pure", "data"),
     ],
     Input("store-info", "data"),
 )
@@ -185,6 +188,7 @@ def update_store(_data):
     df_working_time = cache.get("df_working_time")
     df_caixas_cf = cache.get("df_caixas_cf")
     df_caixas_cf_tot = cache.get("df_caixas_cf_tot")
+    df_info_pure = cache.get("df_info_pure")
 
     print("========== Store atualizado ==========")
     return (
@@ -202,6 +206,7 @@ def update_store(_data):
         df_working_time,
         df_caixas_cf,
         df_caixas_cf_tot,
+        df_info_pure,
     )
 
 
