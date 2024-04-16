@@ -41,7 +41,11 @@ def update_hour_prod_table(data):
     # Transforma a data de registro em datetime
     df["data_registro"] = pd.to_datetime(df["data_registro"])
 
+    # Filtra a data
     df = df[df["data_registro"].dt.date == today]
+
+    # Remove a linha 0
+    df = df[df["linha"] != 0]
 
     # Concatena a data e hora
     df["data_hora"] = (
