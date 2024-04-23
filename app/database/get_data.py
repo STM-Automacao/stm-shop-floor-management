@@ -94,8 +94,6 @@ class GetData:
             " ORDER BY data_registro DESC, linha"
         )
 
-        print("========== Baixando dados do DB ==========")
-
         # Leitura dos dados
         df_occ = self.db_read.get_automacao_data(query_occ)
         df_info = self.db_read.get_automacao_data(query_info)
@@ -103,10 +101,8 @@ class GetData:
 
         # Verificando se os dados foram lidos corretamente
         if df_occ.empty or df_info.empty or df_info_production.empty:
-            print("====== Erro na leitura dos dados ======")
+            print("====== Erro na leitura dos dados do DB Automação ======")
             return None, None, None
-
-        print("Ok...")
 
         return df_occ, df_info, df_info_production
 
@@ -118,18 +114,17 @@ class GetData:
         data = self.get_data()
         # Dados do banco de dados (dataframe)
         df_occ, df_info, df_info_production = data
-        print("========== Limpando dados ==========")
+
         # Limpeza inicial dos dados
         df_occ_cleaned = self.clean_df.get_maq_occ_cleaned(df_occ)
         df_info_cleaned = self.clean_df.get_maq_info_cleaned(df_info)
         df_maq_info_prod_cad_cleaned = self.clean_df.get_maq_production_cleaned(df_info_production)
         df_working_minutes = self.clean_df.get_time_working(df_info)
-        print("Ok...")
-        print("========== Juntando dados ==========")
+
         # Junção dos dados
         df_info_occ = self.join_df.join_info_occ(df_occ_cleaned, df_info_cleaned)
         df_maq_info_cadastro = self.join_df.problems_adjust(df_info_occ)
-        print("Ok...")
+
         # Retorno dos dados
         return df_maq_info_cadastro, df_maq_info_prod_cad_cleaned, df_working_minutes, df_info
 
@@ -214,7 +209,7 @@ class GetData:
         # Junção dos dados
         df_info_occ = self.join_df.join_info_occ(df_occ_cleaned, df_info_cleaned)
         df_maq_info_cadastro = self.join_df.problems_adjust(df_info_occ)
-        print(f"Ok ás {pd.to_datetime('today')}")
+
         # Retorno dos dados
         return df_maq_info_cadastro, df_maq_info_prod_cad_cleaned
 
@@ -278,13 +273,10 @@ class GetData:
             orderby="D3_EMISSAO DESC, CYV_HRRPBG DESC",
         )
 
-        print("=============== Baixando dados TOTVSDB ===============")
         df = self.db_read.get_totvsdb_data(query)
 
         if df.empty:
             print("=============== TOTVSDB ERRO ===============")
-        else:
-            print("Ok...")
 
         return df
 
@@ -309,12 +301,9 @@ class GetData:
             orderby="B2_COD",
         )
 
-        print("=============== Baixando dados TOTVSDB ===============")
         df = self.db_read.get_totvsdb_data(query)
 
         if df.empty:
             print("=============== TOTVSDB ERRO ===============")
-        else:
-            print("Ok...")
 
         return df

@@ -21,6 +21,7 @@ from app import app
 
 get_data = GetData()
 lock = Lock()
+times_data = TimesData()
 
 
 class MyEncoder(json.JSONEncoder):
@@ -29,7 +30,8 @@ class MyEncoder(json.JSONEncoder):
     """
 
     def default(self, o):
-        if isinstance(o, np.int64) or isinstance(o, np.int32):
+        # if isinstance(o, np.int64) or isinstance(o, np.int32):
+        if isinstance(o, (np.int64, np.int32)):
             return int(o)
         return super(MyEncoder, self).default(o)
 
@@ -59,6 +61,9 @@ def tuple_list_to_list(tuple_list: tuple) -> list[str]:
 
 
 def cache_daily_data():
+    """
+    Caches the daily data by retrieving the total caixas from Protheus and saving it to a CSV file.
+    """
     with lock:
         df_caixas_cf_tot = get_data.get_protheus_total_caixas()
 
@@ -75,8 +80,9 @@ def update_cache():
         df1, df2, df_working_time, df_info_pure = get_data.get_cleaned_data()
         df_caixas_cf = get_data.get_protheus_caixas_data()
         df_caixas_cf_tot = pd.read_csv(DF_CAIXAS, index_col=0)
+
+        # Criar dataframes auxiliares com os df do banco de dados
         df_ind = DFIndicators(df1, df2)
-        times_data = TimesData()
         df_eff = times_data.get_eff_data(df1, df2)
         df_perf = times_data.get_perf_data(df1, df2)
         df_repair = times_data.get_repair_data(df1, df2)
@@ -115,5 +121,3 @@ def update_cache():
             "annotations_repair_list_tuple",
             json.dumps(tuple_list_to_list(annotations_repair_list_tuple)),
         )
-
-        print(f"========== Cache atualizado ==========  {pd.to_datetime('today')}")

@@ -190,7 +190,6 @@ def update_store(_data):
     df_caixas_cf_tot = cache.get("df_caixas_cf_tot")
     df_info_pure = cache.get("df_info_pure")
 
-    print("========== Store atualizado ==========")
     return (
         df_maq_info_cadastro,
         df_maq_info_prod_cad,
@@ -230,7 +229,13 @@ def update_is_data_store(data_info, data_prod):
 
 # ======================================== Run App ======================================== #
 if __name__ == "__main__":
-    if os.getenv("APP_ENV") == "production":
-        serve(app.server, host="0.0.0.0", port=8080)
-    else:
-        app.run_server(debug=True, port=8050)
+    try:
+        if os.getenv("APP_ENV") == "production":
+            print("Starting the server on port 8080 in production mode...")
+            serve(app.server, host="0.0.0.0", port=8080)
+        else:
+            print("Starting the server on port 8050 in development mode...")
+            app.run_server(debug=True, port=8050)
+    # pylint: disable=W0703
+    except Exception as e:
+        print(f"Failed to start the server: {e}")
