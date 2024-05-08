@@ -171,7 +171,6 @@ class TimesData:
         df_result = times_data.get_eff_data(df_info, df_prod)
         ```
         """
-
         df_eff_times_desc = self.get_times_discount(df_info, self.desc_eff)
         df_prod_total = df_prod.copy()
         ciclo_ideal = CICLOS_ESPERADOS

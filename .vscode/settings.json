@@ -6,6 +6,7 @@
     "asof",
     "astype",
     "barmode",
+    "bfill",
     "bordercolor",
     "borderpad",
     "borderwidth",
@@ -94,6 +95,7 @@
   ],
   "terminal.integrated.fontFamily": "'Hasklug Nerd Font' ,'Hack Nerd Font Mono'",
   "workbench.editorAssociations": {
-    "file:/**/*.csv": "jupyter-data-wrangler"
+    "file:/**/*.csv": "jupyter-data-wrangler",
+    "*.csv": "default"
   },
 }
