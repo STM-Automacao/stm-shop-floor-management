@@ -38,9 +38,16 @@ class GetData:
         # Mantendo apenas a data
         first_day = first_day.strftime("%Y-%m-%d")
 
+        # NOTE: Se torna obsoleta com a nova maquina_ihm
         # Query para leitura dos dados de ocorrência
         query_occ = self.db_read.create_automacao_query(
             table="maquina_ocorrencia",
+            where=f"data_registro >= '{first_day}'",
+        )
+
+        # Query para leitura dos dados de IHM
+        query_ihm = self.db_read.create_automacao_query(
+            table="maquina_ihm",
             where=f"data_registro >= '{first_day}'",
         )
 
@@ -96,6 +103,7 @@ class GetData:
 
         # Leitura dos dados
         df_occ = self.db_read.get_automacao_data(query_occ)
+        df_ihm = self.db_read.get_automacao_data(query_ihm)
         df_info = self.db_read.get_automacao_data(query_info)
         df_info_production = self.db_read.get_automacao_data(query_production)
 

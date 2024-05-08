@@ -100,4 +100,13 @@
     "file:/**/*.csv": "jupyter-data-wrangler",
     "*.csv": "default"
   },
+  "sqltools.useNodeRuntime": true,
+  "sqltools.connections": [
+    {
+      "previewLimit": 50,
+      "driver": "SQLite",
+      "name": "DB Historic",
+      "database": "${workspaceFolder:stm-shop-floor-management}/app/assets/db_for_historic.db"
+    }
+  ],
 }
