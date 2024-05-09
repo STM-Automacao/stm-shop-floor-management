@@ -9,6 +9,7 @@ import pandas as pd
 from database.db_read import Read
 from service.clean_data import CleanData
 from service.join_data import JoinData
+from service.service_info_ihm import ServiceInfoIHM
 
 
 # cSpell: words automacao, ocorrencia dateadd datediff locpad
@@ -20,8 +21,9 @@ class GetData:
 
     def __init__(self):
         self.db_read = Read()
-        self.clean_df = CleanData()
-        self.join_df = JoinData()
+        self.clean_data = CleanData
+        self.join_data = JoinData
+        self.service = ServiceInfoIHM
 
     def get_data(self) -> tuple:
         """
@@ -37,13 +39,6 @@ class GetData:
 
         # Mantendo apenas a data
         first_day = first_day.strftime("%Y-%m-%d")
-
-        # NOTE: Se torna obsoleta com a nova maquina_ihm
-        # Query para leitura dos dados de ocorrência
-        query_occ = self.db_read.create_automacao_query(
-            table="maquina_ocorrencia",
-            where=f"data_registro >= '{first_day}'",
-        )
 
         # Query para leitura dos dados de IHM
         query_ihm = self.db_read.create_automacao_query(
@@ -102,39 +97,57 @@ class GetData:
         )
 
         # Leitura dos dados
-        df_occ = self.db_read.get_automacao_data(query_occ)
         df_ihm = self.db_read.get_automacao_data(query_ihm)
         df_info = self.db_read.get_automacao_data(query_info)
         df_info_production = self.db_read.get_automacao_data(query_production)
 
         # Verificando se os dados foram lidos corretamente
-        if df_occ.empty or df_info.empty or df_info_production.empty:
-            print("====== Erro na leitura dos dados do DB Automação ======")
-            return None, None, None
+        if df_ihm.empty or df_info.empty or df_info_production.empty:
+            raise ValueError("* --> Erro na leitura dos dados do DB Automação.")
 
-        return df_occ, df_info, df_info_production
+        return df_ihm, df_info, df_info_production
 
     def get_cleaned_data(self) -> tuple:
         """
         Recebe a leitura dos dados do banco de dados e faz a limpeza dos dados.
         Retorna na ordem: df_maq_info_cadastro, df_maq_info_prod_cad
         """
+        # Instanciando as classes de coleta dos dados do DB
         data = self.get_data()
+
         # Dados do banco de dados (dataframe)
-        df_occ, df_info, df_info_production = data
+        df_ihm, df_info, df_info_production = data
+
+        # Instanciando a classe de limpeza dos dados
+        clean_df = self.clean_data(df_ihm, df_info, df_info_production)
 
         # Limpeza inicial dos dados
-        df_occ_cleaned = self.clean_df.get_maq_occ_cleaned(df_occ)
-        df_info_cleaned = self.clean_df.get_maq_info_cleaned(df_info)
-        df_maq_info_prod_cad_cleaned = self.clean_df.get_maq_production_cleaned(df_info_production)
-        df_working_minutes = self.clean_df.get_time_working(df_info)
+        df_ihm_cleaned, df_info_cleaned, df_info_production_cleaned = clean_df.clean_data()
+
+        # Instanciando a classe de junção dos dados
+        join_df = self.join_data(df_ihm_cleaned, df_info_cleaned)
 
         # Junção dos dados
-        df_info_occ = self.join_df.join_info_occ(df_occ_cleaned, df_info_cleaned)
-        df_maq_info_cadastro = self.join_df.problems_adjust(df_info_occ)
+        df_joined = join_df.join_data()
+
+        # Caso df_joined seja None, ou não tenha dados, lança erro personalizado
+        if df_joined is None or df_joined.empty:
+            raise ValueError("* --> Erro na leitura dos dados do DF Joined.")
+
+        # Instanciando Service
+        service = self.service(df_joined)
+
+        # Info IHM ajustado
+        df_info_ihm_adjusted = service.get_info_ihm_adjusted()
+
+        # Tempo trabalhando
+        df_working_minutes = service.get_time_working(df_info_ihm_adjusted)
+
+        # Tempo Parada
+        df_stop_time = service.get_maq_stopped(df_info_ihm_adjusted)
 
         # Retorno dos dados
-        return df_maq_info_cadastro, df_maq_info_prod_cad_cleaned, df_working_minutes, df_info
+        return df_stop_time, df_info_production_cleaned, df_working_minutes, df_info_cleaned
 
     def get_last_month_data(self) -> tuple:
         """
@@ -284,7 +297,7 @@ class GetData:
         df = self.db_read.get_totvsdb_data(query)
 
         if df.empty:
-            print("=============== TOTVSDB ERRO ===============")
+            raise ValueError("* --> Erro na leitura dos dados do DB TOTVSDB.")
 
         return df
 
@@ -312,6 +325,6 @@ class GetData:
         df = self.db_read.get_totvsdb_data(query)
 
         if df.empty:
-            print("=============== TOTVSDB ERRO ===============")
+            raise ValueError("* --> Erro na leitura dos dados do DB TOTVSDB.")
 
         return df

@@ -4,405 +4,104 @@
     Módulo para unir os dados de cadastro, info e ocorrência
 """
 
-import numpy as np
 import pandas as pd
-from fuzzywuzzy import process
 
 
-# cSpell: words solucao, usuario, sabado
 class JoinData:
     """
-    Classe para unir os dados de cadastro, info e ocorrência
+    Class for joining two dataframes based on the 'data_hora' column.
+
+    Args:
+        df_ihm (pd.DataFrame): The first dataframe to be joined.
+        df_info (pd.DataFrame): The second dataframe to be joined.
+
+    Returns:
+        pd.DataFrame: The merged and processed dataframe.
     """
 
-    # Função Auxiliar
-    def move_columns(self, df: pd.DataFrame) -> pd.DataFrame:
+    def __init__(self, df_ihm: pd.DataFrame, df_info: pd.DataFrame) -> None:
+        self.df_ihm = df_ihm
+        self.df_info = df_info
+
+    def join_data(self) -> pd.DataFrame:
         """
-        Move as colunas para a posição desejada.
-        """
-
-        # Adiciona uma verificação para garantir que não haja valores nulos
-        mask = (
-            df[["data_hora_registro_occ", "data_hora_registro", "data_hora_final"]]
-            .notna()
-            .all(axis=1)
-        )
-
-        df["data_hora_registro_occ"] = df["data_hora_registro_occ"].replace(np.nan, pd.NaT)
-        df = df.astype({"data_hora_registro_occ": "datetime64[ns]"})
-
-        # Calcula a diferença de data_hora_registro_occ e data_hora_registro e data_hora_final
-        df["diff_registro"] = np.where(
-            mask,
-            (df["data_hora_registro_occ"] - df["data_hora_registro"]).dt.total_seconds().abs(),
-            np.nan,
-        )
-        df["diff_final"] = np.where(
-            mask,
-            (df["data_hora_registro_occ"] - df["data_hora_final"]).dt.total_seconds().abs(),
-            np.nan,
-        )
-
-        # Encontra qual das duas diferenças é menor
-        mask_idxmin = df[["diff_registro", "diff_final"]].notna().any(axis=1)
-        df.loc[mask & mask_idxmin, "closest"] = df.loc[
-            mask & mask_idxmin, ["diff_registro", "diff_final"]
-        ].idxmin(
-            axis=1
-        )  # removendo erro:
-        # FutureWarning: The behavior of DataFrame.idxmin with all-NA values,
-        # or any-NA and skipna=False, is deprecated.
-        # In a future version this will raise ValueError
-
-        columns = [
-            "motivo_id",
-            "motivo_nome",
-            "problema",
-            "solucao",
-            "usuario_id_occ",
-        ]
-
-        # Move a ocorrência para a linha anterior se a data_hora_registro for mais próxima
-        mask = (
-            (df["closest"].shift(-1) == "diff_registro")
-            & (df["status"].shift(-1) == "rodando")
-            & df["motivo_id"].isnull()
-        )
-        for column in columns:
-            df[column] = np.where(mask, df[column].shift(-1), df[column])
-            df[column] = np.where(mask.shift(1), np.nan, df[column])
-
-        # Tratamento separado para a coluna "data_hora_registro_occ"
-        df["data_hora_registro_occ"] = np.where(
-            mask, df["data_hora_registro_occ"].shift(-1), df["data_hora_registro_occ"]
-        )
-        df["data_hora_registro_occ"] = np.where(mask.shift(1), pd.NaT, df["data_hora_registro_occ"])
-
-        # Move a ocorrência para a linha seguinte se a data_hora_final for mais próxima
-        mask = (
-            (df["closest"].shift(1) == "diff_final")
-            & (df["status"].shift(1) == "rodando")
-            & df["motivo_id"].isnull()
-        )
-        for column in columns:
-            df[column] = np.where(mask, df[column].shift(1), df[column])
-            df[column] = np.where(mask.shift(-1), np.nan, df[column])
-
-        # Tratamento separado para a coluna "data_hora_registro_occ"
-        df["data_hora_registro_occ"] = np.where(
-            mask, df["data_hora_registro_occ"].shift(1), df["data_hora_registro_occ"]
-        )
-        df["data_hora_registro_occ"] = np.where(
-            mask.shift(-1), pd.NaT, df["data_hora_registro_occ"]
-        )
-
-        return df
-
-    def join_info_occ(self, df_occ: pd.DataFrame, df_info: pd.DataFrame) -> pd.DataFrame:
-        """
-        Junta os dados de ocorrências e paradas.
-
-        Args:
-            df_occ (pd.DataFrame): DataFrame com os dados de ocorrências.
-            df_info (pd.DataFrame): DataFrame com os dados de paradas.
+        Joins two dataframes, df_info and df_ihm, based on the 'data_hora' column.
+        The dataframes are sorted by 'data_hora' before merging.
+        The merge is performed using the 'maquina_id' column as the key.
+        The merge is done using the nearest timestamp within a tolerance of 1 minute and 10 seconds.
+        The resulting dataframe is then reordered and renamed to match the desired column names.
+        Finally, the index is reset and the resulting dataframe is returned.
 
         Returns:
-            pd.DataFrame: DataFrame com os dados de ocorrências e paradas juntos.
+            pd.DataFrame: The merged and processed dataframe.
         """
 
-        # Garantir que as colunas com datas sejam datetime
-        df_occ["data_hora_registro"] = pd.to_datetime(df_occ["data_hora_registro"])
-        df_info["data_hora_registro"] = pd.to_datetime(df_info["data_hora_registro"])
-        df_info["data_hora_final"] = pd.to_datetime(df_info["data_hora_final"])
+        # Cria coluna com união de data e hora para df_ihm
+        self.df_ihm["data_hora"] = pd.to_datetime(
+            self.df_ihm["data_registro"].astype(str) + " " + self.df_ihm["hora"].astype(str)
+        )
 
-        # Juntar os dados de ocorrências e paradas
-        def merge_rows(row):
-            """
-            Função para juntar os dados de ocorrências e paradas.
-            """
-            mask = (
-                (df_occ["maquina_id"] == row["maquina_id"])
-                & (df_occ["data_hora_registro"] >= row["data_hora_registro"])
-                & (df_occ["data_hora_registro"] <= row["data_hora_final"])
-            )  # mask para identificar as paradas que ocorreram durante a ocorrência
+        # Cria coluna com união de data e hora para df_info
+        self.df_info["data_hora"] = pd.to_datetime(
+            self.df_info["data_registro"].astype(str) + " " + self.df_info["hora"].astype(str)
+        )
 
-            # Criar dataframe com as paradas que ocorreram durante a ocorrência
-            if df_occ[mask].shape[0] > 0:
-                return pd.Series(
-                    [
-                        df_occ[mask]["motivo_id"].values[0],
-                        df_occ[mask]["motivo_nome"].values[0],
-                        df_occ[mask]["problema"].values[0],
-                        df_occ[mask]["solucao"].values[0],
-                        df_occ[mask]["data_hora_registro"].values[0],
-                        df_occ[mask]["usuario_id"].values[0],
-                    ],
-                )
+        # Classifica os dataframes por data_hora
+        self.df_ihm = self.df_ihm.sort_values(by="data_hora")
+        self.df_info = self.df_info.sort_values(by="data_hora")
 
-            return pd.Series([None, None, None, None, None, None])
+        # Realiza o merge dos dataframes
+        df = pd.merge_asof(
+            self.df_info,
+            self.df_ihm,
+            on="data_hora",
+            by="maquina_id",
+            direction="nearest",
+            tolerance=pd.Timedelta("1 min 10 s"),
+        )
 
-        # Aplicar a função merge_rows
-        df_info[
+        # Define o tipo para colunas de ciclos e produção
+        df["contagem_total_ciclos"] = df["contagem_total_ciclos"].astype("Int64")
+        df["contagem_total_produzido"] = df["contagem_total_produzido"].astype("Int64")
+
+        # Reordenar as colunas, mantendo só as necessárias
+        df = df[
             [
-                "motivo_id",
-                "motivo_nome",
-                "problema",
-                "solucao",
-                "data_hora_registro_occ",
-                "usuario_id_occ",
-            ]
-        ] = df_info.apply(merge_rows, axis=1)
-
-        # Reordenar colunas
-        df_info = df_info.reindex(
-            columns=[
-                "maquina_id",
-                "linha",
                 "fabrica",
+                "linha_x",
+                "maquina_id",
                 "turno",
-                "data_hora_registro",
-                "tempo_registro_min",
-                "data_hora_final",
                 "status",
-                "motivo_id",
-                "data_hora_registro_occ",
-                "motivo_nome",
-                "problema",
-                "solucao",
-                "usuario_id_occ",
                 "contagem_total_ciclos",
                 "contagem_total_produzido",
-                "sabado",
-                "domingo",
-                "feriado",
+                "data_registro_x",
+                "hora_registro_x",
+                "motivo",
+                "equipamento",
+                "problema",
+                "causa",
+                "os_numero",
+                "operador_id",
+                "data_registro_y",
+                "hora_registro_y",
             ]
-        )
+        ]
 
-        # Ordenar por linha, data_hora_registro
-        df_info.sort_values(by=["linha", "data_hora_registro"], inplace=True)
-
-        # Ajustar problema e solução caso seja "nan"
-        df_info["problema"] = df_info["problema"].astype(str)
-        df_info["solucao"] = df_info["solucao"].astype(str)
-        df_info["problema"] = np.where(df_info["problema"] == "nan", np.nan, df_info["problema"])
-        df_info["solucao"] = np.where(df_info["solucao"] == "nan", np.nan, df_info["solucao"])
-
-        # Remove a linha com tempo_registro_min negativo ou 0
-        df_info = df_info[df_info["tempo_registro_min"] > 0]
-
-        df_info = self.move_columns(df_info)
-
-        # Remove colunas desnecessárias
-        df_info.drop(
-            columns=[
-                "diff_registro",
-                "diff_final",
-                "closest",
-            ],
-            inplace=True,
-        )
-
-        # Ajustar motivo id
-        df_info["motivo_id"] = df_info["motivo_id"].fillna(np.nan)
-
-        # Ajustar em problema, solucao, usuario_id_occ e motivo_nome
-        df_info["problema"] = df_info["problema"].fillna("")
-        df_info["solucao"] = df_info["solucao"].fillna("")
-        df_info["usuario_id_occ"] = np.where(
-            df_info["usuario_id_occ"] == pd.NaT, np.nan, df_info["usuario_id_occ"]
-        )
-        df_info["motivo_nome"] = np.where(
-            df_info["motivo_nome"] == pd.NaT, np.nan, df_info["motivo_nome"]
-        )
-        # Mudar de np.nan para pd.NaT em data_hora_registro_occ
-        df_info["data_hora_registro_occ"] = np.where(
-            df_info["data_hora_registro_occ"].isnull(), pd.NaT, df_info["data_hora_registro_occ"]
-        )
-
-        # Corrigir os formatos das colunas
-        df_info = df_info.astype(
-            {
-                "data_hora_registro_occ": "datetime64[ns]",
-                "motivo_nome": "category",
-                "problema": str,
-                "solucao": str,
-                "usuario_id_occ": "category",
+        # Renomear as colunas
+        df = df.rename(
+            columns={
+                "linha_x": "linha",
+                "daa_registro_x": "data_registro",
+                "hora_registro_x": "hora_registro",
+                "data_registro_y": "data_registro_ihm",
+                "hora_registro_y": "hora_registro_ihm",
             }
         )
 
-        # Ajustar problema para Domingo, Sábado e Feriado se motivo_id for 12
-        df_info["problema"] = np.where(
-            (df_info["motivo_id"] == 12) & (df_info["domingo"] == 1),
-            "Domingo",
-            df_info["problema"],
-        )
-        df_info["problema"] = np.where(
-            (df_info["motivo_id"] == 12) & (df_info["sabado"] == 1),
-            "Sábado",
-            df_info["problema"],
-        )
-        df_info["problema"] = np.where(
-            (df_info["motivo_id"] == 12) & (df_info["feriado"] == 1),
-            "Feriado",
-            df_info["problema"],
-        )
+        # Reordenar o dataframe
+        df = df.sort_values(by=["linha", "data_registro", "hora_registro"])
 
-        # ------------------------------ Ajustes Marcação de Paradas ---------------------------- #
-
-        # Ajustar motivo 12 para Sábado, Domingo e Feriado
-        condition = (
-            (df_info["motivo_id"].isnull())
-            & (df_info["status"] == "parada")
-            & (df_info["tempo_registro_min"] > 400)
-        )
-        condition_sabado = condition & (df_info["sabado"] == 1)
-        df_info["motivo_id"] = np.where(condition_sabado, 12, df_info["motivo_id"])
-        df_info["motivo_nome"] = np.where(
-            condition_sabado, "Parada Programada", df_info["motivo_nome"]
-        )
-        df_info["problema"] = np.where(condition_sabado, "Sábado", df_info["problema"])
-
-        condition_domingo = condition & (df_info["domingo"] == 1)
-        df_info["motivo_id"] = np.where(condition_domingo, 12, df_info["motivo_id"])
-        df_info["motivo_nome"] = np.where(
-            condition_domingo, "Parada Programada", df_info["motivo_nome"]
-        )
-        df_info["problema"] = np.where(condition_domingo, "Domingo", df_info["problema"])
-
-        condition_feriado = condition & (df_info["feriado"] == 1)
-        df_info["motivo_id"] = np.where(condition_feriado, 12, df_info["motivo_id"])
-        df_info["motivo_nome"] = np.where(
-            condition_feriado, "Parada Programada", df_info["motivo_nome"]
-        )
-        df_info["problema"] = np.where(condition_feriado, "Feriado", df_info["problema"])
-
-        # Se o tempo de registro for maior que 480 mudar para 480
-        df_info["tempo_registro_min"] = np.where(
-            df_info["tempo_registro_min"] > 480, 480, df_info["tempo_registro_min"]
-        )
-
-        # Ajusta para parada programada qdo não tem o motivo e fica parada todo turno
-        mask = (df_info["motivo_id"].isnull()) & (df_info["tempo_registro_min"] >= 478)
-        df_info["motivo_id"] = np.where(mask, 12, df_info["motivo_id"])
-        df_info["motivo_nome"] = np.where(mask, "Parada Programada", df_info["motivo_nome"])
-
-        # ---- Busca a última parada caso não tenha motivo e seja a primeira parada do turno ---- #
-        # Ordena o DataFrame por 'maquina_id' e 'turno'
-        df_info.sort_values(by=["maquina_id", "data_hora_registro"], inplace=True)
-
-        # Cria colunas temporárias com os valores do último turno
-        df_info["motivo_id_last"] = df_info.groupby("maquina_id", observed=False)[
-            "motivo_id"
-        ].shift()
-        df_info["motivo_nome_last"] = df_info.groupby("maquina_id", observed=False)[
-            "motivo_nome"
-        ].shift()
-        df_info["problema_last"] = df_info.groupby("maquina_id", observed=False)["problema"].shift()
-        df_info["solucao_last"] = df_info.groupby("maquina_id", observed=False)["solucao"].shift()
-
-        # Cria a máscara para as linhas que atendem às condições
-        mask = (df_info["tempo_registro_min"] > 200) & df_info["motivo_id"].isnull()
-
-        # Aplica a máscara e substitui os valores nas colunas originais
-        df_info.loc[mask, "motivo_id"] = df_info.loc[mask, "motivo_id_last"]
-        df_info.loc[mask, "motivo_nome"] = df_info.loc[mask, "motivo_nome_last"]
-        df_info.loc[mask, "problema"] = df_info.loc[mask, "problema_last"]
-        df_info.loc[mask, "solucao"] = df_info.loc[mask, "solucao_last"]
-
-        # Remove as colunas temporárias
-        df_info = df_info.drop(
-            columns=["motivo_id_last", "motivo_nome_last", "problema_last", "solucao_last"]
-        )
-        # -------------------------------------------------------------------------------- #
-
-        # Se for motivo 12 e parada for 478 minutos ou mais, ajustar para 480
-        df_info["tempo_registro_min"] = np.where(
-            (df_info["motivo_id"] == 12) & (df_info["tempo_registro_min"] >= 478),
-            480,
-            df_info["tempo_registro_min"],
-        )
-
-        # Se o motivo for 6, o tempo de registro for maior que 200 e for sábado,
-        # alterar o motivo para 16 e o motivo_nome para "Limpeza Industrial"
-        m6_mask = (
-            (df_info["motivo_id"] == 6)
-            & (df_info["tempo_registro_min"] > 200)
-            & (df_info["sabado"] == 1)
-        )
-        df_info["motivo_id"] = np.where(m6_mask, 16, df_info["motivo_id"])
-        df_info["motivo_nome"] = np.where(
-            (df_info["motivo_id"] == 16) & (df_info["sabado"] == 1),
-            "Limpeza Industrial",
-            df_info["motivo_nome"],
-        )
-
-        # Se for domingo e o tempo de registro for 480, ajustar para
-        # motivo_id 12, motivo_nome "Parada Programada" e problema "Domingo"
-        condition_mask = (df_info["domingo"] == 1) & (df_info["tempo_registro_min"] == 480)
-        df_info["motivo_id"] = np.where(condition_mask, 12, df_info["motivo_id"])
-        df_info["motivo_nome"] = np.where(
-            condition_mask, "Parada Programada", df_info["motivo_nome"]
-        )
-        df_info["problema"] = np.where(condition_mask, "Domingo", df_info["problema"])
-
-        # Remover as linhas onde a linha é 0
-        df_info = df_info[df_info["linha"] != 0]
-
-        # Remover as linhas onde status é rodando
-        df_info = df_info[df_info["status"] != "rodando"]
-
-        mask_no_energy = (
-            (df_info["status"] == "parada")
-            & (df_info["tempo_registro_min"] < 480)
-            & (df_info["status"].shift(-1) == "parada")
-            & (df_info["tempo_registro_min"].shift(-1) == 480)
-            & (df_info["status"].shift() == "parada")
-            & (df_info["tempo_registro_min"].shift() == 480)
-        )
-        df_info.loc[mask_no_energy, "tempo_registro_min"] = 480
-
-        # Ajustar o index
-        df_info.reset_index(drop=True, inplace=True)
-
-        return df_info
-
-    def problems_adjust(self, df: pd.DataFrame, threshold=88) -> pd.DataFrame:
-        """
-        Ajusta os problemas no DataFrame fornecido,
-        mapeando problemas semelhantes para um nome comum.
-
-        Args:
-            df (pd.DataFrame): O DataFrame contendo os problemas a serem ajustados.
-            threshold (int, opcional): O limite de similaridade para combinar problemas.
-            Por padrão é 88.
-
-        Returns:
-            pd.DataFrame: O DataFrame com problemas ajustados.
-        """
-        # Encontrar problemas únicos
-        unique_problems = df["problema"].unique()
-        problem_mapping = {}
-
-        # Criar um dicionário para mapear os problemas
-        for problem in unique_problems:
-            if problem and problem not in problem_mapping:
-                problem = str(problem).capitalize()
-
-                # Corrigir erros básicos de digitação
-                problem = problem.replace("Beckup", "Backup")
-                problem = problem.replace("Becukp", "Backup")
-                problem = problem.replace("Stm", "Atm")
-
-                matches = process.extract(problem, unique_problems, limit=len(unique_problems))
-
-                # Encontrar os problemas com maior similaridade
-                similar_problems = [match[0] for match in matches if match[1] >= threshold]
-
-                # Criar um dicionário com os problemas similares
-                for similar_problem in similar_problems:
-                    problem_mapping[similar_problem] = problem
-
-        # Mapear os problemas
-        df["problema"] = df["problema"].map(problem_mapping)
+        # Reiniciar o index
+        df = df.reset_index(drop=True)
 
         return df
