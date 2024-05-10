@@ -13,6 +13,7 @@
     "bothdates",
     "categoryorder",
     "colorscale",
+    "cornerradius",
     "cumsum",
     "customdata",
     "darkgray",
@@ -52,6 +53,7 @@
     "odbc",
     "pcards",
     "plotly",
+    "producao",
     "protheus",
     "PYMSSQL",
     "pyodbc",
@@ -79,6 +81,7 @@
     "totvsdb",
     "TOTVSDB",
     "traceorder",
+    "treemap",
     "tseries",
     "updatemode",
     "xanchor",
@@ -98,4 +101,13 @@
     "file:/**/*.csv": "jupyter-data-wrangler",
     "*.csv": "default"
   },
+  "sqltools.useNodeRuntime": true,
+  "sqltools.connections": [
+    {
+      "previewLimit": 50,
+      "driver": "SQLite",
+      "name": "DB Historic",
+      "database": "${workspaceFolder:stm-shop-floor-management}/app/assets/db_for_historic.db"
+    }
+  ],
 }

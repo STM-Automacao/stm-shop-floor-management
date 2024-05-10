@@ -6,11 +6,13 @@ Este módulo cria dados do mês anterior.
 
 # cSpell: words eficiencia
 
+import sqlite3
+
 import numpy as np
 import pandas as pd
 from database.get_data import GetData
-from helpers.path_config import DF_HISTORY, EFF_LAST, PERF_LAST, REPAIR_LAST, TOP_STOPS
-from service.times_data import TimesData
+from helpers.path_config import DB_LOCAL
+from service.data_analysis import DataAnalysis
 
 
 class LastMonthInd:
@@ -19,135 +21,113 @@ class LastMonthInd:
     """
 
     def __init__(self):
-        self.times_data = TimesData()
         self.get_data = GetData()
+        self.data_analysis = DataAnalysis
 
     def save_last_month_data(self):
         """
         Salva imagens de gauge do mês anterior.
         """
         # Leitura dos dados
-        df_info, df_prod = self.get_data.get_last_month_data()
+        df_stops, df_prod = self.get_data.get_last_month_data_cleaned()
+
+        # Instancia de analise de dados
+        data_analysis = self.data_analysis(df_stops, df_prod)
 
         # Tratamento dos dados
-        df_eff = self.times_data.get_eff_data(df_info, df_prod)
-        df_perf = self.times_data.get_perf_data(df_info, df_prod)
-        df_repair = self.times_data.get_repair_data(df_info, df_prod)
+        df_eff = data_analysis.get_eff_data()
+        df_perf = data_analysis.get_perf_data()
+        df_repair = data_analysis.get_repair_data()
 
-        # Salva os dataframes em csv
-        df_eff.to_csv(EFF_LAST)
-        df_perf.to_csv(PERF_LAST)
-        df_repair.to_csv(REPAIR_LAST)
-        print("========== Salvo dados Último Mês ==========")
+        # ================================= Conexão Com DB Local ================================= #
+        # Cria conexão com DB local. Se não existir cria um.
+        conn = sqlite3.connect(DB_LOCAL)
 
-        # ---------- Histórico de Dados ---------- #
+        # Lê os dados do DB
         try:
-            df_history = pd.read_csv(DF_HISTORY)
-        except FileNotFoundError:
+            df_history = pd.read_sql_query("SELECT * FROM ind_history", conn)
+        except pd.io.sql.DatabaseError:
             df_history = pd.DataFrame(
                 columns=[
                     "data_registro",
                     "total_caixas",
-                    "eficiencia_media",
-                    "performance_media",
-                    "reparos_media",
+                    "eficiencia",
+                    "performance",
+                    "reparo",
                     "parada_programada",
                 ]
             )
+
+        # =================== Verifica Se O Mês Já Está No DB, Se Não Adiciona =================== #
 
         # Seleciona Mês passado
         last_month = (pd.Timestamp.now() - pd.DateOffset(months=1)).strftime("%Y-%m")
 
         # Verifica se já existe o mês no histórico
-        if last_month in df_history["data_registro"].values:
-            print("Mês já registrado")
-        else:
+        if last_month not in df_history["data_registro"].values:
+
             # Total de Caixas Produzidas
             total_caixas = int(np.floor((df_prod["total_produzido"].sum()) / 10))
 
             # Eficiência Média
-            eff_media = round(df_eff["eficiencia"].mean() * 100)
+            eff_media = round(df_eff["eficiencia"].mean())
 
             # Performance Média
-            perf_media = round(df_perf["performance"].mean() * 100)
+            perf_media = round(df_perf["performance"].mean())
 
             # Reparos Média
-            repair_media = round(df_repair["reparo"].mean() * 100)
+            repair_media = round(df_repair["reparo"].mean())
 
             # Parada Programada - Tempo Total
-            df_info_programada = df_info[df_info["motivo_id"] == 12]
-            parada_programada = df_info_programada["tempo_registro_min"].sum()
+            df_info_programada = df_stops[df_stops["causa"].isin(["Sem Produção", "Backup"])]
+            parada_programada = df_info_programada["tempo"].sum()
 
             # Criação do DataFrame
             df_historic = pd.DataFrame(
                 {
                     "data_registro": [last_month],
                     "total_caixas": [total_caixas],
-                    "eficiencia_media": [eff_media],
-                    "performance_media": [perf_media],
-                    "reparos_media": [repair_media],
+                    "eficiencia": [eff_media],
+                    "performance": [perf_media],
+                    "reparo": [repair_media],
                     "parada_programada": [parada_programada],
                 }
             )
 
-            # Salva no histórico
-            df_history = pd.concat([df_history, df_historic], ignore_index=True)
+            # Adiciona ao DB local
+            df_historic.to_sql("ind_history", conn, if_exists="append", index=False)
 
-            # Salva o histórico
-            df_history.to_csv(DF_HISTORY, index=False)
+        # ====================== Top 5 Motivos De Paradas E Seu Tempo Total ====================== #
 
-            print("========= Mês passado registrado no histórico =========")
-
-        # ------- Top 5 motivos de paradas e seu tempo total ------ #
         # Se motivo nome for null, substitui por "Motivo não apontado"
-        df_info["motivo_nome"] = df_info["motivo_nome"].fillna("Motivo não apontado")
-        df_info["problema"] = df_info["problema"].fillna("Problema não apontado")
-        df_info["problema"] = np.where(
-            df_info["problema"] == "None", "Problema não apontado", df_info["problema"]
-        )
-        # Se o motivo_id for 12 e o problema for motivo não apontado, substitui "Parada Programada"
-        df_info["problema"] = np.where(
-            (df_info["motivo_id"] == 12) & (df_info["problema"] == "Problema não apontado"),
-            "Parada Programada",
-            df_info["problema"],
-        )
-
-        # Encontra o problema 'Parada programada' e substitui por 'Parada Programada'
-        df_info["problema"] = np.where(
-            df_info["problema"] == "Parada programada", "Parada Programada", df_info["problema"]
-        )
+        df_stops["motivo"] = df_stops["motivo"].fillna("Não apontado")
+        df_stops["problema"] = df_stops["problema"].fillna("Não apontado")
 
         # Agrupa por motivo_nome e tempo_registro_min
-        df_info_group = df_info.groupby(["motivo_nome", "problema"])["tempo_registro_min"].sum()
-        df_info_group = df_info_group.sort_values(ascending=False).head(20)
+        df_stops_group = df_stops.groupby(["motivo", "problema"])["tempo"].sum()
+        df_stops_group = df_stops_group.sort_values(ascending=False).head(20)
 
-        # Salva os top 10 motivos de paradas
-        df_info_group.to_csv(TOP_STOPS)
+        # Salva no DB
+        df_stops_group.to_sql("top_stops", conn, if_exists="replace", index=True)
 
-        print("========= Top 10 motivos de paradas salvos =========")
+        # Fecha conexão
+        conn.close()
 
-    def get_last_month_saved_ind(self):
-        """
-        Retorna os dados do mês anterior.
-        ```
-        df_eff, df_perf, df_repair
-        ```
-        """
-        # Leitura dos dados
-        df_eff = pd.read_csv(EFF_LAST)
-        df_perf = pd.read_csv(PERF_LAST)
-        df_repair = pd.read_csv(REPAIR_LAST)
-
-        return df_eff, df_perf, df_repair
-
-    def get_historic_data(self):
+    @staticmethod
+    def get_historic_data():
         """
         Retorna o histórico de dados.
-        ```
-        df_history, top_tops
-        ```
+
+        Returns:
+            df_history (pd.DataFrame): DataFrame com os dados do histórico.
+            top_tops (pd.DataFrame): DataFrame com os top 5 motivos de paradas.
         """
-        df_history = pd.read_csv(DF_HISTORY)
-        top_tops = pd.read_csv(TOP_STOPS)
+
+        # Cria conexão com DB local
+        conn = sqlite3.connect(DB_LOCAL)
+
+        # Lê os dados do DB
+        df_history = pd.read_sql_query("SELECT * FROM ind_history", conn)
+        top_tops = pd.read_sql_query("SELECT * FROM top_stops", conn)
 
         return df_history, top_tops

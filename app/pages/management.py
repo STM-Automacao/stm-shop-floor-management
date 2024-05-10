@@ -194,7 +194,9 @@ def update_production_card(store_info, store_prod, store_caixas, caixas_cf_tot):
                 html.Hr(),
                 dbc.Row(pcards.create_card(df_maq_info, df_maq_prod, today=True)),
                 html.Hr(),
-                dbc.Row(pcards.create_card(df_maq_info, df_caixas, cf=True, total=total_estoque)),
+                dbc.Row(
+                    pcards.create_card(df_maq_info, df_caixas, cf=True, total=int(total_estoque))
+                ),
             ]
         ),
     ]
@@ -232,8 +234,8 @@ def details_picker(info, toggle_theme):
     df = pd.read_json(StringIO(info), orient="split")
     template = {"colorScheme": "light"} if toggle_theme else {"colorScheme": "dark"}
 
-    min_date = pd.to_datetime(df["data_hora_registro"]).min().date()
-    max_date = pd.to_datetime(df["data_hora_registro"]).max().date()
+    min_date = pd.to_datetime(df["data_registro"]).min().date()
+    max_date = pd.to_datetime(df["data_registro"]).max().date()
     return min_date, max_date, template
 
 
@@ -241,13 +243,14 @@ def details_picker(info, toggle_theme):
     Output("bar-chart-details", "children"),
     [
         Input("store-info", "data"),
+        Input("store-prod", "data"),
         Input("radio-items-management", "value"),
         Input("date-picker", "value"),
         Input("store-df_working_time", "data"),
         Input(ThemeSwitchAIO.ids.switch("theme"), "value"),
     ],
 )
-def collapse_details_bar_chart(info, turn, data_picker, working, toggle_theme):
+def collapse_details_bar_chart(info, prod, turn, data_picker, working, toggle_theme):
     """
     Creates a collapsed bar chart details based on the provided information.
 
@@ -268,12 +271,14 @@ def collapse_details_bar_chart(info, turn, data_picker, working, toggle_theme):
     if info is None:
         raise PreventUpdate
 
-    bcd = bar_chart_details.BarChartDetails()
     template = TemplateType.LIGHT if toggle_theme else TemplateType.DARK
 
     # Carrega o string json em um dataframe
     df_info = pd.read_json(StringIO(info), orient="split")
+    df_prod = pd.read_json(StringIO(prod), orient="split")
     df_working = pd.read_json(StringIO(working), orient="split")
+
+    bcd = bar_chart_details.BarChartDetails(df_info, df_prod)
 
     return bcd.create_bar_chart_details(
         df_info, IndicatorType.EFFICIENCY, template, turn, data_picker, df_working
@@ -285,22 +290,24 @@ def collapse_details_bar_chart(info, turn, data_picker, working, toggle_theme):
     Output("grid-occ-modal", "children"),
     [
         Input("store-info", "data"),
+        Input("store-prod", "data"),
         Input("radio-items-management", "value"),
         Input("date-picker", "value"),
         Input(ThemeSwitchAIO.ids.switch("theme"), "value"),
     ],
 )
-def update_grid_occ_modal(info, turn, data_picker, theme):
+def update_grid_occ_modal(info, prod, turn, data_picker, theme):
     """
     Função que atualiza o grid de eficiência do modal.
     """
     if info is None:
         raise PreventUpdate
 
-    goe = grid_occ.GridOcc()
-
     # Carregue a string JSON em um DataFrame
     df_info = pd.read_json(StringIO(info), orient="split")
+    df_prod = pd.read_json(StringIO(prod), orient="split")
+
+    goe = grid_occ.GridOcc(df_info, df_prod)
 
     turns = {
         "NOT": "Noturno",

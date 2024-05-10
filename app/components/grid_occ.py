@@ -5,7 +5,7 @@ Module for creating a grid with occurrence data based on provided data.
 import dash_ag_grid as dag
 import pandas as pd
 from helpers.types import IndicatorType, TemplateType
-from service.times_data import TimesData
+from service.df_for_indicators import DFIndicators
 
 
 class GridOcc:
@@ -20,8 +20,8 @@ class GridOcc:
         Create an AgGrid object with specified columns and data.
     """
 
-    def __init__(self):
-        self.times_data = TimesData()
+    def __init__(self, df_maq_stopped: pd.DataFrame, df_production: pd.DataFrame):
+        self.df_indicator = DFIndicators(df_maq_stopped, df_production)
 
     def create_grid_occ(
         self,
@@ -47,7 +47,7 @@ class GridOcc:
         work = pd.DataFrame() if selected_date else None
 
         # Ajustar dataframe
-        df = self.times_data.adjust_df_for_bar_lost(dataframe, indicator, turn, work)
+        df = self.df_indicator.adjust_df_for_bar_lost(dataframe, indicator, turn, work)
 
         # Filtrar pela data selecionada
         df = (
@@ -55,7 +55,7 @@ class GridOcc:
         )
 
         # Ordenar por linha e data_hora_registro
-        df = df.sort_values(by=["linha", "data_hora_registro"])
+        df = df.sort_values(by=["linha", "data_hora"])
 
         columns_defaults = {"sortable": True, "resizable": True, "flex": 1}
 
@@ -77,18 +77,33 @@ class GridOcc:
             {"field": "fabrica", "headerName": "Fábrica", **number_columns},
             {"field": "linha", "headerName": "Linha", **number_columns},
             {"field": "maquina_id", "headerName": "Máquina", "cellDataType": "string"},
-            {"field": "motivo_nome", "headerName": "Motivo", **filter_columns},
+            {"field": "motivo", "headerName": "Motivo", **filter_columns},
+            {"field": "equipamento", "headerName": "Equipamento", **filter_columns},
             {
                 "field": "problema",
                 "headerName": "Problema",
                 "tooltipField": "problema",
                 **filter_columns,
             },
-            {"field": "tempo_registro_min", "headerName": "Tempo Parada", **number_columns},
-            {"field": "desconto_min", "headerName": "Tempo descontado", **number_columns},
+            {
+                "field": "causa",
+                "headerName": "Causa",
+                "tooltipField": "causa",
+                **filter_columns,
+            },
+            {"field": "tempo", "headerName": "Tempo Parada", **number_columns},
+            {"field": "desconto", "headerName": "Tempo descontado", **number_columns},
             {"field": "excedente", "headerName": "Tempo que afeta", **number_columns},
-            {"field": "data_hora_registro", "headerName": "Início"},
-            {"field": "data_hora_final", "headerName": "Fim"},
+            {
+                "field": "data_hora",
+                "headerName": "Início",
+                "tooltipField": "data_hora",
+            },
+            {
+                "field": "data_hora_final",
+                "headerName": "Fim",
+                "tooltipField": "data_hora_final",
+            },
         ]
 
         return dag.AgGrid(

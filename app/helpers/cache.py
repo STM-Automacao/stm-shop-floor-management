@@ -14,14 +14,13 @@ from database.get_data import GetData
 from flask_caching import Cache
 from helpers.path_config import DF_CAIXAS
 from helpers.types import IndicatorType
+from service.data_analysis import DataAnalysis
 from service.df_for_indicators import DFIndicators
-from service.times_data import TimesData
 
 from app import app
 
 get_data = GetData()
 lock = Lock()
-times_data = TimesData()
 
 
 class MyEncoder(json.JSONEncoder):
@@ -83,9 +82,10 @@ def update_cache():
 
         # Criar dataframes auxiliares com os df do banco de dados
         df_ind = DFIndicators(df1, df2)
-        df_eff = times_data.get_eff_data(df1, df2)
-        df_perf = times_data.get_perf_data(df1, df2)
-        df_repair = times_data.get_repair_data(df1, df2)
+        analysis = DataAnalysis(df1, df2)
+        df_eff = analysis.get_eff_data()
+        df_perf = analysis.get_perf_data()
+        df_repair = analysis.get_repair_data()
         df_eff_heatmap_tuple = df_ind.get_heatmap_data(IndicatorType.EFFICIENCY)
         annotations_eff_list_tuple = df_ind.get_annotations(IndicatorType.EFFICIENCY)
         df_perf_heatmap_tuple = df_ind.get_heatmap_data(IndicatorType.PERFORMANCE)

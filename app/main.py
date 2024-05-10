@@ -47,9 +47,6 @@ def update_last_month():
 
 scheduler = BackgroundScheduler()
 scheduler.add_job(func=update_cache, trigger="interval", seconds=120)  # Atualiza a cada 2 minutos
-scheduler.add_job(
-    func=cache_daily_data, trigger="interval", seconds=120
-)  # FIXME: Manter apenas para testes
 scheduler.add_job(func=cache_daily_data, trigger="cron", hour=0, minute=1)
 scheduler.add_job(func=update_last_month, trigger="cron", hour=1)  # Atualiza a cada 24 horas
 scheduler.start()
