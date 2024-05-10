@@ -44,15 +44,18 @@ class GridOcc:
             dag.AgGrid: The AgGrid object with the specified data and column definitions.
         """
 
-        work = pd.DataFrame() if selected_date else None
-
-        # Ajustar dataframe
-        df = self.df_indicator.adjust_df_for_bar_lost(dataframe, indicator, turn, work)
+        # Garantir que data registro é pd.datetime apenas com a data
+        dataframe["data_registro"] = pd.to_datetime(dataframe["data_registro"]).dt.date
 
         # Filtrar pela data selecionada
-        df = (
-            df[df["data_registro"] == pd.to_datetime(selected_date).date()] if selected_date else df
+        dataframe = (
+            dataframe[(dataframe["data_registro"]) == pd.to_datetime(selected_date).date()]
+            if selected_date
+            else dataframe
         )
+
+        # Ajustar dataframe
+        df = self.df_indicator.adjust_df_for_bar_lost(dataframe, indicator, turn)
 
         # Ordenar por linha e data_hora_registro
         df = df.sort_values(by=["linha", "data_hora"])
@@ -91,6 +94,7 @@ class GridOcc:
                 "tooltipField": "causa",
                 **filter_columns,
             },
+            {"field": "os_numero", "headerName": "Número OS", **filter_columns},
             {"field": "tempo", "headerName": "Tempo Parada", **number_columns},
             {"field": "desconto", "headerName": "Tempo descontado", **number_columns},
             {"field": "excedente", "headerName": "Tempo que afeta", **number_columns},
