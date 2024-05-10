@@ -58,9 +58,11 @@ class TemplateType(Enum):
     DARK = "darkly"
 
 
+# Usado nos dados ao vivo do 'grafana'
 def get_color(value, max_value):
     """
     Retorna uma cor hexadecimal com base no valor fornecido e no valor máximo.
+        Cor varia do vermelho ao verde.
 
     Parâmetros:
     value (float): O valor para o qual a cor será calculada.

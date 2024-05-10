@@ -59,11 +59,8 @@ def update_graph_history_modal(_, light_theme):
 
     # -------------------- Gráfico de Perdas -------------------- #
 
-    # Limita o problema a 5 palavras
-    df_top_stops["problema"] = df_top_stops["problema"].apply(lambda x: " ".join(x.split()[:4]))
-
     # Adiciona quebra de linha no eixo x para melhor visualização
-    df_top_stops["motivo_nome"] = df_top_stops["motivo_nome"].apply(
+    df_top_stops["motivo"] = df_top_stops["motivo"].apply(
         lambda x: "<br>".join(textwrap.wrap(x, width=10))
     )
 
@@ -82,12 +79,12 @@ def update_graph_history_modal(_, light_theme):
 
     fig = px.bar(
         df_top_stops,
-        x="motivo_nome",
-        y="tempo_registro_min",
+        x="motivo",
+        y="tempo",
         color="problema",
         color_discrete_map=color_map,
         title="Principais Paradas",
-        labels={"motivo_nome": "Motivo", "tempo_registro_min": "Tempo Perdido (min)"},
+        labels={"motivo": "Motivo", "tempo": "Tempo Perdido (min)"},
         template=TemplateType.LIGHT.value if light_theme else TemplateType.DARK.value,
         barmode="stack",
     )
@@ -98,6 +95,7 @@ def update_graph_history_modal(_, light_theme):
         showlegend=True,
         plot_bgcolor="RGBA(0,0,0,0.01)",
         margin=dict({"t": 80, "b": 40, "l": 40, "r": 40}),
+        legend=dict(title="Problema", y=-0.5, orientation="h"),
     )
 
     # -------------------- Tabela de Desempenho Mensal -------------------- #
@@ -109,10 +107,14 @@ def update_graph_history_modal(_, light_theme):
     df_history["total_caixas"] = df_history["total_caixas"].apply(
         lambda x: f"{x:,.0f} cxs".replace(",", ".")
     )
+    # Transforma 0.56 em 56%
+    df_history["eficiencia"] = df_history["eficiencia"] * 100
+    df_history["performance"] = df_history["performance"] * 100
+    df_history["reparo"] = df_history["reparo"] * 100
     # Transforma 56 em 56%
-    df_history["eficiencia_media"] = df_history["eficiencia_media"].map(lambda x: f"{x:.0f}%")
-    df_history["performance_media"] = df_history["performance_media"].map(lambda x: f"{x:.0f}%")
-    df_history["reparos_media"] = df_history["reparos_media"].map(lambda x: f"{x:.0f}%")
+    df_history["eficiencia"] = df_history["eficiencia"].map(lambda x: f"{x:.0f}%")
+    df_history["performance"] = df_history["performance"].map(lambda x: f"{x:.0f}%")
+    df_history["reparo"] = df_history["reparo"].map(lambda x: f"{x:.0f}%")
     # Transforma 244502 em 244.502 min
     df_history["parada_programada"] = df_history["parada_programada"].apply(
         lambda x: f"{x:,.0f} min".replace(",", ".")
@@ -121,9 +123,9 @@ def update_graph_history_modal(_, light_theme):
     columns_def = [
         {"headerName": "Mês/Ano", "field": "data_registro"},
         {"headerName": "Produção Total", "field": "total_caixas"},
-        {"headerName": "Eficiência", "field": "eficiencia_media"},
-        {"headerName": "Performance", "field": "performance_media"},
-        {"headerName": "Reparos", "field": "reparos_media"},
+        {"headerName": "Eficiência", "field": "eficiencia"},
+        {"headerName": "Performance", "field": "performance"},
+        {"headerName": "Reparos", "field": "reparo"},
         {"headerName": "Parada Programada", "field": "parada_programada"},
     ]
 

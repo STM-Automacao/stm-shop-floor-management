@@ -172,11 +172,12 @@ def repair_general(df_repair, toggle_theme):
     Output("repair-lost", "children"),
     [
         Input("store-info", "data"),
+        Input("store-prod", "data"),
         Input(f"radio-items-{IndicatorType.REPAIR.value}", "value"),
         Input(ThemeSwitchAIO.ids.switch("theme"), "value"),
     ],
 )
-def repair_lost(info, turn, toggle_theme):
+def repair_lost(info, prod, turn, toggle_theme):
     """
     Calculates the repair lost based on the provided information.
 
@@ -196,10 +197,12 @@ def repair_lost(info, turn, toggle_theme):
         raise PreventUpdate
 
     template = TemplateType.LIGHT if toggle_theme else TemplateType.DARK
-    bcl = bar_chart_lost.BarChartLost()
 
     # Carrega o string json em um dataframe
     df_info = pd.read_json(StringIO(info), orient="split")
+    df_prod = pd.read_json(StringIO(prod), orient="split")
+
+    bcl = bar_chart_lost.BarChartLost(df_info, df_prod)
 
     return bcl.create_bar_chart_lost(df_info, IndicatorType.REPAIR, template, turn)
 
@@ -209,21 +212,23 @@ def repair_lost(info, turn, toggle_theme):
     Output("grid-occ-modal-repair", "children"),
     [
         Input("store-info", "data"),
+        Input("store-prod", "data"),
         Input(f"radio-items-{IndicatorType.REPAIR.value}", "value"),
         Input(ThemeSwitchAIO.ids.switch("theme"), "value"),
     ],
 )
-def update_grid_occ_modal_repair(info, turn, theme):
+def update_grid_occ_modal_repair(info, prod, turn, theme):
     """
     Função que atualiza o grid de eficiência do modal.
     """
     if info is None:
         raise PreventUpdate
 
-    goe = grid_occ.GridOcc()
-
     # Carregue a string JSON em um DataFrame
     df_info = pd.read_json(StringIO(info), orient="split")
+    df_prod = pd.read_json(StringIO(prod), orient="split")
+
+    goe = grid_occ.GridOcc(df_info, df_prod)
 
     turns = {
         "NOT": "Noturno",

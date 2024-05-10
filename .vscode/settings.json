@@ -53,6 +53,7 @@
     "odbc",
     "pcards",
     "plotly",
+    "producao",
     "protheus",
     "PYMSSQL",
     "pyodbc",

@@ -28,7 +28,7 @@ class GetData:
     def get_data(self) -> tuple:
         """
         Realiza a leitura dos dados do banco de dados.
-        Retorna na ordem: df_occ, df_info, df_cadastro
+        Retorna na ordem: df_ihm, df_info, df_info_production
         """
 
         # Dia de hoje
@@ -110,25 +110,19 @@ class GetData:
     def get_cleaned_data(self) -> tuple:
         """
         Recebe a leitura dos dados do banco de dados e faz a limpeza dos dados.
-        Retorna na ordem: df_maq_info_cadastro, df_maq_info_prod_cad
+        Retorna na ordem: df_stop_time, df_info_production, df_working_minutes, df_info
         """
-        # Instanciando as classes de coleta dos dados do DB
-        data = self.get_data()
 
         # Dados do banco de dados (dataframe)
-        df_ihm, df_info, df_info_production = data
-
-        # Instanciando a classe de limpeza dos dados
-        clean_df = self.clean_data(df_ihm, df_info, df_info_production)
+        df_ihm, df_info, df_info_production = self.get_data()
 
         # Limpeza inicial dos dados
-        df_ihm_cleaned, df_info_cleaned, df_info_production_cleaned = clean_df.clean_data()
-
-        # Instanciando a classe de junção dos dados
-        join_df = self.join_data(df_ihm_cleaned, df_info_cleaned)
+        df_ihm_cleaned, df_info_cleaned, df_info_production_cleaned = self.clean_data(
+            df_ihm, df_info, df_info_production
+        ).clean_data()
 
         # Junção dos dados
-        df_joined = join_df.join_data()
+        df_joined = self.join_data(df_ihm_cleaned, df_info_cleaned).join_data()
 
         # Caso df_joined seja None, ou não tenha dados, lança erro personalizado
         if df_joined is None or df_joined.empty:
@@ -149,11 +143,16 @@ class GetData:
         # Retorno dos dados
         return df_stop_time, df_info_production_cleaned, df_working_minutes, df_info_cleaned
 
-    def get_last_month_data(self) -> tuple:
+    def __get_last_month_data(self) -> tuple:
         """
-        Recebe a leitura dos dados do banco de dados e faz a limpeza dos dados.
-        Dados referentes ao mês anterior ao atual.
-        Retorna na ordem: df_maq_info_cadastro, df_maq_info_prod_cad
+        Retrieves data from the previous month.
+
+        Returns:
+            A tuple containing three pandas DataFrames:
+            - df_ihm: Data from the 'maquina_ihm' table.
+            - df_info: Data from the 'maquina_info' table.
+            - df_info_production: Data from the 'maquina_info' table, aggregated by
+            machine, date, and shift.
         """
 
         # Dia de hoje
@@ -164,16 +163,14 @@ class GetData:
 
         # Encontrando primeiro e último dia do mês anterior
         last_month = first_day_this_month - pd.DateOffset(months=1)
-        first_day_last_month = last_month.replace(day=1)
-        last_day_last_month = last_month.replace(day=last_month.days_in_month)
 
         # Mantendo apenas a data
-        first_day = first_day_last_month.strftime("%Y-%m-%d")
-        last_day = last_day_last_month.strftime("%Y-%m-%d")
+        first_day = last_month.replace(day=1).strftime("%Y-%m-%d")
+        last_day = last_month.replace(day=last_month.days_in_month).strftime("%Y-%m-%d")
 
         # Query para leitura dos dados de ocorrência
-        query_occ = self.db_read.create_automacao_query(
-            table="maquina_ocorrencia",
+        query_ihm = self.db_read.create_automacao_query(
+            table="maquina_ihm",
             where=f"data_registro >= '{first_day}' AND data_registro <= '{last_day}'",
         )
 
@@ -201,38 +198,71 @@ class GetData:
 
         # Query para leitura dos dados de de produção
         query_production = (
-            "SELECT"
-            " t1.maquina_id,"
-            " (SELECT TOP 1 t2.linha FROM AUTOMACAO.dbo.maquina_cadastro t2"
-            " WHERE t2.maquina_id = t1.maquina_id AND t2.data_registro <= t1.data_registro"
-            " ORDER BY t2.data_registro DESC, t2.hora_registro desc) as linha,"
-            " t1.turno,"
-            " MAX(t1.contagem_total_ciclos) total_ciclos,"
-            " MAX(t1.contagem_total_produzido) total_produzido,"
-            " t1.data_registro"
-            " FROM"
-            " AUTOMACAO.dbo.maquina_info t1"
-            f" WHERE data_registro >= '{first_day}' AND data_registro <= '{last_day}'"
-            " GROUP BY t1.maquina_id, t1.data_registro, t1.turno"
-            " ORDER BY data_registro DESC, maquina_id, turno"
+            "SELECT * "
+            "FROM ( "
+            "SELECT "
+            "(SELECT TOP 1 t2.fabrica FROM AUTOMACAO.dbo.maquina_cadastro t2 "
+            "WHERE t2.maquina_id = t1.maquina_id AND t2.data_registro <= t1.data_registro "
+            "ORDER BY t2.data_registro DESC, t2.hora_registro DESC) as fabrica, "
+            "(SELECT TOP 1 t2.linha FROM AUTOMACAO.dbo.maquina_cadastro t2 "
+            "WHERE t2.maquina_id = t1.maquina_id AND t2.data_registro <= t1.data_registro "
+            "ORDER BY t2.data_registro DESC, t2.hora_registro DESC) as linha, "
+            "t1.maquina_id, "
+            "t1.turno, "
+            "t1.status, "
+            "t1.contagem_total_ciclos as total_ciclos, "
+            "t1.contagem_total_produzido as total_produzido, "
+            "t1.data_registro, "
+            "t1.hora_registro, "
+            "ROW_NUMBER() OVER ( "
+            "PARTITION BY t1.data_registro, t1.turno, t1.maquina_id "
+            "ORDER BY t1.data_registro DESC, t1.hora_registro DESC"
+            ") AS rn "
+            "FROM AUTOMACAO.dbo.maquina_info t1 "
+            ") AS t "
+            f"WHERE rn = 1 AND WHERE data_registro >= '{first_day}' "
+            f"AND data_registro <= '{last_day}' AND hora_registro > '00:01' "
+            "ORDER BY data_registro DESC, linha"
         )
 
         # Leitura dos dados
-        df_occ = self.db_read.get_automacao_data(query_occ)
+        df_ihm = self.db_read.get_automacao_data(query_ihm)
         df_info = self.db_read.get_automacao_data(query_info)
         df_info_production = self.db_read.get_automacao_data(query_production)
 
+        return df_ihm, df_info, df_info_production
+
+    def get_last_month_data_cleaned(self) -> tuple:
+        """
+        Retrieves the last month's data, cleans it, and returns the cleaned data.
+
+        Returns:
+            tuple: A tuple containing the cleaned dataframes for stop time and production
+            information.
+        """
+
+        # Leitura dos dados
+        df_ihm, df_info, df_info_production = self.__get_last_month_data()
+
         # Limpeza inicial dos dados
-        df_occ_cleaned = self.clean_df.get_maq_occ_cleaned(df_occ)
-        df_info_cleaned = self.clean_df.get_maq_info_cleaned(df_info)
-        df_maq_info_prod_cad_cleaned = self.clean_df.get_maq_production_cleaned(df_info_production)
+        df_ihm_cleaned, df_info_cleaned, df_info_production_cleaned = self.clean_data(
+            df_ihm, df_info, df_info_production
+        ).clean_data()
 
         # Junção dos dados
-        df_info_occ = self.join_df.join_info_occ(df_occ_cleaned, df_info_cleaned)
-        df_maq_info_cadastro = self.join_df.problems_adjust(df_info_occ)
+        df_joined = self.join_data(df_ihm_cleaned, df_info_cleaned).join_data()
+
+        # Instanciando Service
+        service = self.service(df_joined)
+
+        # Info IHM ajustado
+        df_info_ihm_adjusted = service.get_info_ihm_adjusted()
+
+        # Tempo Parada
+        df_stop_time = service.get_maq_stopped(df_info_ihm_adjusted)
 
         # Retorno dos dados
-        return df_maq_info_cadastro, df_maq_info_prod_cad_cleaned
+        return df_stop_time, df_info_production_cleaned
 
     def get_maq_tela(self) -> pd.DataFrame:
         """

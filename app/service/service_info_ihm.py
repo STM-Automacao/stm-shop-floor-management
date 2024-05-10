@@ -3,8 +3,12 @@ Este módulo ajusta os dados do dataframe unido de info e ihm, identificando mud
 preenchendo valores nulos de paradas, agrupando e calculando o tempo de cada status.
 """
 
+import warnings
+
 import numpy as np
 import pandas as pd
+
+warnings.simplefilter(action="ignore", category=FutureWarning)
 
 
 class ServiceInfoIHM:

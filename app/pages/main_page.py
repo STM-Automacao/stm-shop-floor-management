@@ -331,12 +331,12 @@ def update_last_gauge(df_1, toggle_theme):
     last_month = LastMonthInd()
     template = TemplateType.LIGHT if toggle_theme else TemplateType.DARK
 
-    df_eff, df_perf, df_repair = last_month.get_last_month_saved_ind()
+    df_last_month, _ = last_month.get_historic_data()
 
     return (
-        gg.create_gauge(df_eff, IndicatorType.EFFICIENCY, 90, template),
-        gg.create_gauge(df_perf, IndicatorType.PERFORMANCE, 4, template),
-        gg.create_gauge(df_repair, IndicatorType.REPAIR, 4, template),
+        gg.create_gauge(df_last_month, IndicatorType.EFFICIENCY, 90, template, this_month=False),
+        gg.create_gauge(df_last_month, IndicatorType.PERFORMANCE, 4, template, this_month=False),
+        gg.create_gauge(df_last_month, IndicatorType.REPAIR, 4, template, this_month=False),
     )
 
 

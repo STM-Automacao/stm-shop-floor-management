@@ -145,9 +145,7 @@ class ProductionCards:
                 if not cf
                 else None
             )
-            df_info = df_info[
-                pd.to_datetime(df_info["data_hora_registro"]).dt.strftime("%Y-%m-%d") == date_today
-            ]
+            df_info = df_info[pd.to_datetime(df_info["data_registro"]) == date_today]
 
         if cf:
             dataframe["EMISSAO"] = dataframe["EMISSAO"].astype(str)
@@ -163,13 +161,13 @@ class ProductionCards:
             prod_total, prod_mat, prod_ves, prod_not = self.prepare_cxs_data(df_cxs)
 
         # Tempo total de parada programada
-        df_info = df_info[df_info["motivo_id"] == 12]
+        df_info = df_info[df_info["causa"].isin(["Sem Produção", "Backup"])]
 
         # Potencial de Produção
-        potencial = np.floor(df_info["tempo_registro_min"].sum() * (CICLOS_ESPERADOS * 2) / 10)
+        potencial = np.floor(df_info["tempo"].sum() * (CICLOS_ESPERADOS * 2) / 10)
 
         # Strings
-        total_programada = f"{df_info['tempo_registro_min'].sum():,} min".replace(",", ".")
+        total_programada = f"{df_info['tempo'].sum():,} min".replace(",", ".")
         caixas_potencial = f"{potencial:,.0f} cxs".replace(",", ".")
         total = f"{total:,}".replace(",", ".")
 

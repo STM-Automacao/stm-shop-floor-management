@@ -38,12 +38,16 @@ class JoinData:
 
         # Cria coluna com união de data e hora para df_ihm
         self.df_ihm["data_hora"] = pd.to_datetime(
-            self.df_ihm["data_registro"].astype(str) + " " + self.df_ihm["hora"].astype(str)
+            self.df_ihm["data_registro"].astype(str)
+            + " "
+            + self.df_ihm["hora_registro"].astype(str)
         )
 
         # Cria coluna com união de data e hora para df_info
         self.df_info["data_hora"] = pd.to_datetime(
-            self.df_info["data_registro"].astype(str) + " " + self.df_info["hora"].astype(str)
+            self.df_info["data_registro"].astype(str)
+            + " "
+            + self.df_info["hora_registro"].astype(str)
         )
 
         # Classifica os dataframes por data_hora
@@ -91,7 +95,7 @@ class JoinData:
         df = df.rename(
             columns={
                 "linha_x": "linha",
-                "daa_registro_x": "data_registro",
+                "data_registro_x": "data_registro",
                 "hora_registro_x": "hora_registro",
                 "data_registro_y": "data_registro_ihm",
                 "hora_registro_y": "hora_registro_ihm",
