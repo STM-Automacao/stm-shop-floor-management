@@ -6,7 +6,7 @@ from datetime import datetime
 
 import numpy as np
 import pandas as pd
-from helpers.types import IndicatorType
+from helpers.my_types import IndicatorType
 
 
 class DataAnalysis:

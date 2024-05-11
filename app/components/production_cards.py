@@ -10,7 +10,7 @@ import dash_bootstrap_components as dbc
 import numpy as np
 import pandas as pd
 from dash import html
-from helpers.types import CICLOS_ESPERADOS
+from helpers.my_types import CICLOS_ESPERADOS
 
 
 class ProductionCards:

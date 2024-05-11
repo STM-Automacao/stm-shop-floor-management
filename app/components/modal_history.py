@@ -15,7 +15,7 @@ from dash import Input, Output, callback, dcc, html
 from dash.exceptions import PreventUpdate
 from dash_bootstrap_templates import ThemeSwitchAIO
 from database.last_month_ind import LastMonthInd
-from helpers.types import TemplateType
+from helpers.my_types import TemplateType
 
 from app import app
 
@@ -36,8 +36,7 @@ layout = [
         dmc.Image(
             # pylint: disable=E1101
             src=app.get_asset_url("Logo Horizontal_PXB.png"),
-            width="125px",
-            withPlaceholder=True,
+            w="125px",
         ),
     ),
 ]
@@ -136,6 +135,6 @@ def update_graph_history_modal(_, light_theme):
         columnSize="responsiveSizeToFit",
         dashGridOptions={"pagination": True, "paginationAutoPageSize": True},
         style={"height": "600px"},
-        className="ag-theme-quartz-dark" if light_theme is False else "ag-theme-quartz",
+        className="ag-theme-quartz" if light_theme else "ag-theme-alpine-dark",
     )
     return fig, table

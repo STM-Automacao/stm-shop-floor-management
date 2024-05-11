@@ -16,7 +16,24 @@ ESTILOS = [
 
 DBC_CSS = "https://cdn.jsdelivr.net/gh/AnnMarieW/dash-bootstrap-templates@V1.0.4/dbc.min.css"
 
-app = dash.Dash(__name__, external_stylesheets=ESTILOS + [DBC_CSS], external_scripts=SCRIPTS)
+MANTINE_STYLESHEETS = [
+    "https://unpkg.com/@mantine/dates@7/styles.css",
+    "https://unpkg.com/@mantine/code-highlight@7/styles.css",
+    "https://unpkg.com/@mantine/charts@7/styles.css",
+    "https://unpkg.com/@mantine/carousel@7/styles.css",
+    "https://unpkg.com/@mantine/notifications@7/styles.css",
+    "https://unpkg.com/@mantine/nprogress@7/styles.css",
+]
+
+# pylint: disable=W0212
+# Configuração do React
+dash._dash_renderer._set_react_version("18.2.0")
+
+app = dash.Dash(
+    __name__,
+    external_stylesheets=ESTILOS + [DBC_CSS] + MANTINE_STYLESHEETS,
+    external_scripts=SCRIPTS,
+)
 
 app.config.suppress_callback_exceptions = True
 app.title = "Shop Floor Management - Automação"

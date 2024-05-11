@@ -4,7 +4,7 @@ Module for creating a grid with occurrence data based on provided data.
 
 import dash_ag_grid as dag
 import pandas as pd
-from helpers.types import IndicatorType, TemplateType
+from helpers.my_types import IndicatorType, TemplateType
 from service.df_for_indicators import DFIndicators
 
 
@@ -118,5 +118,5 @@ class GridOcc:
             columnSize="responsiveSizeToFit",
             dashGridOptions={"pagination": "true", "paginationAutoPageSize": "true"},
             style={"height": "600px"},
-            className="ag-theme-quartz" if theme else "ag-theme-quartz-dark",
+            className="ag-theme-quartz" if theme else "ag-theme-alpine-dark",
         )

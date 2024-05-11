@@ -7,7 +7,7 @@ import dash_bootstrap_components as dbc
 from dash import callback, dcc, html
 from dash.dependencies import Input, Output
 from database.get_data import GetData
-from helpers.types import get_color
+from helpers.my_types import get_color
 
 get_data = GetData()
 

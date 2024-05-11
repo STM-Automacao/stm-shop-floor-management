@@ -6,7 +6,7 @@ Este módulo é responsável por criar DataFrames para os indicadores.
 
 import numpy as np
 import pandas as pd
-from helpers.types import IndicatorType
+from helpers.my_types import IndicatorType
 from service.data_analysis import DataAnalysis
 
 # cSpell: words eficiencia producao

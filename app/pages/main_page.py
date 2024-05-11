@@ -14,7 +14,7 @@ from dash import Input, Output, State, callback, html
 from dash.exceptions import PreventUpdate
 from dash_bootstrap_templates import ThemeSwitchAIO
 from database.last_month_ind import LastMonthInd
-from helpers.types import IndicatorType, TemplateType
+from helpers.my_types import IndicatorType, TemplateType
 
 # ======================================== Layout ======================================== #
 

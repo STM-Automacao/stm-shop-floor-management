@@ -8,7 +8,7 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 from dash import dcc
-from helpers.types import BSColorsEnum, IndicatorType, TemplateType
+from helpers.my_types import BSColorsEnum, IndicatorType, TemplateType
 
 
 class BarChartGeneral:

@@ -9,7 +9,7 @@ import textwrap
 import pandas as pd
 import plotly.graph_objects as go
 from dash import dcc
-from helpers.types import BSColorsEnum, IndicatorType, TemplateType
+from helpers.my_types import BSColorsEnum, IndicatorType, TemplateType
 from service.df_for_indicators import DFIndicators
 
 

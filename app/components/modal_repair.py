@@ -14,7 +14,7 @@ from components import bar_chart_general, bar_chart_lost, btn_modal, grid_occ, h
 from dash import Input, Output, callback, html
 from dash.exceptions import PreventUpdate
 from dash_bootstrap_templates import ThemeSwitchAIO
-from helpers.types import IndicatorType, TemplateType
+from helpers.my_types import IndicatorType, TemplateType
 
 from app import app
 
@@ -48,8 +48,7 @@ layout = [
         dmc.Image(
             # pylint: disable=E1101
             src=app.get_asset_url("Logo Horizontal_PXB.png"),
-            width="125px",
-            withPlaceholder=True,
+            w="125px",
         ),
     ),
 ]
