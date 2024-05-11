@@ -70,6 +70,7 @@ class DataAnalysis:
         """
 
         # Cria uma coluna com o desconto padrão
+        df = df.copy()
         df["desconto"] = 0
 
         # Caso o motivo, problema ou causa não afete o indicador, o desconto é igual a tempo
