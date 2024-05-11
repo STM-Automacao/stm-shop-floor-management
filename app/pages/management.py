@@ -21,7 +21,7 @@ from dash import Input, Output, State, callback, html
 from dash.exceptions import PreventUpdate
 from dash_bootstrap_templates import ThemeSwitchAIO
 from dash_iconify import DashIconify
-from helpers.types import IndicatorType, TemplateType
+from helpers.my_types import IndicatorType, TemplateType
 
 radio_itens_turn = btn_modal.create_radio_btn_turn("management")
 
@@ -45,22 +45,19 @@ layout = html.Div(
                         ),
                         dbc.Row(
                             dbc.Col(
-                                dmc.MantineProvider(
-                                    id="mantine-provider",
-                                    theme={"colorScheme": "light"},
-                                    children=(
-                                        dmc.DatePicker(
-                                            id="date-picker",
-                                            label="Data",
-                                            placeholder="Selecione uma data",
-                                            inputFormat="dddd - D MMM, YYYY",
-                                            locale="pt-br",
-                                            firstDayOfWeek="sunday",
-                                            clearable=True,
-                                            variant="filled",
-                                            icon=DashIconify(icon="clarity:date-line"),
-                                        ),
+                                dmc.DatesProvider(
+                                    id="dates-provider",
+                                    children=dmc.DatePicker(
+                                        id="date-picker",
+                                        label="Data",
+                                        placeholder="Selecione uma data",
+                                        valueFormat="dddd - D MMM, YYYY",
+                                        firstDayOfWeek=0,
+                                        clearable=True,
+                                        variant="filled",
+                                        leftSection=DashIconify(icon="uiw:date"),
                                     ),
+                                    settings={"locale": "pt-br"},
                                 ),
                                 md=4,
                                 xl=2,
@@ -207,14 +204,10 @@ def update_production_card(store_info, store_prod, store_caixas, caixas_cf_tot):
     [
         Output("date-picker", "minDate"),
         Output("date-picker", "maxDate"),
-        Output("mantine-provider", "theme"),
     ],
-    [
-        Input("store-info", "data"),
-        Input(ThemeSwitchAIO.ids.switch("theme"), "value"),
-    ],
+    Input("store-info", "data"),
 )
-def details_picker(info, toggle_theme):
+def details_picker(info):
     """
     Creates and returns a date picker component for efficiency indicator.
 
@@ -232,11 +225,11 @@ def details_picker(info, toggle_theme):
         raise PreventUpdate
 
     df = pd.read_json(StringIO(info), orient="split")
-    template = {"colorScheme": "light"} if toggle_theme else {"colorScheme": "dark"}
 
     min_date = pd.to_datetime(df["data_registro"]).min().date()
     max_date = pd.to_datetime(df["data_registro"]).max().date()
-    return min_date, max_date, template
+
+    return str(min_date), str(max_date)
 
 
 @callback(

@@ -5,7 +5,7 @@ Module for creating a bar chart with details based on provided data.
 import pandas as pd
 import seaborn as sns
 from dash import dcc
-from helpers.types import BSColorsEnum, IndicatorType, TemplateType
+from helpers.my_types import BSColorsEnum, IndicatorType, TemplateType
 from plotly import express as px
 from service.df_for_indicators import DFIndicators
 

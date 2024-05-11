@@ -12,8 +12,8 @@ import numpy as np
 import pandas as pd
 from database.get_data import GetData
 from flask_caching import Cache
+from helpers.my_types import IndicatorType
 from helpers.path_config import DF_CAIXAS
-from helpers.types import IndicatorType
 from service.data_analysis import DataAnalysis
 from service.df_for_indicators import DFIndicators
 

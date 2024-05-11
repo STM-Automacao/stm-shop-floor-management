@@ -55,73 +55,83 @@ scheduler.start()
 # ========================================= Layout ========================================= #
 content = html.Div(id="page-content")
 
-app.layout = dbc.Container(
+app.layout = dmc.MantineProvider(
+    forceColorScheme="light",
+    id="mantine-provider",
     children=[
-        # ---------------------- Store ---------------------- #
-        dcc.Store(id="store-info"),
-        dcc.Store(id="store-prod"),
-        dcc.Store(id="store-df-eff"),
-        dcc.Store(id="store-df-perf"),
-        dcc.Store(id="store-df-repair"),
-        dcc.Store(id="store-df_eff_heatmap_tuple"),
-        dcc.Store(id="store-annotations_eff_list_tuple"),
-        dcc.Store(id="store-df_perf_heatmap_tuple"),
-        dcc.Store(id="store-annotations_perf_list_tuple"),
-        dcc.Store(id="store-df_repair_heatmap_tuple"),
-        dcc.Store(id="store-annotations_repair_list_tuple"),
-        dcc.Store(id="store-df_working_time"),
-        dcc.Store(id="store-df-caixas-cf"),
-        dcc.Store(id="store-df-caixas-cf-tot"),
-        dcc.Store(id="store-df-info-pure"),
-        dcc.Store(id="is-data-store", storage_type="session", data=False),
-        # ---------------------- Main Layout ---------------------- #
-        dbc.Row(
-            dbc.Col(
-                ThemeSwitchAIO(
-                    aio_id="theme",
-                    themes=[URL_BOOTS, URL_DARKY],
+        dbc.Container(
+            children=[
+                # ---------------------- Store ---------------------- #
+                dcc.Store(id="store-info"),
+                dcc.Store(id="store-prod"),
+                dcc.Store(id="store-df-eff"),
+                dcc.Store(id="store-df-perf"),
+                dcc.Store(id="store-df-repair"),
+                dcc.Store(id="store-df_eff_heatmap_tuple"),
+                dcc.Store(id="store-annotations_eff_list_tuple"),
+                dcc.Store(id="store-df_perf_heatmap_tuple"),
+                dcc.Store(id="store-annotations_perf_list_tuple"),
+                dcc.Store(id="store-df_repair_heatmap_tuple"),
+                dcc.Store(id="store-annotations_repair_list_tuple"),
+                dcc.Store(id="store-df_working_time"),
+                dcc.Store(id="store-df-caixas-cf"),
+                dcc.Store(id="store-df-caixas-cf-tot"),
+                dcc.Store(id="store-df-info-pure"),
+                dcc.Store(id="is-data-store", storage_type="session", data=False),
+                # ---------------------- Main Layout ---------------------- #
+                dbc.Row(
+                    dbc.Col(
+                        ThemeSwitchAIO(
+                            aio_id="theme",
+                            themes=[URL_BOOTS, URL_DARKY],
+                        ),
+                        class_name="h-100 d-flex align-items-center justify-content-end",
+                    ),
                 ),
-                class_name="h-100 d-flex align-items-center justify-content-end",
-            ),
-        ),
-        dbc.Row(
-            [
-                dbc.Col(
-                    html.H1("Shop Floor Management", className="text-center"),
+                dbc.Row(
+                    [
+                        dbc.Col(
+                            html.H1("Shop Floor Management", className="text-center"),
+                        ),
+                    ],
+                ),
+                html.Hr(),
+                dbc.Row(
+                    dbc.Tabs(
+                        [
+                            dbc.Tab(grafana.layout, label="Ao Vivo"),
+                            dbc.Tab(main_page.layout, label="SFM Dashboard"),
+                            dbc.Tab(management.layout, label="Gestão de Produção"),
+                            dbc.Tab(hour_prod.layout, label="Produção por Hora"),
+                        ],
+                    ),
+                    class_name="mb-5",
+                ),
+                dmc.AppShell(
+                    zIndex=1000,
+                    children=[
+                        dmc.AppShellFooter(
+                            children=[
+                                dmc.Center(
+                                    children=dmc.Image(
+                                        # pylint: disable=E1101
+                                        src=app.get_asset_url("Logo Horizontal.png"),
+                                        w="125px",
+                                    ),
+                                    p=5,
+                                ),
+                            ],
+                            id="footer",
+                            className="bg-dark",
+                        )
+                    ],
                 ),
             ],
-        ),
-        html.Hr(),
-        dbc.Row(
-            dbc.Tabs(
-                [
-                    dbc.Tab(grafana.layout, label="Ao Vivo"),
-                    dbc.Tab(main_page.layout, label="SFM Dashboard"),
-                    dbc.Tab(management.layout, label="Gestão de Produção"),
-                    dbc.Tab(hour_prod.layout, label="Produção por Hora"),
-                ],
-            ),
-            class_name="mb-5",
-        ),
-        dmc.Footer(
-            dmc.Center(
-                children=dmc.Image(
-                    # pylint: disable=E1101
-                    src=app.get_asset_url("Logo Horizontal.png"),
-                    width="125px",
-                    withPlaceholder=True,
-                ),
-                p=5,
-            ),
-            height=32,
-            fixed=True,
-            className="bg-light",
-            id="footer",
+            fluid=True,
+            style={"width": "100%"},
+            className="dbc dbc-ag-grid",
         ),
     ],
-    fluid=True,
-    style={"width": "100%"},
-    className="dbc dbc-ag-grid",
 )
 
 
@@ -141,6 +151,23 @@ def update_footer_class_name(light_theme):
     str: O nome da classe do rodapé atualizado.
     """
     return "bg-dark" if not light_theme else "bg-light"
+
+
+@callback(
+    Output("mantine-provider", "forceColorScheme"),
+    Input(ThemeSwitchAIO.ids.switch("theme"), "value"),
+)
+def update_mantine_color_schema(light_theme):
+    """
+    Atualiza o mantine provider com base no tema de cores.
+
+    Parâmetros:
+    light_theme (bool): Indica se o tema de cores é claro ou escuro.
+
+    Retorna:
+    str: O nome da classe do rodapé atualizado.
+    """
+    return "dark" if not light_theme else "light"
 
 
 @callback(
