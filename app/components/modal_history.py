@@ -11,6 +11,7 @@ import matplotlib.colors as mcolors
 import pandas as pd
 import plotly.express as px
 import seaborn as sns
+from babel.dates import format_date
 from dash import Input, Output, callback, dcc, html
 from dash.exceptions import PreventUpdate
 from dash_bootstrap_templates import ThemeSwitchAIO
@@ -76,13 +77,19 @@ def update_graph_history_modal(_, light_theme):
     # Cria um dicionário que mapeia cada valor único na coluna 'problema' para uma cor na paleta
     color_map = dict(zip(df_top_stops["problema"].unique(), palette_hex))
 
+    # Transforma 2024-01 em Jan/2024
+    df_history["data_registro"] = pd.to_datetime(df_history["data_registro"], format="%Y-%m")
+    df_history["data_registro"] = df_history["data_registro"].apply(
+        lambda x: format_date(x, "MMM/yy", locale="pt_BR").replace(".", "").capitalize()
+    )
+
     fig = px.bar(
         df_top_stops,
         x="motivo",
         y="tempo",
         color="problema",
         color_discrete_map=color_map,
-        title="Principais Paradas",
+        title=f"Principais Paradas de {df_history['data_registro'].iloc[-1]}",
         labels={"motivo": "Motivo", "tempo": "Tempo Perdido (min)"},
         template=TemplateType.LIGHT.value if light_theme else TemplateType.DARK.value,
         barmode="stack",
@@ -94,14 +101,11 @@ def update_graph_history_modal(_, light_theme):
         showlegend=True,
         plot_bgcolor="RGBA(0,0,0,0.01)",
         margin=dict({"t": 80, "b": 40, "l": 40, "r": 40}),
-        legend=dict(title="Problema", y=-0.5, orientation="h"),
+        legend=dict(title="Problema", orientation="v"),
     )
 
     # -------------------- Tabela de Desempenho Mensal -------------------- #
 
-    # Transforma 2024-01 em Jan/2024
-    df_history["data_registro"] = pd.to_datetime(df_history["data_registro"], format="%Y-%m")
-    df_history["data_registro"] = df_history["data_registro"].dt.strftime("%b/%Y")
     # Transforma 415641 em 415.641
     df_history["total_caixas"] = df_history["total_caixas"].apply(
         lambda x: f"{x:,.0f} cxs".replace(",", ".")

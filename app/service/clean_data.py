@@ -25,7 +25,12 @@ class CleanData:
         and production data.
     """
 
-    def __init__(self, df_ihm: pd.DataFrame, df_info: pd.DataFrame, df_info_production):
+    def __init__(
+        self,
+        df_ihm: pd.DataFrame,
+        df_info: pd.DataFrame,
+        df_info_production: pd.DataFrame = pd.DataFrame(),
+    ) -> None:
         self.df_ihm = df_ihm
         self.df_info = df_info
         self.df_info_production = df_info_production
@@ -163,7 +168,8 @@ class CleanData:
         # Limpar os dados básicos
         self.df_ihm = self.__clean_basics(self.df_ihm)
         self.df_info = self.__clean_basics(self.df_info)
-        self.df_info_production = self.__clean_basics(self.df_info_production)
+        if not self.df_info_production.empty:
+            self.df_info_production = self.__clean_basics(self.df_info_production)
 
         # Ajustando a nomenclatura do status
         self.df_info["status"] = np.where(self.df_info["status"] == "true", "rodando", "parada")
@@ -172,6 +178,7 @@ class CleanData:
         self.df_info = self.__clean_info(self.df_info)
 
         # Limpar os dados de produção
-        self.df_info_production = self.__clean_production(self.df_info_production)
+        if not self.df_info_production.empty:
+            self.df_info_production = self.__clean_production(self.df_info_production)
 
         return self.df_ihm, self.df_info, self.df_info_production

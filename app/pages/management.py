@@ -32,7 +32,7 @@ layout = html.Div(
         dbc.Card(id="production-card", class_name="mb-3 mt-2"),
         dbc.Card(
             [
-                dbc.CardHeader("Detalhes da Produção"),
+                dbc.CardHeader("Detalhes da Produção do Mês Corrente"),
                 dbc.CardBody(
                     [
                         dbc.Row(
@@ -77,7 +77,7 @@ layout = html.Div(
             children=modal_history.layout,
             id="modal-history-eff",
             size="xl",
-            fullscreen="lg-down",
+            fullscreen=True,
             scrollable=True,
             modal_class_name="inter",
             is_open=False,

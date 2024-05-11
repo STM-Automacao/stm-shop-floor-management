@@ -6,12 +6,10 @@ Este módulo cria dados do mês anterior.
 
 # cSpell: words eficiencia
 
-import sqlite3
-
 import numpy as np
 import pandas as pd
+from database.connection_local import ConnectionLocal
 from database.get_data import GetData
-from helpers.path_config import DB_LOCAL
 from service.data_analysis import DataAnalysis
 
 
@@ -41,22 +39,21 @@ class LastMonthInd:
 
         # ================================= Conexão Com DB Local ================================= #
         # Cria conexão com DB local. Se não existir cria um.
-        conn = sqlite3.connect(DB_LOCAL)
-
-        # Lê os dados do DB
-        try:
-            df_history = pd.read_sql_query("SELECT * FROM ind_history", conn)
-        except pd.io.sql.DatabaseError:
-            df_history = pd.DataFrame(
-                columns=[
-                    "data_registro",
-                    "total_caixas",
-                    "eficiencia",
-                    "performance",
-                    "reparo",
-                    "parada_programada",
-                ]
-            )
+        with ConnectionLocal() as conn:
+            # Lê os dados do DB
+            try:
+                df_history = conn.get_query("SELECT * FROM ind_history")
+            except pd.io.sql.DatabaseError:
+                df_history = pd.DataFrame(
+                    columns=[
+                        "data_registro",
+                        "total_caixas",
+                        "eficiencia",
+                        "performance",
+                        "reparo",
+                        "parada_programada",
+                    ]
+                )
 
         # =================== Verifica Se O Mês Já Está No DB, Se Não Adiciona =================== #
 
@@ -95,7 +92,8 @@ class LastMonthInd:
             )
 
             # Adiciona ao DB local
-            df_historic.to_sql("ind_history", conn, if_exists="append", index=False)
+            with ConnectionLocal() as conn:
+                conn.update_db(df_historic, "ind_history")
 
         # ====================== Top 5 Motivos De Paradas E Seu Tempo Total ====================== #
 
@@ -108,10 +106,8 @@ class LastMonthInd:
         df_stops_group = df_stops_group.sort_values(ascending=False).head(20)
 
         # Salva no DB
-        df_stops_group.to_sql("top_stops", conn, if_exists="replace", index=True)
-
-        # Fecha conexão
-        conn.close()
+        with ConnectionLocal() as conn:
+            conn.save_df(df_stops_group, "top_stops")
 
     @staticmethod
     def get_historic_data():
@@ -124,10 +120,9 @@ class LastMonthInd:
         """
 
         # Cria conexão com DB local
-        conn = sqlite3.connect(DB_LOCAL)
-
-        # Lê os dados do DB
-        df_history = pd.read_sql_query("SELECT * FROM ind_history", conn)
-        top_tops = pd.read_sql_query("SELECT * FROM top_stops", conn)
+        with ConnectionLocal() as conn:
+            # Lê os dados do DB
+            df_history = conn.get_query("SELECT * FROM ind_history")
+            top_tops = conn.get_query("SELECT * FROM top_stops")
 
         return df_history, top_tops
