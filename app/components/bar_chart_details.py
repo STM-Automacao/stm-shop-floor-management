@@ -108,9 +108,14 @@ class BarChartDetails:
                 choice: choice.capitalize(),
             },
             template=template.value,
+            custom_data=["problema", "causa"],
         )
 
         tick_color = "gray" if template == TemplateType.LIGHT else "lightgray"
+
+        fig.update_traces(
+            hovertemplate="Linha: %{x}<br>Tempo: %{y}<br>Problema: %{customdata[0]}<br>Causa: %{customdata[1]}"
+        )
 
         # Atualizar layout
         fig.update_layout(

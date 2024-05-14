@@ -91,6 +91,14 @@ class LastMonthInd:
                 }
             )
 
+            # Como curiosidade, posso adicionar estes dados sem criar um novo dataframe
+            # e sim atualizando o existente, seria assim:
+            # df_historic.loc[df_historic.shape[0]] = (
+            #    [last_month, total_caixas, eff_media, perf_media, repair_media, parada_programada]
+            #    )
+            # Para isso eu preciso adicionar na ordem correta das colunas,
+            # e o index será o shape[0] que é o último index.
+
             # Adiciona ao DB local
             with ConnectionLocal() as conn:
                 conn.update_db(df_historic, "ind_history")
