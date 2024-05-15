@@ -15,9 +15,35 @@ from service.data_analysis import DataAnalysis
 class DFIndicators:
     """
     Classe que cria DataFrames para os indicadores.
+
+    Essa classe possui métodos para ajustar os DataFrames para os indicadores de eficiência,
+    performance e reparo.
+
+    Ao instanciar a classe, é criado um objeto da classe DataAnalysis, que é utilizado para
+    obter os dados de eficiência, performance e reparo.
+    No caso de ajustes para a perda de barra, não é necessário fornecer o DataFrame de produção,
+    pois o mesmo não é usado para esses ajustes.
+
+    Args:
+        df_info_ihm (pd.DataFrame): DataFrame com os dados do IHM.
+        df_prod (pd.DataFrame, optional): DataFrame com os dados de produção.
+
+    Attributes:
+        df_info_ihm (pd.DataFrame): DataFrame com os dados do IHM.
+        df_prod (pd.DataFrame): DataFrame com os dados de produção.
+        data_analysis (DataAnalysis): Objeto da classe DataAnalysis.
+        indicator_functions (dict): Dicionário com as funções dos indicadores.
+        indicator_descontos (dict): Dicionário com os descontos dos indicadores.
+        indicator_not_affect (dict): Dicionário com os indicadores que não afetam a produção.
+
+    Methods:
+        get_heatmap_data: Retorna os dados do heatmap para o indicador fornecido.
+        get_annotations: Retorna as anotações para os dados do heatmap.
+        adjust_df_for_bar_lost: Ajusta o DataFrame fornecido para a perda de barra com base no
+            indicador, turno e minutos trabalhados.
     """
 
-    def __init__(self, df_info_ihm: pd.DataFrame, df_prod: pd.DataFrame):
+    def __init__(self, df_info_ihm: pd.DataFrame, df_prod: pd.DataFrame = pd.DataFrame()):
         self.df_info_ihm = df_info_ihm
         self.df_prod = df_prod
         self.data_analysis = DataAnalysis(self.df_info_ihm, self.df_prod)

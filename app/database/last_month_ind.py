@@ -134,3 +134,23 @@ class LastMonthInd:
             top_tops = conn.get_query("SELECT * FROM top_stops")
 
         return df_history, top_tops
+
+    @staticmethod
+    def get_historic_data_analysis():
+        """
+        Retorna o histórico de dados.
+
+        Returns:
+            df_stops (pd.DataFrame): DataFrame com os dados de paradas.
+            df_working (pd.DataFrame): DataFrame com os dados de tempo de trabalho.
+            df_prod (pd.DataFrame): DataFrame com os dados de produção.
+        """
+
+        # Cria conexão com DB local
+        with ConnectionLocal() as conn:
+            # Lê os dados do DB
+            df_stops = conn.get_query("SELECT * FROM maq_stopped")
+            df_working = conn.get_query("SELECT * FROM time_working")
+            df_prod = conn.get_query("SELECT * FROM info_production_cleaned")
+
+        return df_stops, df_working, df_prod

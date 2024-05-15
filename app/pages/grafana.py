@@ -216,6 +216,12 @@ def update_grafana(_n, _n_intervals):
                                             ),
                                         ],
                                         label=f"{row[1]['parada_nome']}",
+                                        position="top",
+                                        transitionProps={
+                                            "transition": "slide-down",
+                                            "duration": 400,
+                                        },
+                                        closeDelay=500,
                                         boxWrapperProps={"className": "truncate"},
                                     ),
                                     class_name="card-body-modal-style fs-4",

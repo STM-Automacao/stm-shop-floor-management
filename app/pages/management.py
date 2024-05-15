@@ -73,14 +73,13 @@ layout = html.Div(
         ),
         # Incluir detalhes de produção
         # ---------------- Modal History ---------------- #
-        dbc.Modal(
+        dmc.Modal(
             children=modal_history.layout,
             id="modal-history-eff",
-            size="xl",
-            fullscreen=True,
-            scrollable=True,
-            modal_class_name="inter",
-            is_open=False,
+            fullScreen=True,
+            title="Histórico",
+            opened=False,
+            className="inter",
         ),
         # ---------------- Modal Estoque ---------------- #
         dbc.Modal(
@@ -99,9 +98,9 @@ layout = html.Div(
 
 # --------------------- Modal History --------------------- #
 @callback(
-    Output("modal-history-eff", "is_open"),
+    Output("modal-history-eff", "opened"),
     [Input("history-btn", "n_clicks")],
-    [State("modal-history-eff", "is_open")],
+    [State("modal-history-eff", "opened")],
 )
 def toggle_modal_history(n, is_open):
     """
@@ -236,14 +235,13 @@ def details_picker(info):
     Output("bar-chart-details", "children"),
     [
         Input("store-info", "data"),
-        Input("store-prod", "data"),
         Input("radio-items-management", "value"),
         Input("date-picker", "value"),
         Input("store-df_working_time", "data"),
         Input(ThemeSwitchAIO.ids.switch("theme"), "value"),
     ],
 )
-def collapse_details_bar_chart(info, prod, turn, data_picker, working, toggle_theme):
+def details_bar_chart(info, turn, data_picker, working, toggle_theme):
     """
     Creates a collapsed bar chart details based on the provided information.
 
@@ -268,13 +266,12 @@ def collapse_details_bar_chart(info, prod, turn, data_picker, working, toggle_th
 
     # Carrega o string json em um dataframe
     df_info = pd.read_json(StringIO(info), orient="split")
-    df_prod = pd.read_json(StringIO(prod), orient="split")
     df_working = pd.read_json(StringIO(working), orient="split")
 
-    bcd = bar_chart_details.BarChartDetails(df_info, df_prod)
+    bcd = bar_chart_details.BarChartDetails(df_info)
 
     return bcd.create_bar_chart_details(
-        df_info, IndicatorType.EFFICIENCY, template, turn, data_picker, df_working
+        IndicatorType.EFFICIENCY, template, turn, data_picker, df_working
     )
 
 

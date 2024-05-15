@@ -12,33 +12,96 @@ import pandas as pd
 import plotly.express as px
 import seaborn as sns
 from babel.dates import format_date
+from components import bar_chart_details, btn_modal
 from dash import Input, Output, callback, dcc, html
 from dash.exceptions import PreventUpdate
 from dash_bootstrap_templates import ThemeSwitchAIO
+from dash_iconify import DashIconify
 from database.last_month_ind import LastMonthInd
-from helpers.my_types import TemplateType
-
-from app import app
+from helpers.my_types import IndicatorType, TemplateType
+from service.big_data import BigData
 
 last_month = LastMonthInd()
 
+lines_number = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14"]
+
 # ============================================ Layout =========================================== #
 layout = [
-    dbc.ModalHeader("Histórico"),
-    dbc.ModalBody(
+    dbc.Row(dcc.Graph(id="graph-history-modal-perdas")),
+    html.Hr(),
+    html.H4("Desempenho Mensal", className="inter"),
+    dbc.Row(id="table-history-modal"),
+    html.Hr(),
+    html.H4("Dados de Paradas", className="inter"),
+    dbc.Card(
         [
-            dbc.Row(dcc.Graph(id="graph-history-modal-perdas")),
-            html.Hr(),
-            html.H5("Desempenho Mensal", className="inter"),
-            dbc.Row(id="table-history-modal"),
-        ]
-    ),
-    dbc.ModalFooter(
-        dmc.Image(
-            # pylint: disable=E1101
-            src=app.get_asset_url("Logo Horizontal_PXB.png"),
-            w="125px",
-        ),
+            dbc.Row(
+                [
+                    dbc.Col(
+                        btn_modal.create_radio_btn_turn("history"),
+                        class_name=(
+                            "radio-group d-flex justify-content-center align-items-center p-2"
+                        ),
+                        md=3,
+                        align="center",
+                    ),
+                    dbc.Col(
+                        dmc.MultiSelect(
+                            data=[
+                                {
+                                    "group": "Fabrica 1",
+                                    "items": [
+                                        {"label": f"Linha {line}", "value": line}
+                                        for line in lines_number[:8]
+                                    ],
+                                },
+                                {
+                                    "group": "Fabrica 2",
+                                    "items": [
+                                        {"label": f"Linha {line}", "value": line}
+                                        for line in lines_number[8:]
+                                    ],
+                                },
+                            ],
+                            className="p-2",
+                            hidePickedOptions=True,
+                            clearable=True,
+                            placeholder="Selecione as linhas",
+                            w="80%",
+                            id="multi-select-history",
+                        ),
+                        md=3,
+                        class_name="p-2",
+                        align="center",
+                    ),
+                    dbc.Col(
+                        dmc.DatesProvider(
+                            id="dates-provider-history",
+                            children=dmc.DatePicker(
+                                id="date-picker-history",
+                                placeholder="Selecione uma data",
+                                valueFormat="dddd - D MMM, YYYY",
+                                firstDayOfWeek=0,
+                                clearable=True,
+                                variant="filled",
+                                leftSection=DashIconify(icon="uiw:date"),
+                                w="80%",
+                            ),
+                            settings={"locale": "pt-br"},
+                        ),
+                        md=3,
+                        class_name="p-2",
+                        align="center",
+                    ),
+                ],
+                justify="evenly",
+            ),
+            dbc.Row(
+                id="bar-chart-geral-history",
+            ),
+        ],
+        outline=True,
+        class_name="p-2 mb-5 shadow-lg",
     ),
 ]
 
@@ -142,3 +205,48 @@ def update_graph_history_modal(_, light_theme):
         className="ag-theme-quartz" if light_theme else "ag-theme-alpine-dark",
     )
     return fig, table
+
+
+@callback(
+    Output("bar-chart-geral-history", "children"),
+    [
+        Input("radio-items-history", "value"),
+        Input("multi-select-history", "value"),
+        Input("date-picker-history", "value"),
+        Input(ThemeSwitchAIO.ids.switch("theme"), "value"),
+    ],
+)
+def update_general_chart(turn, line, date, toggle_theme):
+
+    # Verificar se o tema está em modo claro ou escuro
+    template = TemplateType.LIGHT if toggle_theme else TemplateType.DARK
+
+    # Ler os dados de big data
+    bg = BigData()
+    df_big = bg.get_big_data()
+    df_stops, _, _ = last_month.get_historic_data_analysis()
+    if date is not None:
+        # Seleciona os dados de acordo com a data
+        df = df_big if pd.to_datetime(date) > pd.to_datetime("2024-05-01") else df_stops
+        # Filtrar os dados de acordo com a data
+        df["data_registro"] = pd.to_datetime(df["data_registro"]).dt.date
+        df = df[df["data_registro"] == pd.to_datetime(date).date()]
+
+    else:
+        df = df_big
+
+    # Filtrar os dados de acordo com o turno
+    df = df[df["turno"] == turn]
+
+    # Transformar a linha em uma lista de inteiros
+    line_n = [int(i) for i in line] if line else line
+
+    # Filtrar os dados de acordo com a linha
+    if line_n is not None and len(line_n) > 0:
+        df = df[df["linha"].isin(line_n)]
+
+    # NOTE: Criar novo gráfico ao invés de reaproveitar este
+
+    chart = bar_chart_details.BarChartDetails(df)
+
+    return chart.create_bar_chart_details(IndicatorType.EFFICIENCY, template, turn, date)

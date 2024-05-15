@@ -22,6 +22,7 @@ from dash_bootstrap_templates import ThemeSwitchAIO
 from database.last_month_ind import LastMonthInd
 from helpers.cache import cache, cache_daily_data, update_cache
 from pages import grafana, hour_prod, main_page, management
+from service.big_data import BigData
 from waitress import serve
 
 from app import app
@@ -45,8 +46,25 @@ def update_last_month():
         last_month_ind.save_last_month_data()
 
 
+def update_big_data():
+    """
+    Atualiza os dados grandes.
+
+    Esta função chama o método save_big_data para salvar os dados grandes.
+
+    Parâmetros:
+        Nenhum.
+
+    Retorno:
+        Nenhum.
+    """
+    big_data = BigData()
+    big_data.save_big_data()
+
+
 scheduler = BackgroundScheduler()
-scheduler.add_job(func=update_cache, trigger="interval", seconds=120)  # Atualiza a cada 2 minutos
+scheduler.add_job(func=update_cache, trigger="interval", seconds=600)  # Atualiza a cada 10 minutos
+scheduler.add_job(func=update_big_data, trigger="cron", hour=0)
 scheduler.add_job(func=cache_daily_data, trigger="cron", hour=0, minute=1)
 scheduler.add_job(func=update_last_month, trigger="cron", hour=1)  # Atualiza a cada 24 horas
 scheduler.start()
