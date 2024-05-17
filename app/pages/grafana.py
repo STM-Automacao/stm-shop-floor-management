@@ -4,10 +4,11 @@
 
 # cSpell:words eficiencia
 import dash_bootstrap_components as dbc
+import dash_mantine_components as dmc
 from dash import callback, dcc, html
 from dash.dependencies import Input, Output
 from database.get_data import GetData
-from helpers.types import get_color
+from helpers.my_types import get_color
 
 get_data = GetData()
 
@@ -88,12 +89,24 @@ def update_grafana(_n, _n_intervals):
                             [
                                 dbc.CardHeader("Produto"),
                                 dbc.CardBody(
-                                    html.Div(
-                                        f"{row[1]['produto_nome']}",
-                                        className="truncate",
-                                        id=f"produto-{row[1]['linha']}",
+                                    dmc.Tooltip(
+                                        children=[
+                                            html.Div(
+                                                f"{row[1]['produto_nome']}",
+                                                className="truncate",
+                                                id=f"produto-{row[1]['linha']}",
+                                            ),
+                                        ],
+                                        label=f"{row[1]['produto_nome']}",
+                                        position="top",
+                                        transitionProps={
+                                            "transition": "slide-down",
+                                            "duration": 400,
+                                        },
+                                        closeDelay=500,
+                                        boxWrapperProps={"className": "truncate"},
                                     ),
-                                    class_name="card-body-modal-style fs-6",
+                                    class_name="card-body-modal-style fs-5",
                                 ),
                             ],
                             class_name="h-100",
@@ -101,15 +114,10 @@ def update_grafana(_n, _n_intervals):
                         md=2,
                         class_name="p-1",
                     ),
-                    dbc.Tooltip(
-                        f"{row[1]['produto_nome']}",
-                        target=f"produto-{row[1]['linha']}",
-                        placement="top",
-                    ),
                     dbc.Col(
                         dbc.Card(
                             [
-                                dbc.CardHeader("Eficiência 15min", class_name="truncate"),
+                                dbc.CardHeader("Eficiência 15min", style={"font-size": "0.9rem"}),
                                 dbc.CardBody(
                                     f"{eff_15_min}%",
                                     style=({"color": get_color(eff_15_min, 100)}),
@@ -121,11 +129,6 @@ def update_grafana(_n, _n_intervals):
                         ),
                         md=1,
                         class_name="p-1",
-                    ),
-                    dbc.Tooltip(
-                        "Eficiência 15min",
-                        target=f"eficiencia-15min-{row[1]['linha']}",
-                        placement="top",
                     ),
                     dbc.Col(
                         dbc.Card(
@@ -175,11 +178,6 @@ def update_grafana(_n, _n_intervals):
                         md=1,
                         class_name="p-1",
                     ),
-                    dbc.Tooltip(
-                        "Eficiência",
-                        target=f"eficiencia-{row[1]['linha']}",
-                        placement="top",
-                    ),
                     dbc.Col(
                         dbc.Card(
                             [
@@ -202,17 +200,30 @@ def update_grafana(_n, _n_intervals):
                         md=1,
                         class_name="p-1",
                     ),
-                    dbc.Tooltip(
-                        "Tempo Parada",
-                        target=f"tempo_parada-{row[1]['linha']}",
-                        placement="top",
-                    ),
                     dbc.Col(
                         dbc.Card(
                             [
                                 dbc.CardHeader("Motivo da Parada", class_name="truncate"),
                                 dbc.CardBody(
-                                    html.Div(f"{row[1]['parada_nome']}", className="truncate"),
+                                    dmc.Tooltip(
+                                        children=[
+                                            dmc.Center(
+                                                dmc.Text(
+                                                    f"{row[1]['parada_nome']}",
+                                                    truncate=True,
+                                                    className="fs-4",
+                                                ),
+                                            ),
+                                        ],
+                                        label=f"{row[1]['parada_nome']}",
+                                        position="top",
+                                        transitionProps={
+                                            "transition": "slide-down",
+                                            "duration": 400,
+                                        },
+                                        closeDelay=500,
+                                        boxWrapperProps={"className": "truncate"},
+                                    ),
                                     class_name="card-body-modal-style fs-4",
                                     id=f"parada_nome-{row[1]['linha']}",
                                 ),
@@ -221,11 +232,6 @@ def update_grafana(_n, _n_intervals):
                         ),
                         md=2,
                         class_name="p-1",
-                    ),
-                    dbc.Tooltip(
-                        f"{row[1]['parada_nome']}",
-                        target=f"parada_nome-{row[1]['linha']}",
-                        placement="top",
                     ),
                 ],
                 className="mb-0 p-0",

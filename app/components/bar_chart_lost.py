@@ -9,8 +9,8 @@ import textwrap
 import pandas as pd
 import plotly.graph_objects as go
 from dash import dcc
-from helpers.types import BSColorsEnum, IndicatorType, TemplateType
-from service.times_data import TimesData
+from helpers.my_types import BSColorsEnum, IndicatorType, TemplateType
+from service.df_for_indicators import DFIndicators
 
 
 class BarChartLost:
@@ -27,8 +27,8 @@ class BarChartLost:
 
     """
 
-    def __init__(self):
-        self.times_data = TimesData()
+    def __init__(self, df_maq_stopped: pd.DataFrame, df_production: pd.DataFrame):
+        self.indicator = DFIndicators(df_maq_stopped, df_production)
         self.grey_500_color = BSColorsEnum.GREY_500_COLOR.value
 
     def create_bar_chart_lost(
@@ -58,28 +58,22 @@ class BarChartLost:
         """
 
         # Ajustar o dataframe
-        df = self.times_data.adjust_df_for_bar_lost(dataframe, indicator, turn, working)
+        df = self.indicator.adjust_df_for_bar_lost(dataframe, indicator, turn, working)
 
         # Turno Map
         turn_map = {"NOT": "Noturno", "MAT": "Matutino", "VES": "Vespertino", "TOT": "Total"}
-
-        # Se motivo id for 3 e problema for nulo, preencher o problema
-        df.loc[(df["motivo_id"] == 3) & (df["problema"].isnull()), "problema"] = "Refeição"
-
-        # Preencher onde o problema é nulo
-        df.loc[df["problema"].isnull(), "problema"] = "Problema não informado"
 
         figure = go.Figure()
 
         if indicator != IndicatorType.REPAIR:
             # Agrupar por motivo e problema e somar o excedente
-            df_grouped = df.groupby(["motivo_nome", "problema"])["excedente"].sum().reset_index()
+            df_grouped = df.groupby(["motivo", "problema"])["excedente"].sum().reset_index()
 
             # Ordenar por excedente
             df_grouped = df_grouped.sort_values(by="excedente", ascending=False).head(10)
 
             # Adicionar quebras de linha no texto do eixo x para melhor visualização
-            df_grouped["motivo_nome"] = df_grouped["motivo_nome"].apply(
+            df_grouped["motivo"] = df_grouped["motivo"].apply(
                 lambda x: "<br>".join(textwrap.wrap(x, width=10))
             )
 
@@ -87,7 +81,7 @@ class BarChartLost:
                 data=[
                     go.Bar(
                         name="Motivo/Problema",
-                        x=df_grouped["motivo_nome"],
+                        x=df_grouped["motivo"],
                         y=df_grouped["excedente"],
                         customdata=df_grouped["problema"],
                         marker_color=self.grey_500_color,

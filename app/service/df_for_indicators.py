@@ -4,13 +4,10 @@ Data: 31/01/2024
 Este módulo é responsável por criar DataFrames para os indicadores.
 """
 
-from datetime import datetime, timedelta
-from itertools import product
-
 import numpy as np
 import pandas as pd
-from helpers.types import IndicatorType
-from service.times_data import TimesData
+from helpers.my_types import IndicatorType
+from service.data_analysis import DataAnalysis
 
 # cSpell: words eficiencia producao
 
@@ -18,129 +15,262 @@ from service.times_data import TimesData
 class DFIndicators:
     """
     Classe que cria DataFrames para os indicadores.
+
+    Essa classe possui métodos para ajustar os DataFrames para os indicadores de eficiência,
+    performance e reparo.
+
+    Ao instanciar a classe, é criado um objeto da classe DataAnalysis, que é utilizado para
+    obter os dados de eficiência, performance e reparo.
+    No caso de ajustes para a perda de barra, não é necessário fornecer o DataFrame de produção,
+    pois o mesmo não é usado para esses ajustes.
+
+    Args:
+        df_info_ihm (pd.DataFrame): DataFrame com os dados do IHM.
+        df_prod (pd.DataFrame, optional): DataFrame com os dados de produção.
+
+    Attributes:
+        df_info_ihm (pd.DataFrame): DataFrame com os dados do IHM.
+        df_prod (pd.DataFrame): DataFrame com os dados de produção.
+        data_analysis (DataAnalysis): Objeto da classe DataAnalysis.
+        indicator_functions (dict): Dicionário com as funções dos indicadores.
+        indicator_descontos (dict): Dicionário com os descontos dos indicadores.
+        indicator_not_affect (dict): Dicionário com os indicadores que não afetam a produção.
+
+    Methods:
+        get_heatmap_data: Retorna os dados do heatmap para o indicador fornecido.
+        get_annotations: Retorna as anotações para os dados do heatmap.
+        adjust_df_for_bar_lost: Ajusta o DataFrame fornecido para a perda de barra com base no
+            indicador, turno e minutos trabalhados.
     """
 
-    def __init__(self, df_info, df_prod):
-        self.times_data = TimesData()
-        self.df_info = df_info
+    def __init__(self, df_info_ihm: pd.DataFrame, df_prod: pd.DataFrame = pd.DataFrame()):
+        self.df_info_ihm = df_info_ihm
         self.df_prod = df_prod
+        self.data_analysis = DataAnalysis(self.df_info_ihm, self.df_prod)
         self.indicator_functions = {
-            IndicatorType.EFFICIENCY: self.times_data.get_eff_data,
-            IndicatorType.PERFORMANCE: self.times_data.get_perf_data,
-            IndicatorType.REPAIR: self.times_data.get_repair_data,
+            IndicatorType.EFFICIENCY: self.data_analysis.get_eff_data,
+            IndicatorType.PERFORMANCE: self.data_analysis.get_perf_data,
+            IndicatorType.REPAIR: self.data_analysis.get_repair_data,
         }
-
-    # ---------------------------------- HEATMAP ---------------------------------- #
+        self.indicator_descontos = {
+            IndicatorType.EFFICIENCY: self.data_analysis.desc_eff,
+            IndicatorType.PERFORMANCE: self.data_analysis.desc_perf,
+            IndicatorType.REPAIR: self.data_analysis.desc_rep,
+        }
+        self.indicator_not_affect = {
+            IndicatorType.EFFICIENCY: self.data_analysis.not_eff,
+            IndicatorType.PERFORMANCE: self.data_analysis.not_perf,
+            IndicatorType.REPAIR: self.data_analysis.afeta_rep,
+        }
 
     def __adjust_heatmap_data(
         self, indicator: IndicatorType, turn: str = None, main: bool = False
     ) -> pd.DataFrame:
+        """
+        Adjusts the heatmap data based on the given indicator, turn, and main flag.
 
-        # Cria um dataframe vazio
-        dataframe = pd.DataFrame()
+        Parameters:
+            indicator (IndicatorType): The indicator type to adjust the data for.
+            turn (str, optional): The turn to filter the data for. Defaults to None.
+            main (bool, optional): Flag indicating whether the main grouping should be used.
+            Defaults to False.
 
-        # Verifica se o indicador está no dicionário, se sim, chama a função do indicador
-        if indicator in self.indicator_functions:
-            dataframe = self.indicator_functions[indicator](self.df_info, self.df_prod)
+        Returns:
+            pd.DataFrame: The adjusted dataframe with the heatmap data.
+        """
 
-        # Se o turno for diferente de nulo, filtra o dataframe
+        # Dataframe com os dados do indicador
+        df = pd.DataFrame()
+
+        # Busca o dataframe de acordo com o indicador
+        df = self.indicator_functions[indicator]()
+
+        # Se for indicado um turno, filtra o dataframe
         if turn:
-            dataframe = dataframe[dataframe["turno"] == turn]
+            df = df[df["turno"] == turn]
 
-        # Converter 'data_registro' para datetime
-        dataframe["data_registro"] = pd.to_datetime(dataframe["data_registro"])
+        # Colunas para agrupar o dataframe
+        group_cols = ["data_registro", "turno"] if main else ["data_registro", "linha"]
 
-        # Criar coluna 'data_turno' para agrupar por dia e turno
-        dataframe["data_turno"] = dataframe["data_registro"].dt.strftime("%Y-%m-%d")
+        # Agrupa o dataframe e calcula a média
+        df = df.groupby(group_cols, observed=False)[indicator.value].mean().reset_index()
 
-        # Coluna para agrupar por linha ou turno
-        group_col = ["data_turno", "linha"] if not main else ["data_turno", "turno"]
+        # ====================== Garantir Que Todas Datas Estejam Presentes ====================== #
 
-        # Agrupar por data_turno e turno e calcular a média do indicador
-        df_grouped = (
-            dataframe.groupby(group_col, observed=False)[indicator.value].mean().reset_index()
-        )
+        # Obter a data do inicio e fim do mês atual
+        start_date = pd.to_datetime("today").replace(day=1).date()
+        end_date = (pd.to_datetime("today") + pd.offsets.MonthEnd(0)).date()
 
-        # ------------ dataframe com datas possíveis ------------ #
-        # Obter a data de início e fim do mês
-        today = datetime.now()
-        start_date = today.replace(day=1).strftime("%Y-%m-%d")
-        end_date = (today.replace(month=today.month % 12 + 1, day=1) - timedelta(days=1)).strftime(
-            "%Y-%m-%d"
-        )
+        # Lista com todas as datas do mês atual
+        date_range = [date.date() for date in pd.date_range(start_date, end_date, freq="D")]
 
-        # Criar um dataframe com as datas possíveis
-        all_dates = pd.date_range(start=start_date, end=end_date).strftime("%Y-%m-%d")
-        all_lines = dataframe["linha"].unique() if not main else dataframe["turno"].unique()
-        all_dates_lines = pd.DataFrame(list(product(all_dates, all_lines)), columns=group_col)
+        # Encontra os valores únicos de turno ou linha e cria um novo index
+        if main:
+            unique_turnos = df["turno"].unique()
+            df.set_index(["data_registro", "turno"], inplace=True)
+            new_index = pd.MultiIndex.from_product(
+                [date_range, unique_turnos], names=["data_registro", "turno"]
+            )
+        else:
+            unique_lines = df["linha"].unique()
+            df.set_index(["data_registro", "linha"], inplace=True)
+            new_index = pd.MultiIndex.from_product(
+                [date_range, unique_lines], names=["data_registro", "linha"]
+            )
 
-        # Merge com o dataframe agrupado
-        df_grouped = pd.merge(all_dates_lines, df_grouped, on=group_col, how="left")
+        # Reindexa o dataframe
+        df = df.reindex(new_index).reset_index()
 
-        # Se a data é futura, o indicador é np.nan
-        df_grouped.loc[df_grouped["data_turno"] > today.strftime("%Y-%m-%d"), indicator.value] = (
-            np.nan
-        )
+        # ================================== Pivotar O Dataframe ================================= #
 
         # Pivotar o dataframe
         if main:
-            df_pivot = df_grouped.pivot(index="turno", columns="data_turno", values=indicator.value)
-            df_pivot = df_pivot.reindex(["VES", "MAT", "NOT"])
+            df = df.pivot(index="turno", columns="data_registro", values=indicator.value)
+            df = df.reindex(["NOT", "MAT", "VES"])
         else:
-            df_grouped = df_grouped.sort_values(by=["linha", "data_turno"], ascending=True)
-            df_pivot = df_grouped.pivot(index="linha", columns="data_turno", values=indicator.value)
+            df = df.pivot(index="linha", columns="data_registro", values=indicator.value)
 
-        # Remover a linha 0
-        df_pivot = df_pivot[df_pivot.index != 0]
-
-        return df_pivot
+        return df
 
     def get_heatmap_data(self, indicator: IndicatorType) -> tuple:
         """
-        Função que retorna um DataFrame com os dados de eficiência para o heatmap.
-        Filtrado por turno.
+        Retrieves heatmap data for the given indicator.
+
+        Args:
+            indicator (IndicatorType): The indicator type to retrieve data for.
+
+        Returns:
+            tuple: A tuple containing the heatmap data for different shifts:
+                - noturno: Heatmap data for the night shift.
+                - matutino: Heatmap data for the morning shift.
+                - vespertino: Heatmap data for the afternoon shift.
+                - main: Heatmap data for the main shift.
         """
 
-        noturno = self.__adjust_heatmap_data(indicator, turn="NOT")
-        matutino = self.__adjust_heatmap_data(indicator, turn="MAT")
-        vespertino = self.__adjust_heatmap_data(indicator, turn="VES")
+        noturno = self.__adjust_heatmap_data(indicator, "NOT")
+        matutino = self.__adjust_heatmap_data(indicator, "MAT")
+        vespertino = self.__adjust_heatmap_data(indicator, "VES")
         total = self.__adjust_heatmap_data(indicator)
         main = self.__adjust_heatmap_data(indicator, main=True)
 
         return noturno, matutino, vespertino, total, main
 
-    # ---------------------------------------- Anotações ---------------------------------------- #
+    @staticmethod
+    def __annotations_list(df: pd.DataFrame) -> list:
+        """
+        Cria uma lista de anotações para o heatmap.
 
-    def __annotations_list(self, df_pivot: pd.DataFrame) -> list:
+        Args:
+            df (pd.DataFrame): O dataframe com os dados do heatmap.
+
+        Returns:
+            list: Uma lista de anotações para o heatmap.
+        """
+
+        # Inicializa a lista de anotações
         annotations = []
-        df_pivot.columns = pd.to_datetime(df_pivot.columns).day
-        for (i, j), value in np.ndenumerate(df_pivot.values):
-            annotations.append(
-                dict(
-                    x=df_pivot.columns[j],
-                    y=df_pivot.index[i],
-                    text=f"{value:.1%}",
-                    showarrow=False,
-                    font=dict({"color": "white", "size": 8}),
-                )
-            )
 
-        # Remover a anotação com texto "nan%"
-        annotations = [annotation for annotation in annotations if "nan%" not in annotation["text"]]
+        # Define a coluna para dia apenas
+        df.columns = pd.to_datetime(df.columns).day
+
+        # Loop sobre as linhas do dataframe
+        for (i, j), value in np.ndenumerate(df.values):
+            # Se o valor for diferente de NaN
+            if not np.isnan(value):
+                # Adiciona a anotação
+                annotations.append(
+                    {
+                        "x": df.columns[j],
+                        "y": df.index[i],
+                        "text": f"{value:.1%}",
+                        "xref": "x",
+                        "yref": "y",
+                        "showarrow": False,
+                        "font": {"size": 10, "color": "white"},
+                    }
+                )
 
         return annotations
 
     def get_annotations(self, indicator: IndicatorType) -> tuple:
         """
-        Função que retorna um DataFrame com as anotações de eficiência.
-        Filtrado por turno.
+        Retrieves annotations for the heatmap data.
+
+        Args:
+            indicator (IndicatorType): The indicator type to retrieve annotations for.
+
+        Returns:
+            tuple: A tuple containing the annotations for different shifts:
+                - noturno: Annotations for the night shift.
+                - matutino: Annotations for the morning shift.
+                - vespertino: Annotations for the afternoon shift.
+                - main: Annotations for the main shift.
         """
+
         noturno, matutino, vespertino, total, main = self.get_heatmap_data(indicator)
 
+        noturno_annotations = self.__annotations_list(noturno)
+        matutino_annotations = self.__annotations_list(matutino)
+        vespertino_annotations = self.__annotations_list(vespertino)
+        total_annotations = self.__annotations_list(total)
+        main_annotations = self.__annotations_list(main)
+
         return (
-            self.__annotations_list(noturno),
-            self.__annotations_list(matutino),
-            self.__annotations_list(vespertino),
-            self.__annotations_list(total),
-            self.__annotations_list(main),
+            noturno_annotations,
+            matutino_annotations,
+            vespertino_annotations,
+            total_annotations,
+            main_annotations,
         )
+
+    def adjust_df_for_bar_lost(
+        self,
+        df: pd.DataFrame,
+        indicator: IndicatorType,
+        turn: str = "TOT",
+        working_minutes: pd.DataFrame = None,
+    ) -> pd.DataFrame:
+        """
+        Adjusts the given DataFrame for bar lost based on the specified indicator, turn,
+        and working minutes.
+
+        Args:
+            df (pd.DataFrame): The DataFrame to be adjusted.
+            indicator (IndicatorType): The indicator type for adjusting the DataFrame.
+            turn (str, optional): The turn to filter the DataFrame. Defaults to "TOT".
+            working_minutes (pd.DataFrame, optional): The DataFrame containing working minutes.
+            Defaults to None.
+
+        Returns:
+            pd.DataFrame: The adjusted DataFrame.
+        """
+
+        # Cria dataframe com os tempos
+        df = self.data_analysis.get_discount(
+            df, self.indicator_descontos[indicator], self.indicator_not_affect[indicator], indicator
+        )
+
+        # Une com working_minutes
+        if working_minutes is not None:
+            df = pd.concat([df, working_minutes], ignore_index=True, sort=False)
+
+        # Filtra por turno
+        df = df[df["turno"] == turn] if turn != "TOT" else df
+
+        # Lidando com paradas de  5 minutos ou menos
+        mask = (df["motivo"].isnull()) & (df["tempo"] <= 5)
+        columns_to_fill = ["motivo", "problema", "causa"]
+        fill_value = "Parada de 5 minutos ou menos"
+
+        for column in columns_to_fill:
+            df.loc[mask, column] = fill_value
+
+        # Lidando com motivo nulo
+        mask = mask = df["motivo"].isnull()
+        columns_to_fill = ["motivo", "problema", "causa"]
+        fill_value = "Não apontado"
+
+        for column in columns_to_fill:
+            df.loc[mask, column] = fill_value
+
+        return df

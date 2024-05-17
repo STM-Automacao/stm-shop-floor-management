@@ -6,12 +6,14 @@
     "asof",
     "astype",
     "barmode",
+    "bfill",
     "bordercolor",
     "borderpad",
     "borderwidth",
     "bothdates",
     "categoryorder",
     "colorscale",
+    "cornerradius",
     "cumsum",
     "customdata",
     "darkgray",
@@ -51,6 +53,7 @@
     "odbc",
     "pcards",
     "plotly",
+    "producao",
     "protheus",
     "PYMSSQL",
     "pyodbc",
@@ -78,6 +81,7 @@
     "totvsdb",
     "TOTVSDB",
     "traceorder",
+    "treemap",
     "tseries",
     "updatemode",
     "xanchor",
@@ -94,6 +98,16 @@
   ],
   "terminal.integrated.fontFamily": "'Hasklug Nerd Font' ,'Hack Nerd Font Mono'",
   "workbench.editorAssociations": {
-    "file:/**/*.csv": "jupyter-data-wrangler"
+    "file:/**/*.csv": "jupyter-data-wrangler",
+    "*.csv": "default"
   },
+  "sqltools.useNodeRuntime": true,
+  "sqltools.connections": [
+    {
+      "previewLimit": 50,
+      "driver": "SQLite",
+      "name": "DB Historic",
+      "database": "${workspaceFolder:stm-shop-floor-management}/app/assets/db_for_historic.db"
+    }
+  ],
 }

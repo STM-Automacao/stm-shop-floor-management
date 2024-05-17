@@ -22,7 +22,7 @@ from components import (
 from dash import Input, Output, callback, html
 from dash.exceptions import PreventUpdate
 from dash_bootstrap_templates import ThemeSwitchAIO
-from helpers.types import IndicatorType, TemplateType
+from helpers.my_types import IndicatorType, TemplateType
 
 from app import app
 
@@ -67,8 +67,7 @@ layout = [
         dmc.Image(
             # pylint: disable=E1101
             src=app.get_asset_url("Logo Horizontal_PXB.png"),
-            width="125px",
-            withPlaceholder=True,
+            w="125px",
         ),
     ),
 ]
@@ -274,11 +273,12 @@ def efficiency_general(df_eff, toggle_theme):
     Output("eff-lost", "children"),
     [
         Input("store-info", "data"),
+        Input("store-prod", "data"),
         Input(f"radio-items-{IndicatorType.EFFICIENCY.value}", "value"),
         Input(ThemeSwitchAIO.ids.switch("theme"), "value"),
     ],
 )
-def efficiency_lost(info, turn, toggle_theme):
+def efficiency_lost(info, prod, turn, toggle_theme):
     """
     Calculates the efficiency lost based on the provided information.
 
@@ -298,10 +298,12 @@ def efficiency_lost(info, turn, toggle_theme):
         raise PreventUpdate
 
     template = TemplateType.LIGHT if toggle_theme else TemplateType.DARK
-    bcl = bar_chart_lost.BarChartLost()
 
     # Carrega o string json em um dataframe
     df_info = pd.read_json(StringIO(info), orient="split")
+    df_prod = pd.read_json(StringIO(prod), orient="split")
+
+    bcl = bar_chart_lost.BarChartLost(df_info, df_prod)
 
     return bcl.create_bar_chart_lost(df_info, IndicatorType.EFFICIENCY, template, turn)
 
@@ -314,21 +316,23 @@ def efficiency_lost(info, turn, toggle_theme):
     Output("grid-occ-modal-eff", "children"),
     [
         Input("store-info", "data"),
+        Input("store-prod", "data"),
         Input(f"radio-items-{IndicatorType.EFFICIENCY.value}", "value"),
         Input(ThemeSwitchAIO.ids.switch("theme"), "value"),
     ],
 )
-def update_grid_occ_modal(info, turn, theme):
+def update_grid_occ_modal(info, prod, turn, theme):
     """
     Função que atualiza o grid de eficiência do modal.
     """
     if info is None:
         raise PreventUpdate
 
-    goe = grid_occ.GridOcc()
-
     # Carregue a string JSON em um DataFrame
     df_info = pd.read_json(StringIO(info), orient="split")
+    df_prod = pd.read_json(StringIO(prod), orient="split")
+
+    goe = grid_occ.GridOcc(df_info, df_prod)
 
     turns = {
         "NOT": "Noturno",

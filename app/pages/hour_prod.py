@@ -1,3 +1,7 @@
+"""
+Módulo que contém a página de produção por hora.
+"""
+
 from io import StringIO
 
 import dash_bootstrap_components as dbc

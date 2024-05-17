@@ -12,10 +12,10 @@ import numpy as np
 import pandas as pd
 from database.get_data import GetData
 from flask_caching import Cache
+from helpers.my_types import IndicatorType
 from helpers.path_config import DF_CAIXAS
-from helpers.types import IndicatorType
+from service.data_analysis import DataAnalysis
 from service.df_for_indicators import DFIndicators
-from service.times_data import TimesData
 
 from app import app
 
@@ -29,7 +29,8 @@ class MyEncoder(json.JSONEncoder):
     """
 
     def default(self, o):
-        if isinstance(o, np.int64) or isinstance(o, np.int32):
+        # if isinstance(o, np.int64) or isinstance(o, np.int32):
+        if isinstance(o, (np.int64, np.int32)):
             return int(o)
         return super(MyEncoder, self).default(o)
 
@@ -40,6 +41,7 @@ cache = Cache(
         "CACHE_TYPE": "filesystem",
         "CACHE_DIR": "cache-directory",
         "CACHE_THRESHOLD": 50,
+        "CACHE_DEFAULT_TIMEOUT": 600,
     },
 )
 
@@ -59,6 +61,9 @@ def tuple_list_to_list(tuple_list: tuple) -> list[str]:
 
 
 def cache_daily_data():
+    """
+    Caches the daily data by retrieving the total caixas from Protheus and saving in the local DB.
+    """
     with lock:
         df_caixas_cf_tot = get_data.get_protheus_total_caixas()
 
@@ -75,11 +80,13 @@ def update_cache():
         df1, df2, df_working_time, df_info_pure = get_data.get_cleaned_data()
         df_caixas_cf = get_data.get_protheus_caixas_data()
         df_caixas_cf_tot = pd.read_csv(DF_CAIXAS, index_col=0)
+
+        # Criar dataframes auxiliares com os df do banco de dados
         df_ind = DFIndicators(df1, df2)
-        times_data = TimesData()
-        df_eff = times_data.get_eff_data(df1, df2)
-        df_perf = times_data.get_perf_data(df1, df2)
-        df_repair = times_data.get_repair_data(df1, df2)
+        analysis = DataAnalysis(df1, df2)
+        df_eff = analysis.get_eff_data()
+        df_perf = analysis.get_perf_data()
+        df_repair = analysis.get_repair_data()
         df_eff_heatmap_tuple = df_ind.get_heatmap_data(IndicatorType.EFFICIENCY)
         annotations_eff_list_tuple = df_ind.get_annotations(IndicatorType.EFFICIENCY)
         df_perf_heatmap_tuple = df_ind.get_heatmap_data(IndicatorType.PERFORMANCE)
@@ -115,5 +122,3 @@ def update_cache():
             "annotations_repair_list_tuple",
             json.dumps(tuple_list_to_list(annotations_repair_list_tuple)),
         )
-
-        print(f"========== Cache atualizado ==========  {pd.to_datetime('today')}")

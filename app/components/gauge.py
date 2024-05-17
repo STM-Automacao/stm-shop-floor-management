@@ -7,7 +7,7 @@
 import pandas as pd
 import plotly.graph_objs as go
 from dash import dcc
-from helpers.types import BSColorsEnum, IndicatorType, TemplateType
+from helpers.my_types import BSColorsEnum, IndicatorType, TemplateType
 
 
 class Gauge:
@@ -29,7 +29,12 @@ class Gauge:
         self.success = BSColorsEnum.SUCCESS_COLOR.value
 
     def create_gauge(
-        self, df: pd.DataFrame, indicator: IndicatorType, meta: int, template: str = None
+        self,
+        df: pd.DataFrame,
+        indicator: IndicatorType,
+        meta: int,
+        template: str = None,
+        this_month: bool = True,
     ) -> dcc.Graph:
         """
         Creates a gauge chart based on the given parameters.
@@ -39,21 +44,19 @@ class Gauge:
             indicator (IndicatorType): The type of indicator to be displayed.
             meta (int): The target value for the indicator.
             template (str, optional): The template to be used for the chart. Defaults to None.
+            this_month (bool, optional): Whether the chart is for the current month or the
+            previous month. Defaults to True.
 
         Returns:
             dcc.Graph: The gauge chart as a Dash component.
 
         """
 
-        # Garantir que a data de registro seja datetime
-        df["data_registro"] = pd.to_datetime(df["data_registro"])
-
         # Verificar se é mês atual ou mês anterior
-        this_month = df["data_registro"].dt.month.max() == pd.Timestamp.now().month
         month = "Mês Atual" if this_month else "Mês Anterior"
 
         # Calcula a porcentagem de acordo com o indicador
-        percentage = df[indicator.value].mean()
+        percentage = df[indicator.value].mean() if this_month else df[indicator.value].iloc[-1]
         percentage = percentage if percentage is not None else 0
 
         # Arredonda o valor da porcentagem

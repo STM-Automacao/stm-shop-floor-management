@@ -5,7 +5,7 @@ Este módulo cria um grupo de botões para girar o modal.
 import dash_bootstrap_components as dbc
 
 # pylint: disable=E0401
-from helpers.types import MODAL_RADIO, IndicatorType
+from helpers.my_types import MODAL_RADIO, IndicatorType
 
 # cSpell: words eficiencia
 

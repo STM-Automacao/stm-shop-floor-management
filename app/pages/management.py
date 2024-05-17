@@ -12,6 +12,7 @@ import pandas as pd
 from components import (
     bar_chart_details,
     btn_modal,
+    grid_eff,
     grid_occ,
     modal_estoque,
     modal_history,
@@ -21,7 +22,7 @@ from dash import Input, Output, State, callback, html
 from dash.exceptions import PreventUpdate
 from dash_bootstrap_templates import ThemeSwitchAIO
 from dash_iconify import DashIconify
-from helpers.types import IndicatorType, TemplateType
+from helpers.my_types import IndicatorType, TemplateType
 
 radio_itens_turn = btn_modal.create_radio_btn_turn("management")
 
@@ -32,7 +33,7 @@ layout = html.Div(
         dbc.Card(id="production-card", class_name="mb-3 mt-2"),
         dbc.Card(
             [
-                dbc.CardHeader("Detalhes da Produção"),
+                dbc.CardHeader("Detalhes da Produção do Mês Corrente"),
                 dbc.CardBody(
                     [
                         dbc.Row(
@@ -45,22 +46,19 @@ layout = html.Div(
                         ),
                         dbc.Row(
                             dbc.Col(
-                                dmc.MantineProvider(
-                                    id="mantine-provider",
-                                    theme={"colorScheme": "light"},
-                                    children=(
-                                        dmc.DatePicker(
-                                            id="date-picker",
-                                            label="Data",
-                                            placeholder="Selecione uma data",
-                                            inputFormat="dddd - D MMM, YYYY",
-                                            locale="pt-br",
-                                            firstDayOfWeek="sunday",
-                                            clearable=True,
-                                            variant="filled",
-                                            icon=DashIconify(icon="clarity:date-line"),
-                                        ),
+                                dmc.DatesProvider(
+                                    id="dates-provider",
+                                    children=dmc.DatePicker(
+                                        id="date-picker",
+                                        label="Data",
+                                        placeholder="Selecione uma data",
+                                        valueFormat="dddd - D MMM, YYYY",
+                                        firstDayOfWeek=0,
+                                        clearable=True,
+                                        variant="filled",
+                                        leftSection=DashIconify(icon="uiw:date"),
                                     ),
+                                    settings={"locale": "pt-br"},
                                 ),
                                 md=4,
                                 xl=2,
@@ -69,21 +67,34 @@ layout = html.Div(
                             justify="center",
                         ),
                         dbc.Row(id="bar-chart-details"),
-                        dbc.Row(id="grid-occ-modal"),
+                        dbc.Row(
+                            dbc.Card(
+                                id="grid-occ-modal",
+                                className="mt-2 shadow-lg p-2 mb-2 rounded",
+                            ),
+                            className="p-2",
+                        ),
+                        html.Hr(),
+                        dbc.Row(
+                            dbc.Card(
+                                id="grid-eff-modal-management",
+                                className="mt-2 shadow-lg p-2 mb-2 rounded",
+                            ),
+                            className="p-2",
+                        ),
                     ]
                 ),
             ],
         ),
         # Incluir detalhes de produção
         # ---------------- Modal History ---------------- #
-        dbc.Modal(
+        dmc.Modal(
             children=modal_history.layout,
             id="modal-history-eff",
-            size="xl",
-            fullscreen="lg-down",
-            scrollable=True,
-            modal_class_name="inter",
-            is_open=False,
+            fullScreen=True,
+            title="Histórico",
+            opened=False,
+            className="inter",
         ),
         # ---------------- Modal Estoque ---------------- #
         dbc.Modal(
@@ -102,9 +113,9 @@ layout = html.Div(
 
 # --------------------- Modal History --------------------- #
 @callback(
-    Output("modal-history-eff", "is_open"),
+    Output("modal-history-eff", "opened"),
     [Input("history-btn", "n_clicks")],
-    [State("modal-history-eff", "is_open")],
+    [State("modal-history-eff", "opened")],
 )
 def toggle_modal_history(n, is_open):
     """
@@ -194,7 +205,9 @@ def update_production_card(store_info, store_prod, store_caixas, caixas_cf_tot):
                 html.Hr(),
                 dbc.Row(pcards.create_card(df_maq_info, df_maq_prod, today=True)),
                 html.Hr(),
-                dbc.Row(pcards.create_card(df_maq_info, df_caixas, cf=True, total=total_estoque)),
+                dbc.Row(
+                    pcards.create_card(df_maq_info, df_caixas, cf=True, total=int(total_estoque))
+                ),
             ]
         ),
     ]
@@ -205,14 +218,10 @@ def update_production_card(store_info, store_prod, store_caixas, caixas_cf_tot):
     [
         Output("date-picker", "minDate"),
         Output("date-picker", "maxDate"),
-        Output("mantine-provider", "theme"),
     ],
-    [
-        Input("store-info", "data"),
-        Input(ThemeSwitchAIO.ids.switch("theme"), "value"),
-    ],
+    Input("store-info", "data"),
 )
-def details_picker(info, toggle_theme):
+def details_picker(info):
     """
     Creates and returns a date picker component for efficiency indicator.
 
@@ -230,11 +239,11 @@ def details_picker(info, toggle_theme):
         raise PreventUpdate
 
     df = pd.read_json(StringIO(info), orient="split")
-    template = {"colorScheme": "light"} if toggle_theme else {"colorScheme": "dark"}
 
-    min_date = pd.to_datetime(df["data_hora_registro"]).min().date()
-    max_date = pd.to_datetime(df["data_hora_registro"]).max().date()
-    return min_date, max_date, template
+    min_date = pd.to_datetime(df["data_registro"]).min().date()
+    max_date = pd.to_datetime(df["data_registro"]).max().date()
+
+    return str(min_date), str(max_date)
 
 
 @callback(
@@ -247,7 +256,7 @@ def details_picker(info, toggle_theme):
         Input(ThemeSwitchAIO.ids.switch("theme"), "value"),
     ],
 )
-def collapse_details_bar_chart(info, turn, data_picker, working, toggle_theme):
+def details_bar_chart(info, turn, data_picker, working, toggle_theme):
     """
     Creates a collapsed bar chart details based on the provided information.
 
@@ -268,15 +277,16 @@ def collapse_details_bar_chart(info, turn, data_picker, working, toggle_theme):
     if info is None:
         raise PreventUpdate
 
-    bcd = bar_chart_details.BarChartDetails()
     template = TemplateType.LIGHT if toggle_theme else TemplateType.DARK
 
     # Carrega o string json em um dataframe
     df_info = pd.read_json(StringIO(info), orient="split")
     df_working = pd.read_json(StringIO(working), orient="split")
 
+    bcd = bar_chart_details.BarChartDetails(df_info)
+
     return bcd.create_bar_chart_details(
-        df_info, IndicatorType.EFFICIENCY, template, turn, data_picker, df_working
+        IndicatorType.EFFICIENCY, template, turn, data_picker, df_working
     )
 
 
@@ -285,22 +295,24 @@ def collapse_details_bar_chart(info, turn, data_picker, working, toggle_theme):
     Output("grid-occ-modal", "children"),
     [
         Input("store-info", "data"),
+        Input("store-prod", "data"),
         Input("radio-items-management", "value"),
         Input("date-picker", "value"),
         Input(ThemeSwitchAIO.ids.switch("theme"), "value"),
     ],
 )
-def update_grid_occ_modal(info, turn, data_picker, theme):
+def update_grid_occ_modal(info, prod, turn, data_picker, theme):
     """
     Função que atualiza o grid de eficiência do modal.
     """
     if info is None:
         raise PreventUpdate
 
-    goe = grid_occ.GridOcc()
-
     # Carregue a string JSON em um DataFrame
     df_info = pd.read_json(StringIO(info), orient="split")
+    df_prod = pd.read_json(StringIO(prod), orient="split")
+
+    goe = grid_occ.GridOcc(df_info, df_prod)
 
     turns = {
         "NOT": "Noturno",
@@ -312,4 +324,40 @@ def update_grid_occ_modal(info, turn, data_picker, theme):
     return [
         html.H5(f"Ocorrências - {turns[turn]}", className="text-center"),
         goe.create_grid_occ(df_info, IndicatorType.EFFICIENCY, turn, theme, data_picker),
+    ]
+
+
+@callback(
+    Output("grid-eff-modal-management", "children"),
+    [
+        Input("store-df-eff", "data"),
+        Input("radio-items-management", "value"),
+        Input("date-picker", "value"),
+        Input(ThemeSwitchAIO.ids.switch("theme"), "value"),
+    ],
+)
+def update_grid_eff_modal_management(data, turn, data_picker, theme):
+    """
+    Função que atualiza o grid de eficiência do modal.
+    """
+    if data is None:
+        raise PreventUpdate
+
+    # Carregue a string JSON em um DataFrame
+    df = pd.read_json(StringIO(data), orient="split")
+
+    # Filtra pelo turno
+    if turn != "TOT":
+        df = df[df["turno"] == turn]
+
+    # Se houver data, filtrar pelo dia selecionado
+    if data_picker is not None:
+        df["data_registro"] = pd.to_datetime(df["data_registro"]).dt.date
+        df = df[(df["data_registro"]) == pd.to_datetime(data_picker).date()]
+
+    ge = grid_eff.GridEff()
+
+    return [
+        html.H5("Eficiência", className="text-center"),
+        ge.create_grid_eff(df, theme),
     ]
