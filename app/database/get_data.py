@@ -122,7 +122,7 @@ class GetData:
         """
 
         # Encontrando o primeiro dia de 6 meses atrás
-        first_day = pd.to_datetime("today").replace(day=1) - pd.DateOffset(months=6)
+        first_day = pd.to_datetime("today").replace(day=1) - pd.DateOffset(months=4)
 
         # Mantendo apenas a data
         first_day = first_day.strftime("%Y-%m-%d")

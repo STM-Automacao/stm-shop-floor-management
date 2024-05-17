@@ -79,7 +79,7 @@ class DataAnalysis:
             .apply(lambda x: x.str.contains("|".join(not_dict), case=False, na=False))
             .any(axis=1)
         )
-        df.loc[mask, "desconto"] = df["tempo"] if not IndicatorType.REPAIR else 0
+        df.loc[mask, "desconto"] = 0 if indicator == IndicatorType.REPAIR else df["tempo"]
 
         # Cria um dict para indicadores
         indicator_dict = {
@@ -178,7 +178,7 @@ class DataAnalysis:
         df["producao_esperada"] = (df["tempo_esperado"] * ciclo_ideal) * 2
 
         # Nova coluna para eficiência
-        df["eficiencia"] = (df["total_produzido"] / df["producao_esperada"]).round(2)
+        df["eficiencia"] = (df["total_produzido"] / df["producao_esperada"]).round(3)
 
         # Corrige valores nulos ou inf de eficiência
         df["eficiencia"] = df["eficiencia"].replace([np.inf, -np.inf], np.nan).fillna(0)

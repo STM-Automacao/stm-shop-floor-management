@@ -12,18 +12,16 @@ import pandas as pd
 import plotly.express as px
 import seaborn as sns
 from babel.dates import format_date
-from components import bar_chart_details, btn_modal
+from components import chart_history, history_components
 from dash import Input, Output, callback, dcc, html
 from dash.exceptions import PreventUpdate
 from dash_bootstrap_templates import ThemeSwitchAIO
-from dash_iconify import DashIconify
 from database.last_month_ind import LastMonthInd
-from helpers.my_types import IndicatorType, TemplateType
+from helpers.my_types import TemplateType
 from service.big_data import BigData
 
 last_month = LastMonthInd()
-
-lines_number = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14"]
+hc = history_components.HistoryComponents()
 
 # ============================================ Layout =========================================== #
 layout = [
@@ -38,38 +36,17 @@ layout = [
             dbc.Row(
                 [
                     dbc.Col(
-                        btn_modal.create_radio_btn_turn("history"),
-                        class_name=(
-                            "radio-group d-flex justify-content-center align-items-center p-2"
+                        hc.create_btn_segmented(
+                            "segmented_btn_general",
+                            ["Noturno", "Matutino", "Vespertino", "Total"],
+                            "Matutino",
                         ),
+                        class_name=("d-flex justify-content-center align-items-center p-2"),
                         md=3,
                         align="center",
                     ),
                     dbc.Col(
-                        dmc.MultiSelect(
-                            data=[
-                                {
-                                    "group": "Fabrica 1",
-                                    "items": [
-                                        {"label": f"Linha {line}", "value": line}
-                                        for line in lines_number[:8]
-                                    ],
-                                },
-                                {
-                                    "group": "Fabrica 2",
-                                    "items": [
-                                        {"label": f"Linha {line}", "value": line}
-                                        for line in lines_number[8:]
-                                    ],
-                                },
-                            ],
-                            className="p-2",
-                            hidePickedOptions=True,
-                            clearable=True,
-                            placeholder="Selecione as linhas",
-                            w="80%",
-                            id="multi-select-history",
-                        ),
+                        hc.create_multiselect("multi-select-general"),
                         md=3,
                         class_name="p-2",
                         align="center",
@@ -77,16 +54,7 @@ layout = [
                     dbc.Col(
                         dmc.DatesProvider(
                             id="dates-provider-history",
-                            children=dmc.DatePicker(
-                                id="date-picker-history",
-                                placeholder="Selecione uma data",
-                                valueFormat="dddd - D MMM, YYYY",
-                                firstDayOfWeek=0,
-                                clearable=True,
-                                variant="filled",
-                                leftSection=DashIconify(icon="uiw:date"),
-                                w="80%",
-                            ),
+                            children=hc.create_date_picker("date-picker-general", 4),
                             settings={"locale": "pt-br"},
                         ),
                         md=3,
@@ -98,6 +66,48 @@ layout = [
             ),
             dbc.Row(
                 id="bar-chart-geral-history",
+            ),
+        ],
+        outline=True,
+        class_name="p-2 mb-5 shadow-lg",
+    ),
+    html.Hr(),
+    html.H4("Dados de Paradas por blocos", className="inter"),
+    dbc.Card(
+        [
+            dbc.Row(
+                [
+                    dbc.Col(
+                        hc.create_btn_segmented(
+                            "segmented_btn_block",
+                            ["Equipamento", "Turno", "Motivo"],
+                            "Turno",
+                        ),
+                        class_name=("d-flex justify-content-center align-items-center p-2"),
+                        md=3,
+                        align="center",
+                    ),
+                    dbc.Col(
+                        hc.create_multiselect("multi-select-block"),
+                        md=3,
+                        class_name="p-2",
+                        align="center",
+                    ),
+                    dbc.Col(
+                        dmc.DatesProvider(
+                            id="dates-provider-block",
+                            children=hc.create_date_picker("date-picker-block", 4),
+                            settings={"locale": "pt-br"},
+                        ),
+                        md=3,
+                        class_name="p-2",
+                        align="center",
+                    ),
+                ],
+                justify="evenly",
+            ),
+            dbc.Row(
+                id="icicle-chart-block",
             ),
         ],
         outline=True,
@@ -207,36 +217,51 @@ def update_graph_history_modal(_, light_theme):
     return fig, table
 
 
-@callback(
-    Output("bar-chart-geral-history", "children"),
-    [
-        Input("radio-items-history", "value"),
-        Input("multi-select-history", "value"),
-        Input("date-picker-history", "value"),
-        Input(ThemeSwitchAIO.ids.switch("theme"), "value"),
-    ],
-)
-def update_general_chart(turn, line, date, toggle_theme):
+def date_filter(date: list[str], big: pd.DataFrame, stops: pd.DataFrame) -> tuple:
+    """
+    Filtra os dados de acordo com a data fornecida.
 
-    # Verificar se o tema está em modo claro ou escuro
-    template = TemplateType.LIGHT if toggle_theme else TemplateType.DARK
+    Args:
+        date (list[str]): Lista de datas no formato "YYYY-MM-DD".
+        big (pd.DataFrame): DataFrame contendo os dados principais.
+        stops (pd.DataFrame): DataFrame contendo os dados de paradas.
 
-    # Ler os dados de big data
-    bg = BigData()
-    df_big = bg.get_big_data()
-    df_stops, _, _ = last_month.get_historic_data_analysis()
-    if date is not None:
-        # Seleciona os dados de acordo com a data
-        df = df_big if pd.to_datetime(date) > pd.to_datetime("2024-05-01") else df_stops
-        # Filtrar os dados de acordo com a data
+    Returns:
+        tuple: Uma tupla contendo o DataFrame filtrado e a lista de datas fornecida.
+    """
+
+    if date is not None and len(date) > 0:
+        # Seleciona os dados de acordo com a data. Date é uma lista.
+        date = [pd.to_datetime(d).date() for d in date]
+        if (
+            date[0] < pd.Timestamp("2024-05-01").date()
+            and date[-1] < pd.Timestamp("2024-05-01").date()
+        ):
+            df = stops
+        else:
+            df = big
+
+        # Filtrar os dados de acordo com a data, date é uma lista
         df["data_registro"] = pd.to_datetime(df["data_registro"]).dt.date
-        df = df[df["data_registro"] == pd.to_datetime(date).date()]
+        df = df[df["data_registro"].isin(date)]
 
     else:
-        df = df_big
+        df = big
 
-    # Filtrar os dados de acordo com o turno
-    df = df[df["turno"] == turn]
+    return df, date
+
+
+def line_filter(line: list[str], df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Filtra um DataFrame de acordo com uma lista de linhas.
+
+    Parâmetros:
+    line (list[str]): A lista de linhas a serem filtradas.
+    df (pd.DataFrame): O DataFrame a ser filtrado.
+
+    Retorna:
+    pd.DataFrame: O DataFrame filtrado de acordo com as linhas especificadas.
+    """
 
     # Transformar a linha em uma lista de inteiros
     line_n = [int(i) for i in line] if line else line
@@ -245,8 +270,132 @@ def update_general_chart(turn, line, date, toggle_theme):
     if line_n is not None and len(line_n) > 0:
         df = df[df["linha"].isin(line_n)]
 
-    # NOTE: Criar novo gráfico ao invés de reaproveitar este
+    return df
 
-    chart = bar_chart_details.BarChartDetails(df)
 
-    return chart.create_bar_chart_details(IndicatorType.EFFICIENCY, template, turn, date)
+# ===================================== Variáveis De Ambiente ==================================== #
+
+# Ler os dados de big data
+bg = BigData()
+df_big = bg.get_big_data()
+df_stops, _, _ = last_month.get_historic_data_analysis()
+
+# Ajuste de turno
+turn_options = {
+    "Noturno": "NOT",
+    "Matutino": "MAT",
+    "Vespertino": "VES",
+    "Total": "TOT",
+}
+
+
+def adjust_df(date: list[str], line: list[str], turn: str = None) -> pd.DataFrame:
+    """
+    Ajusta o DataFrame de acordo com os filtros de data, turno e linha.
+
+    Parâmetros:
+    - date (list[str]): Lista de datas a serem filtradas.
+    - turn (str): Turno a ser filtrado.
+    - line (list[str]): Lista de linhas a serem filtradas.
+
+    Retorna:
+    - pd.DataFrame: DataFrame ajustado de acordo com os filtros aplicados.
+    """
+
+    # Filtrar os dados de acordo com a data
+    df, date = date_filter(date, df_big.copy(), df_stops.copy())
+
+    if turn is not None:
+        turn = turn_options[turn]
+
+        # Filtrar os dados de acordo com o turno
+        if turn != "TOT":
+            df = df[df["turno"] == turn]
+
+    # Filtrar os dados de acordo com a linha
+    df = line_filter(line, df)
+
+    # Se selecionar apenas uma data e ela não estiver no df devolver texto de aviso
+    if date is not None and len(date) == 1 and date[0] not in df["data_registro"].unique():
+        return dbc.Alert(
+            "Não há dados para a data selecionada.",
+            color="warning",
+            style={
+                "width": "80%",
+                "textAlign": "center",
+                "margin-left": "auto",
+                "margin-right": "auto",
+            },
+        )
+
+    return df
+
+
+@callback(
+    Output("bar-chart-geral-history", "children"),
+    [
+        Input("segmented_btn_general", "value"),
+        Input("multi-select-general", "value"),
+        Input("date-picker-general", "value"),
+        Input(ThemeSwitchAIO.ids.switch("theme"), "value"),
+    ],
+)
+def update_general_chart(turn, line, date, toggle_theme):
+    """
+    Atualiza o gráfico geral com base nos parâmetros fornecidos.
+
+    Args:
+        turn (str): O turno a ser filtrado.
+        line (List[str]): A(s) linha(s) a ser(em) filtrada(s).
+        date (List[str]): A(s) data(s) a ser(em) filtrada(s).
+        toggle_theme (bool): Indica se o tema está em modo claro ou escuro.
+
+    Returns:
+        Bar Chart: O gráfico atualizado.
+
+    """
+    # Verificar se o tema está em modo claro ou escuro
+    template = TemplateType.LIGHT if toggle_theme else TemplateType.DARK
+
+    # Ajustes no dataframe
+    df = adjust_df(date, line, turn)
+
+    # Instanciar chart
+    ch = chart_history.ChartHistory()
+
+    return ch.create_bar_chart_details(df, template)
+
+
+@callback(
+    Output("icicle-chart-block", "children"),
+    [
+        Input("segmented_btn_block", "value"),
+        Input("multi-select-block", "value"),
+        Input("date-picker-block", "value"),
+        Input(ThemeSwitchAIO.ids.switch("theme"), "value"),
+    ],
+)
+def update_icicle(path, line, date, toggle_theme):
+    """
+    Atualiza o gráfico geral com base nos parâmetros fornecidos.
+
+    Args:
+        path (str): O caminho dos blocos.
+        line (List[str]): A(s) linha(s) a ser(em) filtrada(s).
+        date (List[str]): A(s) data(s) a ser(em) filtrada(s).
+        toggle_theme (bool): Indica se o tema está em modo claro ou escuro.
+
+    Returns:
+        Bar Chart: O gráfico atualizado.
+
+    """
+    # Verificar se o tema está em modo claro ou escuro
+    template = TemplateType.LIGHT if toggle_theme else TemplateType.DARK
+
+    # Ajustes no dataframe
+    df = adjust_df(date, line)
+
+    # Instanciar chart
+    ch = chart_history.ChartHistory()
+
+    return ch.create_icicle_chart(df, path, template)

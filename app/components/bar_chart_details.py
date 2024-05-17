@@ -3,9 +3,8 @@ Module for creating a bar chart with details based on provided data.
 """
 
 import pandas as pd
-import seaborn as sns
 from dash import dcc
-from helpers.my_types import BSColorsEnum, IndicatorType, TemplateType
+from helpers.my_types import COLOR_DICT, IndicatorType, TemplateType
 from plotly import express as px
 from service.df_for_indicators import DFIndicators
 
@@ -63,14 +62,6 @@ class BarChartDetails:
             else df
         )
 
-        # Filtro pelo motivo, causa ou problema
-        motivos = df[choice].unique()
-
-        # Definir cores
-        palette = sns.color_palette("tab20", len(motivos)).as_hex()
-
-        color_dict = dict(zip(motivos, palette))
-
         if choice == "motivo":
             # Se motivo for Rodando, problema e causa são "Sem Problema" e "Sem Causa"
             df.loc[df["motivo"] == "Rodando", ["problema", "causa"]] = " "
@@ -98,20 +89,6 @@ class BarChartDetails:
             # Remover a coluna sort
             df = df.drop(columns=["sort"])
 
-            # Mapear cores
-            color_dict = {
-                "Parada de 5 minutos ou menos": BSColorsEnum.BLUE_DELFT_COLOR.value,
-                "Não apontado": BSColorsEnum.WARNING_COLOR.value,
-                "Ajustes": BSColorsEnum.TEAL_COLOR.value,
-                "Manutenção": BSColorsEnum.SPACE_CADET_COLOR.value,
-                "Qualidade": BSColorsEnum.INFO_COLOR.value,
-                "Fluxo": BSColorsEnum.PINK_COLOR.value,
-                "Parada Programada": BSColorsEnum.DANGER_COLOR.value,
-                "Setup": BSColorsEnum.SECONDARY_COLOR.value,
-                "Limpeza": BSColorsEnum.PRIMARY_COLOR.value,
-                "Rodando": BSColorsEnum.SUCCESS_COLOR.value,
-            }
-
         # Criação do gráfico
         fig = px.bar(
             df,
@@ -119,7 +96,7 @@ class BarChartDetails:
             y="tempo",
             color=choice,
             barmode="stack",
-            color_discrete_map=color_dict,
+            color_discrete_map=COLOR_DICT,
             title="Detalhes de Tempo",
             labels={
                 "tempo": "Tempo (min)",

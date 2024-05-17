@@ -12,6 +12,7 @@ import pandas as pd
 from components import (
     bar_chart_details,
     btn_modal,
+    grid_eff,
     grid_occ,
     modal_estoque,
     modal_history,
@@ -66,7 +67,21 @@ layout = html.Div(
                             justify="center",
                         ),
                         dbc.Row(id="bar-chart-details"),
-                        dbc.Row(id="grid-occ-modal"),
+                        dbc.Row(
+                            dbc.Card(
+                                id="grid-occ-modal",
+                                className="mt-2 shadow-lg p-2 mb-2 rounded",
+                            ),
+                            className="p-2",
+                        ),
+                        html.Hr(),
+                        dbc.Row(
+                            dbc.Card(
+                                id="grid-eff-modal-management",
+                                className="mt-2 shadow-lg p-2 mb-2 rounded",
+                            ),
+                            className="p-2",
+                        ),
                     ]
                 ),
             ],
@@ -309,4 +324,40 @@ def update_grid_occ_modal(info, prod, turn, data_picker, theme):
     return [
         html.H5(f"Ocorrências - {turns[turn]}", className="text-center"),
         goe.create_grid_occ(df_info, IndicatorType.EFFICIENCY, turn, theme, data_picker),
+    ]
+
+
+@callback(
+    Output("grid-eff-modal-management", "children"),
+    [
+        Input("store-df-eff", "data"),
+        Input("radio-items-management", "value"),
+        Input("date-picker", "value"),
+        Input(ThemeSwitchAIO.ids.switch("theme"), "value"),
+    ],
+)
+def update_grid_eff_modal_management(data, turn, data_picker, theme):
+    """
+    Função que atualiza o grid de eficiência do modal.
+    """
+    if data is None:
+        raise PreventUpdate
+
+    # Carregue a string JSON em um DataFrame
+    df = pd.read_json(StringIO(data), orient="split")
+
+    # Filtra pelo turno
+    if turn != "TOT":
+        df = df[df["turno"] == turn]
+
+    # Se houver data, filtrar pelo dia selecionado
+    if data_picker is not None:
+        df["data_registro"] = pd.to_datetime(df["data_registro"]).dt.date
+        df = df[(df["data_registro"]) == pd.to_datetime(data_picker).date()]
+
+    ge = grid_eff.GridEff()
+
+    return [
+        html.H5("Eficiência", className="text-center"),
+        ge.create_grid_eff(df, theme),
     ]
