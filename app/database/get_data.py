@@ -107,6 +107,64 @@ class GetData:
 
         return df_ihm, df_info, df_info_production
 
+    def get_big_data(self) -> tuple:
+        """
+        Recupera dados grandes do banco de dados. Traz dados dos últimos 6 meses.
+
+        Retorna:
+            Tuple[pd.DataFrame, pd.DataFrame]: Uma tupla contendo dois DataFrames.
+            O primeiro DataFrame contém dados da tabela 'maquina_ihm',
+            e o segundo DataFrame contém dados da tabela 'maquina_info'.
+
+        Raises:
+            ValueError: Se o DataFrame 'maquina_ihm' ou 'maquina_info' estiver vazio,
+            indicando um erro na leitura dos dados do banco de dados.
+        """
+
+        # Encontrando o primeiro dia de 6 meses atrás
+        first_day = pd.to_datetime("today").replace(day=1) - pd.DateOffset(months=4)
+
+        # Mantendo apenas a data
+        first_day = first_day.strftime("%Y-%m-%d")
+
+        # Query para leitura dos dados de IHM
+        query_ihm = self.db_read.create_automacao_query(
+            table="maquina_ihm",
+            where=f"data_registro >= '{first_day}'",
+        )
+
+        # Query para leitura dos dados de informações
+        query_info = (
+            "SELECT"
+            " t1.maquina_id,"
+            " (SELECT TOP 1 t2.linha FROM AUTOMACAO.dbo.maquina_cadastro t2"
+            " WHERE t2.maquina_id = t1.maquina_id AND t2.data_registro <= t1.data_registro"
+            " ORDER BY t2.data_registro DESC, t2.hora_registro DESC) as linha,"
+            " (SELECT TOP 1 t2.fabrica FROM AUTOMACAO.dbo.maquina_cadastro t2"
+            " WHERE t2.maquina_id = t1.maquina_id AND t2.data_registro <= t1.data_registro"
+            " ORDER BY t2.data_registro DESC, t2.hora_registro DESC) as fabrica,"
+            " t1.status,"
+            " t1.turno,"
+            " t1.contagem_total_ciclos,"
+            " t1.contagem_total_produzido,"
+            " t1.data_registro,"
+            " t1.hora_registro"
+            " FROM "
+            " AUTOMACAO.dbo.maquina_info t1"
+            f" WHERE data_registro >= '{first_day}'"
+            " ORDER BY t1.data_registro DESC, t1.hora_registro DESC"
+        )
+
+        # Leitura dos dados
+        df_ihm = self.db_read.get_automacao_data(query_ihm)
+        df_info = self.db_read.get_automacao_data(query_info)
+
+        # Verificando se os dados foram lidos corretamente
+        if df_ihm.empty or df_info.empty:
+            raise ValueError("* --> Erro na leitura dos dados do DB Automação.")
+
+        return df_ihm, df_info
+
     def get_cleaned_data(self) -> tuple:
         """
         Recebe a leitura dos dados do banco de dados e faz a limpeza dos dados.

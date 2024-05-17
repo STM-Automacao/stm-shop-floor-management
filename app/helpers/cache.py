@@ -41,6 +41,7 @@ cache = Cache(
         "CACHE_TYPE": "filesystem",
         "CACHE_DIR": "cache-directory",
         "CACHE_THRESHOLD": 50,
+        "CACHE_DEFAULT_TIMEOUT": 600,
     },
 )
 
@@ -61,7 +62,7 @@ def tuple_list_to_list(tuple_list: tuple) -> list[str]:
 
 def cache_daily_data():
     """
-    Caches the daily data by retrieving the total caixas from Protheus and saving it to a CSV file.
+    Caches the daily data by retrieving the total caixas from Protheus and saving in the local DB.
     """
     with lock:
         df_caixas_cf_tot = get_data.get_protheus_total_caixas()

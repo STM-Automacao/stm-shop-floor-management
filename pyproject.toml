@@ -36,6 +36,7 @@ dash-bootstrap-templates = "^1.1.2"
 streamlit = "^1.31.0"
 dash-ag-grid = "^31.0.1"
 pylint = "^3.0.3"
+babel = "^2.15.0"
 
 
 [build-system]

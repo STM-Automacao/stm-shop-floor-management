@@ -3,9 +3,8 @@ Module for creating a bar chart with details based on provided data.
 """
 
 import pandas as pd
-import seaborn as sns
 from dash import dcc
-from helpers.my_types import BSColorsEnum, IndicatorType, TemplateType
+from helpers.my_types import COLOR_DICT, IndicatorType, TemplateType
 from plotly import express as px
 from service.df_for_indicators import DFIndicators
 
@@ -13,14 +12,21 @@ from service.df_for_indicators import DFIndicators
 class BarChartDetails:
     """
     Represents a class for creating bar chart details based on provided data.
+
+    Args:
+        df_maq_stopped (pd.DataFrame): The input dataframe containing the data.
+
+    Attributes:
+        df_maq_stopped (pd.DataFrame): The input dataframe containing the data.
+        df_indicator (DFIndicators): The dataframe for indicators.
     """
 
-    def __init__(self, df_maq_stopped: pd.DataFrame, df_production: pd.DataFrame):
-        self.df_indicator = DFIndicators(df_maq_stopped, df_production)
+    def __init__(self, df_maq_stopped: pd.DataFrame):
+        self.df_maq_stopped = df_maq_stopped
+        self.df_indicator = DFIndicators(self.df_maq_stopped)
 
     def create_bar_chart_details(
         self,
-        dataframe: pd.DataFrame,
         indicator: IndicatorType,
         template: TemplateType,
         turn: str,
@@ -43,7 +49,7 @@ class BarChartDetails:
             dcc.Graph: The bar chart as a Dash component.
         """
         df = self.df_indicator.adjust_df_for_bar_lost(
-            dataframe, indicator, turn, working_minutes=working
+            self.df_maq_stopped, indicator, turn, working_minutes=working
         )
 
         # Garantis que data_registro tenha apenas o dia
@@ -56,15 +62,10 @@ class BarChartDetails:
             else df
         )
 
-        # Filtro pelo motivo, causa ou problema
-        motivos = df[choice].unique()
-
-        # Definir cores
-        palette = sns.color_palette("tab20", len(motivos)).as_hex()
-
-        color_dict = dict(zip(motivos, palette))
-
         if choice == "motivo":
+            # Se motivo for Rodando, problema e causa são "Sem Problema" e "Sem Causa"
+            df.loc[df["motivo"] == "Rodando", ["problema", "causa"]] = " "
+
             # Criar coluna sort para ordenar os dados
             df["sort"] = (
                 df["motivo"].map({"Rodando": 0, "Parada Programada": 2, "Limpeza": 1}).fillna(9)
@@ -76,22 +77,17 @@ class BarChartDetails:
                 ascending=[True, True, True, False],
             )
 
+            # Ajustar a coluna data_registro para exibir apenas o dia
+            df["data_registro"] = pd.to_datetime(df["data_registro"]).dt.strftime("%d/%m")
+
+            # Ajustar a coluna data_hora para exibir apenas a hora e o minuto
+            df["data_hora"] = pd.to_datetime(df["data_hora"]).dt.time
+
+            # Ajustar data_hora qdo motivo é Rodando
+            df.loc[df["motivo"] == "Rodando", "data_hora"] = " "
+
             # Remover a coluna sort
             df = df.drop(columns=["sort"])
-
-            # Mapear cores
-            color_dict = {
-                "Parada de 5 minutos ou menos": BSColorsEnum.BLUE_DELFT_COLOR.value,
-                "Não apontado": BSColorsEnum.GREY_600_COLOR.value,
-                "Ajustes": BSColorsEnum.TEAL_COLOR.value,
-                "Manutenção": BSColorsEnum.SPACE_CADET_COLOR.value,
-                "Qualidade": BSColorsEnum.WARNING_COLOR.value,
-                "Fluxo": BSColorsEnum.PINK_COLOR.value,
-                "Parada Programada": BSColorsEnum.DANGER_COLOR.value,
-                "Setup": BSColorsEnum.SECONDARY_COLOR.value,
-                "Limpeza": BSColorsEnum.PRIMARY_COLOR.value,
-                "Rodando": BSColorsEnum.SUCCESS_COLOR.value,
-            }
 
         # Criação do gráfico
         fig = px.bar(
@@ -100,7 +96,7 @@ class BarChartDetails:
             y="tempo",
             color=choice,
             barmode="stack",
-            color_discrete_map=color_dict,
+            color_discrete_map=COLOR_DICT,
             title="Detalhes de Tempo",
             labels={
                 "tempo": "Tempo (min)",
@@ -108,9 +104,21 @@ class BarChartDetails:
                 choice: choice.capitalize(),
             },
             template=template.value,
+            custom_data=["problema", "causa", "data_registro", "data_hora"],
         )
 
         tick_color = "gray" if template == TemplateType.LIGHT else "lightgray"
+
+        fig.update_traces(
+            hovertemplate=(
+                "Linha: %{x}<br>"
+                "Tempo: %{y}<br>"
+                "Problema: %{customdata[0]}<br>"
+                "Causa: %{customdata[1]}<br>"
+                "Dia: %{customdata[2]}<br>"
+                "Hora: %{customdata[3]}"
+            )
+        )
 
         # Atualizar layout
         fig.update_layout(
