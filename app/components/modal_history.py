@@ -80,7 +80,7 @@ layout = [
                     dbc.Col(
                         hc.create_btn_segmented(
                             "segmented_btn_block",
-                            ["Equipamento", "Turno", "Motivo"],
+                            ["Manutenção", "Equipamento", "Turno", "Motivo"],
                             "Turno",
                         ),
                         class_name=("d-flex justify-content-center align-items-center p-2"),
@@ -100,6 +100,21 @@ layout = [
                             settings={"locale": "pt-br"},
                         ),
                         md=3,
+                        class_name="p-2",
+                        align="center",
+                    ),
+                    dbc.Col(
+                        dmc.Switch(
+                            id="switch-block",
+                            description="Mostrar não apontado",
+                            radius="md",
+                            checked=False,
+                            size="lg",
+                            color="grey",
+                            onLabel="ON",
+                            offLabel="OFF",
+                        ),
+                        md=2,
                         class_name="p-2",
                         align="center",
                     ),
@@ -315,19 +330,6 @@ def adjust_df(date: list[str], line: list[str], turn: str = None) -> pd.DataFram
     # Filtrar os dados de acordo com a linha
     df = line_filter(line, df)
 
-    # Se selecionar apenas uma data e ela não estiver no df devolver texto de aviso
-    if date is not None and len(date) == 1 and date[0] not in df["data_registro"].unique():
-        return dbc.Alert(
-            "Não há dados para a data selecionada.",
-            color="warning",
-            style={
-                "width": "80%",
-                "textAlign": "center",
-                "margin-left": "auto",
-                "margin-right": "auto",
-            },
-        )
-
     return df
 
 
@@ -360,6 +362,19 @@ def update_general_chart(turn, line, date, toggle_theme):
     # Ajustes no dataframe
     df = adjust_df(date, line, turn)
 
+    # Se selecionar apenas uma data e ela não estiver no df devolver texto de aviso
+    if date is not None and len(date) == 1 and date[0] not in df["data_registro"].unique():
+        return dbc.Alert(
+            "Não há dados para a data selecionada.",
+            color="warning",
+            style={
+                "width": "80%",
+                "textAlign": "center",
+                "margin-left": "auto",
+                "margin-right": "auto",
+            },
+        )
+
     # Instanciar chart
     ch = chart_history.ChartHistory()
 
@@ -372,10 +387,11 @@ def update_general_chart(turn, line, date, toggle_theme):
         Input("segmented_btn_block", "value"),
         Input("multi-select-block", "value"),
         Input("date-picker-block", "value"),
+        Input("switch-block", "checked"),
         Input(ThemeSwitchAIO.ids.switch("theme"), "value"),
     ],
 )
-def update_icicle(path, line, date, toggle_theme):
+def update_icicle(path, line, date, switch, toggle_theme):
     """
     Atualiza o gráfico geral com base nos parâmetros fornecidos.
 
@@ -398,4 +414,4 @@ def update_icicle(path, line, date, toggle_theme):
     # Instanciar chart
     ch = chart_history.ChartHistory()
 
-    return ch.create_icicle_chart(df, path, template)
+    return ch.create_icicle_chart(df, path, switch, template)
