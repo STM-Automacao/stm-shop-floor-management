@@ -43,6 +43,16 @@ class BSColorsEnum(Enum):
     BLUE_DELFT_COLOR = "#353e5a"
 
 
+MANUT_COLORS = {
+    "Termoformadora": BSColorsEnum.INFO_COLOR.value,
+    "Recheadora": BSColorsEnum.SPACE_CADET_COLOR.value,
+    "Robô": BSColorsEnum.GREY_500_COLOR.value,
+    "Armadora de Caixas": BSColorsEnum.INDIGO_COLOR.value,
+    "Seladora de Caixas": BSColorsEnum.PURPLE_COLOR.value,
+    "Detector de Metais": BSColorsEnum.ORANGE_COLOR.value,
+}
+
+
 MODAL_RADIO = [
     ["NOT", "Noturno", "red"],
     ["MAT", "Matutino", "red"],
