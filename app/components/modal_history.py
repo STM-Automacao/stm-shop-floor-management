@@ -4,7 +4,6 @@
 
 import textwrap
 
-import dash_ag_grid as dag
 import dash_bootstrap_components as dbc
 import dash_mantine_components as dmc
 import matplotlib.colors as mcolors
@@ -12,7 +11,7 @@ import pandas as pd
 import plotly.express as px
 import seaborn as sns
 from babel.dates import format_date
-from components import chart_history, history_components
+from components import chart_history, grid_eff, history_components
 from dash import Input, Output, callback, dcc, html
 from dash.exceptions import PreventUpdate
 from dash_bootstrap_templates import ThemeSwitchAIO
@@ -22,13 +21,14 @@ from service.big_data import BigData
 
 last_month = LastMonthInd()
 hc = history_components.HistoryComponents()
+ge = grid_eff.GridEff()
 
 # ============================================ Layout =========================================== #
 layout = [
-    dbc.Row(dcc.Graph(id="graph-history-modal-perdas")),
+    dbc.Row(dbc.Card(dcc.Graph(id="graph-history-modal-perdas"), className="p-2")),
     html.Hr(),
     html.H4("Desempenho Mensal", className="inter"),
-    dbc.Row(id="table-history-modal"),
+    dbc.Row(dbc.Card(id="table-history-modal", className="p-2")),
     html.Hr(),
     html.H4("Dados de Paradas", className="inter"),
     dbc.Card(
@@ -123,6 +123,7 @@ layout = [
             ),
             dbc.Row(
                 id="icicle-chart-block",
+                class_name="inter",
             ),
         ],
         outline=True,
@@ -133,7 +134,7 @@ layout = [
 
 # ========================================= Callbacks ========================================= #
 @callback(
-    [Output("graph-history-modal-perdas", "figure"), Output("table-history-modal", "children")],
+    Output("graph-history-modal-perdas", "figure"),
     [Input("store-info", "data"), Input(ThemeSwitchAIO.ids.switch("theme"), "value")],
 )
 def update_graph_history_modal(_, light_theme):
@@ -192,44 +193,31 @@ def update_graph_history_modal(_, light_theme):
         legend=dict(title="Problema", orientation="v"),
     )
 
-    # -------------------- Tabela de Desempenho Mensal -------------------- #
+    return fig
 
-    # Transforma 415641 em 415.641
-    df_history["total_caixas"] = df_history["total_caixas"].apply(
-        lambda x: f"{x:,.0f} cxs".replace(",", ".")
-    )
-    # Transforma 0.56 em 56%
-    df_history["eficiencia"] = df_history["eficiencia"] * 100
-    df_history["performance"] = df_history["performance"] * 100
-    df_history["reparo"] = df_history["reparo"] * 100
-    # Transforma 56 em 56%
-    df_history["eficiencia"] = df_history["eficiencia"].map(lambda x: f"{x:.0f}%")
-    df_history["performance"] = df_history["performance"].map(lambda x: f"{x:.0f}%")
-    df_history["reparo"] = df_history["reparo"].map(lambda x: f"{x:.0f}%")
-    # Transforma 244502 em 244.502 min
-    df_history["parada_programada"] = df_history["parada_programada"].apply(
-        lambda x: f"{x:,.0f} min".replace(",", ".")
+
+@callback(
+    Output("table-history-modal", "children"),
+    Input(ThemeSwitchAIO.ids.switch("theme"), "value"),
+)
+def update_table_history_modal(light_theme):
+    """
+    Função que atualiza a tabela de desempenho mensal do modal de histórico.
+    """
+    df_history, _ = last_month.get_historic_data()
+
+    if df_history.empty:
+        raise PreventUpdate
+
+    # Transforma 2024-01 em Jan/2024
+    df_history["data_registro"] = pd.to_datetime(df_history["data_registro"], format="%Y-%m")
+    df_history["data_registro"] = df_history["data_registro"].apply(
+        lambda x: format_date(x, "MMM/yy", locale="pt_BR").replace(".", "").capitalize()
     )
 
-    columns_def = [
-        {"headerName": "Mês/Ano", "field": "data_registro"},
-        {"headerName": "Produção Total", "field": "total_caixas"},
-        {"headerName": "Eficiência", "field": "eficiencia"},
-        {"headerName": "Performance", "field": "performance"},
-        {"headerName": "Reparos", "field": "reparo"},
-        {"headerName": "Parada Programada", "field": "parada_programada"},
-    ]
+    table = ge.create_grid_history(df_history, light_theme)
 
-    table = dag.AgGrid(
-        id="table-history-modal",
-        columnDefs=columns_def,
-        rowData=df_history.to_dict("records"),
-        columnSize="responsiveSizeToFit",
-        dashGridOptions={"pagination": True, "paginationAutoPageSize": True},
-        style={"height": "600px"},
-        className="ag-theme-quartz" if light_theme else "ag-theme-alpine-dark",
-    )
-    return fig, table
+    return table
 
 
 def date_filter(date: list[str], big: pd.DataFrame, stops: pd.DataFrame) -> tuple:
@@ -363,7 +351,11 @@ def update_general_chart(turn, line, date, toggle_theme):
     df = adjust_df(date, line, turn)
 
     # Se selecionar apenas uma data e ela não estiver no df devolver texto de aviso
-    if date is not None and len(date) == 1 and date[0] not in df["data_registro"].unique():
+    if (
+        date is not None
+        and len(date) == 1
+        and pd.to_datetime(date[0]).date() not in df["data_registro"].unique()
+    ):
         return dbc.Alert(
             "Não há dados para a data selecionada.",
             color="warning",

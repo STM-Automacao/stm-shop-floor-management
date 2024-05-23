@@ -45,7 +45,7 @@ class BSColorsEnum(Enum):
 
 MANUT_COLORS = {
     "Termoformadora": BSColorsEnum.INFO_COLOR.value,
-    "Recheadora": BSColorsEnum.SPACE_CADET_COLOR.value,
+    "Recheadora": BSColorsEnum.PINK_COLOR.value,
     "Robô": BSColorsEnum.GREY_500_COLOR.value,
     "Armadora de Caixas": BSColorsEnum.INDIGO_COLOR.value,
     "Seladora de Caixas": BSColorsEnum.PURPLE_COLOR.value,

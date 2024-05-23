@@ -52,6 +52,8 @@ class HistoryComponents:
             dmc.DatePicker: O componente de seleção de data criado.
         """
 
+        now = pd.Timestamp.now()
+
         return dmc.DatePicker(
             id=picker_id,
             placeholder="Selecione a(s) data(s)",
@@ -60,8 +62,8 @@ class HistoryComponents:
             clearable=True,
             variant="filled",
             leftSection=DashIconify(icon="uiw:date"),
-            minDate=pd.Timestamp.now().replace(day=1) - pd.DateOffset(months=months),
-            maxDate=pd.Timestamp.now() - pd.DateOffset(days=1),
+            minDate=now.replace(day=1) - pd.DateOffset(months=months),
+            maxDate=pd.to_datetime(now - pd.DateOffset(days=1)).date(),
             type="multiple",
             w="85%",
         )

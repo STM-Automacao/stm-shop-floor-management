@@ -226,10 +226,10 @@ class ChartHistory:
         )
 
         # Adicionar a porcentagem
-        fig.update_traces(textinfo="label+percent parent")
-
         fig.update_traces(
-            hovertemplate="Label: %{label}<br>Tempo: %{value}<br>Percentual: %{percentParent:.2%}"
+            textinfo="label+percent parent",
+            hovertemplate="Label: %{label}<br>Tempo: %{value}<br>Percentual: %{percentParent:.2%}",
+            textfont=dict(family="Inter, Courier New, monospace", size=16),
         )
 
         return dcc.Graph(figure=fig)
