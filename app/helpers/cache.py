@@ -67,6 +67,9 @@ def cache_daily_data():
     with lock:
         df_caixas_cf_tot = get_data.get_protheus_total_caixas()
 
+        # Coluna QTD convertida para inteiro
+        df_caixas_cf_tot["QTD"] = df_caixas_cf_tot["QTD"].astype(int)
+
         df_caixas_cf_tot.to_csv(DF_CAIXAS, index=True)
 
 
