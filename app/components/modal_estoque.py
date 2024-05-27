@@ -53,6 +53,16 @@ def update_table_estoque(data):
 
     df = pd.DataFrame(pd.read_json(StringIO(data), orient="split"))
 
+    # Ordenar pela coluna QTD
+    df = df.sort_values(by="QTD", ascending=False)
+
+    # Adicionar uma linha no final com o total de caixas
+    total = df["QTD"].sum()
+    df = df.append(
+        {"PRODUTO": "Total", "QTD": total},
+        ignore_index=True,
+    )
+
     table = dbc.Table.from_dataframe(
         df,
         striped=True,

@@ -6,7 +6,7 @@ from datetime import datetime
 
 import numpy as np
 import pandas as pd
-from helpers.my_types import IndicatorType
+from helpers.my_types import CICLOS_ESPERADOS, IndicatorType
 
 
 class DataAnalysis:
@@ -152,7 +152,7 @@ class DataAnalysis:
 
         # Calcula o desconto de eficiência
         df = self.get_discount(df, self.desc_eff, self.not_eff, IndicatorType.EFFICIENCY)
-        ciclo_ideal = 10.6
+        ciclo_ideal = CICLOS_ESPERADOS
 
         # Agrupa para ter o valor total de desconto
         df = (
