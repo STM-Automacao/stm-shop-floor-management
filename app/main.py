@@ -34,6 +34,7 @@ last_month_ind = LastMonthInd()
 URL_BOOTS = dbc.themes.BOOTSTRAP  # para o switch
 URL_DARKY = dbc.themes.DARKLY
 
+update_cache()
 
 # ========================================= Background ========================================= #
 
