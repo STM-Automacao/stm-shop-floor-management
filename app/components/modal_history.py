@@ -25,6 +25,7 @@ ge = grid_eff.GridEff()
 
 # ============================================ Layout =========================================== #
 layout = [
+    dcc.Interval(id="interval-component", interval=24 * 60 * 60 * 1000),
     dbc.Row(dbc.Card(dcc.Graph(id="graph-history-modal-perdas"), className="p-2")),
     html.Hr(),
     html.H4("Desempenho Mensal", className="inter"),
@@ -403,7 +404,54 @@ def update_icicle(path, line, date, switch, toggle_theme):
     # Ajustes no dataframe
     df = adjust_df(date, line)
 
+    # Se selecionar apenas uma data e ela não estiver no df devolver texto de aviso
+    if (
+        date is not None
+        and len(date) == 1
+        and pd.to_datetime(date[0]).date() not in df["data_registro"].unique()
+    ):
+        return dbc.Alert(
+            "Não há dados para a data selecionada.",
+            color="warning",
+            style={
+                "width": "80%",
+                "textAlign": "center",
+                "margin-left": "auto",
+                "margin-right": "auto",
+            },
+        )
+
     # Instanciar chart
     ch = chart_history.ChartHistory()
 
     return ch.create_icicle_chart(df, path, switch, template)
+
+
+# ================================================================================================ #
+#                                     CORREÇÃO PARA DATE PICKER                                    #
+# ================================================================================================ #
+
+
+@callback(
+    [
+        Output("dates-provider-block", "children"),
+        Output("dates-provider-history", "children"),
+    ],
+    Input("interval-component", "n_intervals"),
+)
+def update_dates(_):
+    """
+    Atualiza as datas dos seletores de data.
+
+    Retorna dois seletores de data criados usando a função `hc.create_date_picker`.
+
+    Parâmetros:
+    - _: Parâmetro não utilizado.
+
+    Retorno:
+    - date_picker_block: Seletor de data para o bloco.
+    - date_picker_general: Seletor de data geral.
+    """
+    return hc.create_date_picker("date-picker-block", 4), hc.create_date_picker(
+        "date-picker-general", 4
+    )

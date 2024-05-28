@@ -6,7 +6,7 @@ from datetime import datetime
 
 import numpy as np
 import pandas as pd
-from helpers.my_types import IndicatorType
+from helpers.my_types import CICLOS_ESPERADOS, IndicatorType
 
 
 class DataAnalysis:
@@ -152,7 +152,7 @@ class DataAnalysis:
 
         # Calcula o desconto de eficiência
         df = self.get_discount(df, self.desc_eff, self.not_eff, IndicatorType.EFFICIENCY)
-        ciclo_ideal = 10.6
+        ciclo_ideal = CICLOS_ESPERADOS
 
         # Agrupa para ter o valor total de desconto
         df = (
@@ -217,8 +217,10 @@ class DataAnalysis:
         df_prod = self.df_prod
 
         # Dataframe com datas e turnos onde a causa está em not_eff e o tempo é igual a 480
-        mask = (df["causa"].isin(self.not_perf)) & (df["tempo"] == 480)
-        paradas_programadas = df[mask][["data_registro", "turno"]]  # Para performance ser np.nan
+        mask = (df["causa"].isin(["Sem Produção", "Backup"])) & (df["tempo"] == 480)
+        paradas_programadas = df[mask][
+            ["data_registro", "turno", "linha"]
+        ]  # Para performance ser np.nan
 
         # Calcula o desconto de performance e filtra linhas que não afetam a performance
         df = self.get_discount(df, self.desc_perf, self.not_perf, IndicatorType.PERFORMANCE)
@@ -249,12 +251,19 @@ class DataAnalysis:
         # Corrige valores nulos ou inf de performance
         df["performance"] = df["performance"].replace([np.inf, -np.inf], np.nan).fillna(0)
 
-        # Ajuste para paradas_programadas, performance é np.nan e o tempo esperado é igual a 0
-        mask = df["data_registro"].isin(paradas_programadas["data_registro"]) & df["turno"].isin(
-            paradas_programadas["turno"]
-        )
-        df.loc[mask, "performance"] = np.nan
-        df.loc[mask, "tempo_esperado"] = 0
+        # ============================ Ajuste Para Paradas Programadas =========================== #
+        # Criar uma coluna de controle em paradas_programadas
+        paradas_programadas["programada"] = True
+
+        # Merge dos dataframes
+        df = pd.merge(df, paradas_programadas, how="left", on=["data_registro", "turno", "linha"])
+
+        # Se a parada for programada, a performance é np.nan
+        df.loc[df["programada"] == 1, "performance"] = np.nan
+        df.loc[df["programada"] == 1, "tempo_esperado"] = 0
+
+        # Remove a coluna de controle
+        df = df.drop(columns="programada")
 
         # Ordenar as colunas
         df = df[
@@ -284,8 +293,10 @@ class DataAnalysis:
         df_prod = self.df_prod
 
         # Dataframe com datas e turnos onde a causa está em not_eff e o tempo é igual a 480
-        mask = (df["causa"].isin(self.not_perf)) & (df["tempo"] == 480)
-        paradas_programadas = df[mask][["data_registro", "turno"]]  # Para performance ser np.nan
+        mask = (df["causa"].isin(["Sem Produção", "Backup"])) & (df["tempo"] == 480)
+        paradas_programadas = df[mask][
+            ["data_registro", "turno", "linha"]
+        ]  # Para reparos ser np.nan
 
         # Calcula o desconto de reparo
         df = self.get_discount(df, self.desc_rep, self.afeta_rep, IndicatorType.REPAIR)
@@ -316,12 +327,19 @@ class DataAnalysis:
         # Corrige valores nulos ou inf de reparo
         df["reparo"] = df["reparo"].replace([np.inf, -np.inf], np.nan).fillna(0)
 
-        # Ajuste p/ paradas_programadas, performance é np.nan e o tempo esperado é igual a 0
-        mask = df["data_registro"].isin(paradas_programadas["data_registro"]) & df["turno"].isin(
-            paradas_programadas["turno"]
-        )
-        df.loc[mask, "reparo"] = np.nan
-        df.loc[mask, "tempo_esperado"] = 0
+        # ============================ Ajuste Para Paradas Programadas =========================== #
+        # Criar uma coluna de controle em paradas_programadas
+        paradas_programadas["programada"] = True
+
+        # Merge dos dataframes
+        df = pd.merge(df, paradas_programadas, how="left", on=["data_registro", "turno", "linha"])
+
+        # Se a parada for programada, a performance é np.nan
+        df.loc[df["programada"] == 1, "reparo"] = np.nan
+        df.loc[df["programada"] == 1, "tempo_esperado"] = 0
+
+        # Remove a coluna de controle
+        df = df.drop(columns="programada")
 
         # Ordenar as colunas
         df = df[

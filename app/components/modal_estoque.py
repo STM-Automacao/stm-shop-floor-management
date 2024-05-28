@@ -37,6 +37,30 @@ layout = [
 # ================================================================================================ #
 #                                             CALLBACKS                                            #
 # ================================================================================================ #
+def adjust_table(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Função que ajusta a tabela de estoque.
+
+    Args:
+        df (pd.DataFrame): DataFrame com os dados do estoque.
+
+    Returns:
+        pd.DataFrame: DataFrame ajustado.
+    """
+    # Ordenar pela coluna QTD
+    df = df.sort_values(by="QTD", ascending=False)
+
+    # Tornar a coluna QTD em inteiros
+    df["QTD"] = df["QTD"].astype(int)
+
+    # Adicionar uma linha no final com o total de caixas
+    total = df["QTD"].sum()
+    new_row = pd.DataFrame({"PRODUTO": ["Total"], "QTD": [total]})
+    df = pd.concat([df, new_row], ignore_index=True)
+
+    return df
+
+
 @callback(Output("table-estoque", "children"), [Input("store-df-caixas-cf-tot", "data")])
 def update_table_estoque(data):
     """
@@ -51,7 +75,11 @@ def update_table_estoque(data):
     if data is None:
         return dbc.Col("Sem dados de estoque")
 
+    # Transformar os dados em DataFrame
     df = pd.DataFrame(pd.read_json(StringIO(data), orient="split"))
+
+    # Ajustar a tabela
+    df = adjust_table(df)
 
     table = dbc.Table.from_dataframe(
         df,
