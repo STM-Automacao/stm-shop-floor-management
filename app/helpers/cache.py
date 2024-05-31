@@ -41,7 +41,7 @@ cache = Cache(
         "CACHE_TYPE": "filesystem",
         "CACHE_DIR": "cache-directory",
         "CACHE_THRESHOLD": 50,
-        "CACHE_DEFAULT_TIMEOUT": 600,
+        "CACHE_DEFAULT_TIMEOUT": 610,
     },
 )
 
