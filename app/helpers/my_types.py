@@ -43,6 +43,20 @@ class BSColorsEnum(Enum):
     BLUE_DELFT_COLOR = "#353e5a"
 
 
+COLOR_DICT = {
+    "Parada de 5 minutos ou menos": BSColorsEnum.GREY_600_COLOR.value,
+    "Não apontado": BSColorsEnum.WARNING_COLOR.value,
+    "Ajustes": BSColorsEnum.PRIMARY_COLOR.value,
+    "Manutenção": BSColorsEnum.SPACE_CADET_COLOR.value,
+    "Qualidade": BSColorsEnum.INFO_COLOR.value,
+    "Fluxo": BSColorsEnum.PINK_COLOR.value,
+    "Parada Programada": BSColorsEnum.DANGER_COLOR.value,
+    "Setup": BSColorsEnum.BLUE_DELFT_COLOR.value,
+    "Saída para Backup": BSColorsEnum.TEAL_COLOR.value,
+    "Limpeza": BSColorsEnum.ORANGE_COLOR.value,
+    "Rodando": BSColorsEnum.SUCCESS_COLOR.value,
+}
+
 MANUT_COLORS = {
     "Termoformadora": BSColorsEnum.INFO_COLOR.value,
     "Recheadora": BSColorsEnum.PINK_COLOR.value,
@@ -97,17 +111,3 @@ def get_color(value, max_value):
     )
 
     return hex_color
-
-
-COLOR_DICT = {
-    "Parada de 5 minutos ou menos": BSColorsEnum.GREY_600_COLOR.value,
-    "Não apontado": BSColorsEnum.WARNING_COLOR.value,
-    "Ajustes": BSColorsEnum.TEAL_COLOR.value,
-    "Manutenção": BSColorsEnum.SPACE_CADET_COLOR.value,
-    "Qualidade": BSColorsEnum.INFO_COLOR.value,
-    "Fluxo": BSColorsEnum.PINK_COLOR.value,
-    "Parada Programada": BSColorsEnum.DANGER_COLOR.value,
-    "Setup": BSColorsEnum.BLUE_DELFT_COLOR.value,
-    "Limpeza": BSColorsEnum.PRIMARY_COLOR.value,
-    "Rodando": BSColorsEnum.SUCCESS_COLOR.value,
-}

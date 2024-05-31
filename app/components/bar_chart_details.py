@@ -86,6 +86,9 @@ class BarChartDetails:
             # Ajustar data_hora qdo motivo é Rodando
             df.loc[df["motivo"] == "Rodando", "data_hora"] = " "
 
+            # Ajustar causa quando motivo é limpeza
+            df.loc[df["motivo"] == "Limpeza", "causa"] = "Parada de Fábrica"
+
             # Remover a coluna sort
             df = df.drop(columns=["sort"])
 

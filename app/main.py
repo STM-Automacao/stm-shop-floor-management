@@ -34,8 +34,6 @@ last_month_ind = LastMonthInd()
 URL_BOOTS = dbc.themes.BOOTSTRAP  # para o switch
 URL_DARKY = dbc.themes.DARKLY
 
-update_cache()
-
 # ========================================= Background ========================================= #
 
 
@@ -53,11 +51,6 @@ def update_big_data():
 
     Esta função chama o método save_big_data para salvar os dados grandes.
 
-    Parâmetros:
-        Nenhum.
-
-    Retorno:
-        Nenhum.
     """
     big_data = BigData()
     big_data.save_big_data()
@@ -70,7 +63,6 @@ scheduler.add_job(func=cache_daily_data, trigger="cron", hour=0, minute=1)
 scheduler.add_job(func=update_last_month, trigger="cron", hour=1)  # Atualiza a cada 24 horas
 
 scheduler.start()
-
 
 # ========================================= Layout ========================================= #
 content = html.Div(id="page-content")

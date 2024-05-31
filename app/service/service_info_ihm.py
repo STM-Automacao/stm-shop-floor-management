@@ -107,6 +107,32 @@ class ServiceInfoIHM:
             df["data_hora_final"],
         )
 
+        # =============== Atualização Para Hora Final No Caso De Mudança De Turno =============== #
+        # Dicionário com o horário de término de cada turno
+        turno_end_time = {
+            "NOT": pd.to_timedelta("08:01:00"),
+            "MAT": pd.to_timedelta("16:01:00"),
+            "VES": pd.to_timedelta("00:01:00"),
+        }
+
+        # Nova coluna com o horário de término do turno
+        df["turno_end_time"] = df["turno"].map(turno_end_time)
+
+        # Atualiza a hora final caso haja mudança de turno
+        mask = df["turno"] != df["turno"].shift(-1)
+        df["data_hora_final"] = np.where(
+            mask & (df["turno"] == "VES"),
+            (df["data_hora"].dt.normalize() + pd.DateOffset(days=1)) + df["turno_end_time"],
+            np.where(
+                mask,
+                df["data_hora"].dt.normalize() + df["turno_end_time"],
+                df["data_hora_final"],
+            ),
+        )
+
+        # Remove coluna auxiliar
+        df = df.drop(columns=["turno_end_time"])
+
         # Caso a data_hora_final seja nula, remove a linha
         df = df.dropna(subset=["data_hora_final"]).reset_index(drop=True)
 
@@ -117,6 +143,10 @@ class ServiceInfoIHM:
 
         # Arredondar e converter para inteiro
         df["tempo"] = df["tempo"].round().astype(int)
+
+        # Se o tempo for maior que 478, e o motivo for parada programada ou limpeza ajustar para 480
+        mask = (df["tempo"] > 478) & (df["motivo"].isin(["Parada Programada", "Limpeza"]))
+        df["tempo"] = np.where(mask, 480, df["tempo"])
 
         return df
 
@@ -179,6 +209,15 @@ class ServiceInfoIHM:
         mask = (
             (df_joined["status"] == "rodando")
             & (df_joined["tempo"] < 10)
+            & (df_joined["turno"].eq(df_joined["turno"].shift(-1)))
+            & (df_joined["motivo"].shift() != "Parada Programada")
+        )
+
+        df_joined["status"] = np.where(mask, "parada", df_joined["status"])
+
+        mask = (
+            (df_joined["status"] == "rodando")
+            & (df_joined["tempo"] < 5)
             & (df_joined["turno"].eq(df_joined["turno"].shift(-1)))
         )
 
