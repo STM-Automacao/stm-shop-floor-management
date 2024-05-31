@@ -10,6 +10,7 @@ import pandas as pd
 
 # pylint: disable=import-error
 from database.connection import Connection
+from sqlalchemy.exc import DatabaseError
 
 
 class Read(Connection):
@@ -45,8 +46,7 @@ class Read(Connection):
             connection = self.get_connection_automacao()
             data = pd.read_sql(query, connection)
             return data
-        # pylint: disable=broad-except
-        except Exception as e:
+        except DatabaseError as e:
             print(f"Erro ao buscar dados: {e}")
             return None
         finally:
@@ -100,8 +100,7 @@ class Read(Connection):
             connection = self.get_connection_totvsdb()
             data = pd.read_sql(query, connection)
             return data
-        # pylint: disable=broad-except
-        except Exception as e:
+        except DatabaseError as e:
             print(f"Erro ao buscar dados: {e}")
             return None
         finally:
