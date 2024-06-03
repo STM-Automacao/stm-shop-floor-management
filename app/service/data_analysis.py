@@ -187,6 +187,10 @@ class DataAnalysis:
         mask = (df["producao_esperada"] == 0) & (df["eficiencia"] == 0)
         df.loc[mask, "eficiencia"] = np.nan
 
+        # Se o tempo esperado for menor que 5 e o total produzido for 0, tornar a eficiência np.nan
+        mask = (df["tempo_esperado"] < 5) & (df["total_produzido"] == 0)
+        df.loc[mask, "eficiencia"] = np.nan
+
         # Ordenar as colunas
         df = df[
             [

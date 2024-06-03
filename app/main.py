@@ -9,6 +9,7 @@
 
 import os
 from threading import Lock
+from time import sleep
 
 import dash_bootstrap_components as dbc
 import dash_mantine_components as dmc
@@ -21,7 +22,7 @@ from dash_bootstrap_templates import ThemeSwitchAIO
 # pylint: disable=E0401
 from database.last_month_ind import LastMonthInd
 from helpers.cache import cache, cache_daily_data, update_cache
-from pages import grafana, hour_prod, main_page, management
+from pages import grafana, hour_prod, main_page, management, pcp
 from service.big_data import BigData
 from waitress import serve
 
@@ -58,14 +59,13 @@ def update_big_data():
 
 scheduler = BackgroundScheduler()
 scheduler.add_job(func=update_cache, trigger="interval", seconds=600)  # Atualiza a cada 10 minutos
-scheduler.add_job(func=update_big_data, trigger="cron", hour=0)
+scheduler.add_job(func=update_big_data, trigger="cron", hour=5)
 scheduler.add_job(func=cache_daily_data, trigger="cron", hour=0, minute=1)
 scheduler.add_job(func=update_last_month, trigger="cron", hour=1)  # Atualiza a cada 24 horas
 
 scheduler.start()
 
 # ========================================= Layout ========================================= #
-content = html.Div(id="page-content")
 
 app.layout = dmc.MantineProvider(
     forceColorScheme="light",
@@ -105,18 +105,12 @@ app.layout = dmc.MantineProvider(
                         dbc.Col(
                             html.H1("Shop Floor Management", className="text-center"),
                         ),
+                        dcc.Location(id="url"),
                     ],
                 ),
                 html.Hr(),
                 dbc.Row(
-                    dbc.Tabs(
-                        [
-                            dbc.Tab(grafana.layout, label="Ao Vivo"),
-                            dbc.Tab(main_page.layout, label="SFM Dashboard"),
-                            dbc.Tab(management.layout, label="Gestão de Produção"),
-                            dbc.Tab(hour_prod.layout, label="Produção por Hora"),
-                        ],
-                    ),
+                    id="dbc-tabs",
                     class_name="mb-5",
                 ),
                 dmc.AppShell(
@@ -148,6 +142,44 @@ app.layout = dmc.MantineProvider(
 
 
 # ========================================= Callbacks ========================================= #
+@callback(
+    Output("dbc-tabs", "children"),
+    Input("url", "pathname"),
+)
+def update_tabs(pathname):
+    """
+    Função que atualiza o conteúdo da aba com base no pathname.
+
+    Parâmetros:
+    pathname (str): O pathname da URL.
+
+    Retorna:
+    list: A lista de componentes da aba.
+    """
+
+    tabs_info = [
+        (grafana.layout, "Ao Vivo", "tab-grafana"),
+        (main_page.layout, "SFM Dashboard", "tab-sfm-dashboard"),
+        (management.layout, "Gestão de Produção", "tab-management"),
+        (hour_prod.layout, "Produção por Hora", "tab-hour-prod"),
+        (pcp.layout, "PCP", "tab-pcp"),
+    ]
+
+    all_tabs = [dbc.Tab(layout, label=label, id=id) for layout, label, id in tabs_info]
+
+    tabs = {
+        "/": all_tabs,
+        "/1": all_tabs[:2],
+        "/2": all_tabs[:3],
+        "/3": all_tabs[:4],
+        "/4": [all_tabs[0], all_tabs[4]] + all_tabs[1:4],
+        "/5": all_tabs,
+        "/test": all_tabs[-1],
+    }
+
+    return dbc.Tabs(tabs[pathname])
+
+
 @callback(
     Output("footer", "className"),
     Input(ThemeSwitchAIO.ids.switch("theme"), "value"),
@@ -258,6 +290,12 @@ def update_is_data_store(data_info, data_prod):
     Utiliza dados do cache para agilizar o carregamento.
     """
     if data_info is None or data_prod is None:
+        update_cache()
+        sleep(5)
+        update_last_month()
+        sleep(5)
+        update_big_data()
+
         return False
 
     return True

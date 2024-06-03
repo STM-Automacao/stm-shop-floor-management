@@ -118,8 +118,21 @@ class ServiceInfoIHM:
         # Nova coluna com o horário de término do turno
         df["turno_end_time"] = df["turno"].map(turno_end_time)
 
-        # Atualiza a hora final caso haja mudança de turno
-        mask = df["turno"] != df["turno"].shift(-1)
+        # Determina a data e hora atual
+        now = pd.Timestamp.now()
+
+        # Determina o turno atual com base na hora atual
+        if now.hour in range(0, 8):
+            current_shift = "NOT"
+        elif now.hour in range(8, 16):
+            current_shift = "MAT"
+        else:
+            current_shift = "VES"
+
+        # Atualiza a hora final caso haja mudança de turno e o turno não seja o turno atual
+        mask = (df["turno"] != df["turno"].shift(-1)) & ~(
+            (df["data_hora"].dt.date == now.date()) & (df["turno"] == current_shift)
+        )
         df["data_hora_final"] = np.where(
             mask & (df["turno"] == "VES"),
             (df["data_hora"].dt.normalize() + pd.DateOffset(days=1)) + df["turno_end_time"],

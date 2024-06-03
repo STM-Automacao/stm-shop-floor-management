@@ -82,6 +82,9 @@ def update_hour_prod_table(data):
     # Selecionar apenas as colunas necessárias
     df_final = df_resampled[["linha", "data_hora", "total_produzido"]]
 
+    # Preenchendo valores ausentes com 0
+    df_final.loc[:, "total_produzido"] = df_final["total_produzido"].fillna(0)
+
     # Dividir o total produzido por 10 para ter o número de caixas
     df_final.loc[:, "total_produzido"] = np.floor(df_final["total_produzido"] / 10).astype(int)
 
@@ -99,6 +102,9 @@ def update_hour_prod_table(data):
 
     # Reordena as colunas para que 'Intervalo' seja a primeira coluna
     df_pivot = df_pivot[["Intervalo"] + [col for col in df_pivot.columns if col != "Intervalo"]]
+
+    # Renomeia as colunas para que sejam mais legíveis
+    df_pivot.columns = [col if col == "Intervalo" else f"Linha {col}" for col in df_pivot.columns]
 
     return dbc.Table.from_dataframe(
         df_pivot,

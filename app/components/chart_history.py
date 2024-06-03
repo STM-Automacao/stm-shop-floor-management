@@ -130,6 +130,7 @@ class ChartHistory:
         df: pd.DataFrame,
         path_choice: str,
         switch: bool,
+        switch_programada: bool,
         template: TemplateType,
     ) -> dcc.Graph:
         """
@@ -157,6 +158,10 @@ class ChartHistory:
 
             # Remove onde motivo for 5 minutos ou menos
             df = df[df["motivo"] != "Parada de 5 minutos ou menos"].reset_index(drop=True)
+
+        if not switch_programada:
+            # Remove onde motivo for Parada Programada
+            df = df[df["motivo"] != "Parada Programada"].reset_index(drop=True)
 
         # Preenche equipamentos nulos
         df["equipamento"] = df["equipamento"].fillna("Sem Equipamento")

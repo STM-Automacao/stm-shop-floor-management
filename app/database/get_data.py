@@ -102,7 +102,7 @@ class GetData:
         df_info_production = self.db_read.get_automacao_data(query_production)
 
         # Verificando se os dados foram lidos corretamente
-        if df_ihm.empty or df_info.empty or df_info_production.empty:
+        if df_info.empty or df_info_production.empty:
             raise ValueError("* --> Erro na leitura dos dados do DB Automação.")
 
         return df_ihm, df_info, df_info_production
