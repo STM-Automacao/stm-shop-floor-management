@@ -39,6 +39,9 @@ class GetPcpData:
         Retorno:
             DataFrame contendo os dados de massa do PCP.
         """
+        # ================================== Definindo As Datas ================================== #
+        first_day = pd.Timestamp.today().replace(day=1).strftime("%Y%m%d")
+
         # ================================== Preparando A Query ================================== #
         select = (
             'T1.CYV_CDMQ AS "Codigo_Maquina"'
@@ -65,7 +68,7 @@ class GetPcpData:
 
         where = (
             "T1.D_E_L_E_T_ <> '*' AND T1.CYV_FILIAL = '0101' AND T1.CYV_CDMQ LIKE 'AMS%' "
-            "AND T1.CYV_DTRPBG BETWEEN '20240430' AND '20240601'"
+            f"AND T1.CYV_DTRPBG >= '{first_day}'"
         )
 
         orderby = "T1.CYV_DTRPBG, T1.CYV_CDMQ, T1.CYV_HRRPBG"
