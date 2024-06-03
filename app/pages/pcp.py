@@ -1,3 +1,7 @@
+"""
+Módulo com a aba do PCP.
+"""
+
 import dash_bootstrap_components as dbc
 from dash import html
 
@@ -14,3 +18,7 @@ layout = [
     ),
     dbc.Row(html.H2("Trabalhando aqui, entrará dados de perda")),
 ]
+
+# ================================================================================================ #
+#                                            CALLBACK'S                                            #
+# ================================================================================================ #
