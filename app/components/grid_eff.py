@@ -85,3 +85,44 @@ class GridEff:
         )
 
         return grid
+
+    def create_grid_history(self, df_history: pd.DataFrame, light_theme: bool) -> dag.AgGrid:
+
+        # -------------------- Tabela de Desempenho Mensal -------------------- #
+
+        # Transforma 415641 em 415.641
+        df_history["total_caixas"] = df_history["total_caixas"].apply(
+            lambda x: f"{x:,.0f} cxs".replace(",", ".")
+        )
+        # Transforma 0.56 em 56%
+        df_history["eficiencia"] = df_history["eficiencia"] * 100
+        df_history["performance"] = df_history["performance"] * 100
+        df_history["reparo"] = df_history["reparo"] * 100
+        # Transforma 56 em 56%
+        df_history["eficiencia"] = df_history["eficiencia"].map(lambda x: f"{x:.0f}%")
+        df_history["performance"] = df_history["performance"].map(lambda x: f"{x:.0f}%")
+        df_history["reparo"] = df_history["reparo"].map(lambda x: f"{x:.0f}%")
+        # Transforma 244502 em 244.502 min
+        df_history["parada_programada"] = df_history["parada_programada"].apply(
+            lambda x: f"{x:,.0f} min".replace(",", ".")
+        )
+
+        columns_def = [
+            {"headerName": "Mês/Ano", "field": "data_registro"},
+            {"headerName": "Produção Total", "field": "total_caixas"},
+            {"headerName": "Eficiência", "field": "eficiencia"},
+            {"headerName": "Performance", "field": "performance"},
+            {"headerName": "Reparos", "field": "reparo"},
+            {"headerName": "Parada Programada", "field": "parada_programada"},
+        ]
+
+        table = dag.AgGrid(
+            className="ag-theme-quartz" if light_theme else "ag-theme-alpine-dark",
+            columnDefs=columns_def,
+            rowData=df_history.to_dict("records"),
+            columnSize="responsiveSizeToFit",
+            dashGridOptions={"pagination": True, "paginationAutoPageSize": True},
+            style={"height": "600px"},
+        )
+
+        return table

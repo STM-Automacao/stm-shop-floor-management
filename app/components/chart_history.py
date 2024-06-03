@@ -4,7 +4,7 @@
 
 import pandas as pd
 from dash import dcc
-from helpers.my_types import COLOR_DICT, IndicatorType, TemplateType
+from helpers.my_types import COLOR_DICT, MANUT_COLORS, IndicatorType, TemplateType
 from plotly import express as px
 from service.df_for_indicators import DFIndicators
 
@@ -129,6 +129,8 @@ class ChartHistory:
         self,
         df: pd.DataFrame,
         path_choice: str,
+        switch: bool,
+        switch_programada: bool,
         template: TemplateType,
     ) -> dcc.Graph:
         """
@@ -149,22 +151,38 @@ class ChartHistory:
         # Ajustar df para indicador de eficiência
         df = class_indicators.adjust_df_for_bar_lost(df, IndicatorType.EFFICIENCY)
 
-        # Remove onde não há motivo informado
-        df = df[df["motivo"] != "Não apontado"].reset_index(drop=True)
+        # Switch para remover paradas sem apontamento
+        if not switch:
+            # Remove onde não há motivo informado
+            df = df[df["motivo"] != "Não apontado"]
+
+            # Remove onde motivo for 5 minutos ou menos
+            df = df[df["motivo"] != "Parada de 5 minutos ou menos"].reset_index(drop=True)
+
+        if not switch_programada:
+            # Remove onde motivo for Parada Programada
+            df = df[df["motivo"] != "Parada Programada"].reset_index(drop=True)
 
         # Preenche equipamentos nulos
         df["equipamento"] = df["equipamento"].fillna("Sem Equipamento")
 
         # Se path_choice for equipamento, remove linhas sem equipamento
-        if path_choice == "Equipamento":
+        if path_choice in ("Equipamento", "Manutenção"):
             df = df[df["equipamento"] != "Sem Equipamento"].reset_index(drop=True)
+
+        # Se path_choice for manutenção, mantém apenas as paradas de manutenção
+        if path_choice == "Manutenção":
+            df = df[df["motivo"] == "Manutenção"].reset_index(drop=True)
 
         # Se motivo for limpeza, causa deve ser igual ao problema
         df.loc[df["motivo"] == "Limpeza", "causa"] = df["problema"]
 
+        # Editar a linha para que apareça "Linha 1" ao invés de 1
+        df["linha"] = "Linha " + df["linha"].astype(str)
+
         # Criar uma string contendo cada linha única
         linhas = df["linha"].unique()
-        linhas = [f"Linha {linha}<br>" for linha in linhas]
+        linhas = [f"{linha}<br>" for linha in linhas]
         linhas = "".join(linhas) if len(linhas) > 1 else linhas[0]
 
         path_dict = {
@@ -172,21 +190,36 @@ class ChartHistory:
             "Equipamento": [
                 px.Constant(linhas),
                 "equipamento",
+                "maquina_id",
+                "linha",
                 "turno",
                 "motivo",
                 "problema",
                 "causa",
             ],
             "Turno": [px.Constant(linhas), "turno", "motivo", "equipamento", "problema", "causa"],
+            "Manutenção": [
+                px.Constant(linhas),
+                "equipamento",
+                "turno",
+                "problema",
+                "causa",
+                "maquina_id",
+                "linha",
+            ],
         }
+
+        # Ajuste nas cores no caso de manutenção
+        color_map = MANUT_COLORS if path_choice == "Manutenção" else COLOR_DICT
+        color_column = "equipamento" if path_choice == "Manutenção" else "motivo"
 
         # Criação do gráfico
         fig = px.icicle(
             df,
             path=path_dict[path_choice],
             values="tempo",
-            color="motivo",
-            color_discrete_map=COLOR_DICT,
+            color=color_column,
+            color_discrete_map=color_map,
             title="Paradas de Produção",
             height=800,
             template=template.value,
@@ -198,10 +231,10 @@ class ChartHistory:
         )
 
         # Adicionar a porcentagem
-        fig.update_traces(textinfo="label+percent parent")
-
         fig.update_traces(
-            hovertemplate="Label: %{label}<br>Tempo: %{value}<br>Percentual: %{percentParent:.2%}"
+            textinfo="label+percent parent",
+            hovertemplate="Label: %{label}<br>Tempo: %{value}<br>Percentual: %{percentParent:.2%}",
+            textfont=dict(family="Inter, Courier New, monospace", size=16),
         )
 
         return dcc.Graph(figure=fig)

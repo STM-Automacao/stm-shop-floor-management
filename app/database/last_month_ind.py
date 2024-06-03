@@ -67,13 +67,13 @@ class LastMonthInd:
             total_caixas = int(np.floor((df_prod["total_produzido"].sum()) / 10))
 
             # Eficiência Média
-            eff_media = round(df_eff["eficiencia"].mean())
+            eff_media = round(df_eff["eficiencia"].mean(), 3)
 
             # Performance Média
-            perf_media = round(df_perf["performance"].mean())
+            perf_media = round(df_perf["performance"].mean(), 3)
 
             # Reparos Média
-            repair_media = round(df_repair["reparo"].mean())
+            repair_media = round(df_repair["reparo"].mean(), 3)
 
             # Parada Programada - Tempo Total
             df_info_programada = df_stops[df_stops["causa"].isin(["Sem Produção", "Backup"])]
@@ -110,8 +110,8 @@ class LastMonthInd:
         df_stops["problema"] = df_stops["problema"].fillna("Não apontado")
 
         # Agrupa por motivo_nome e tempo_registro_min
-        df_stops_group = df_stops.groupby(["motivo", "problema"])["tempo"].sum()
-        df_stops_group = df_stops_group.sort_values(ascending=False).head(20)
+        df_stops_group = df_stops.groupby(["motivo", "problema"])["tempo"].sum().reset_index()
+        df_stops_group = df_stops_group.sort_values(by="tempo", ascending=False).head(20)
 
         # Salva no DB
         with ConnectionLocal() as conn:

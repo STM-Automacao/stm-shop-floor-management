@@ -102,7 +102,7 @@ class GetData:
         df_info_production = self.db_read.get_automacao_data(query_production)
 
         # Verificando se os dados foram lidos corretamente
-        if df_ihm.empty or df_info.empty or df_info_production.empty:
+        if df_info.empty or df_info_production.empty:
             raise ValueError("* --> Erro na leitura dos dados do DB Automação.")
 
         return df_ihm, df_info, df_info_production
@@ -278,7 +278,7 @@ class GetData:
             ") AS rn "
             "FROM AUTOMACAO.dbo.maquina_info t1 "
             ") AS t "
-            f"WHERE rn = 1 AND WHERE data_registro >= '{first_day}' "
+            f"WHERE rn = 1 AND data_registro >= '{first_day}' "
             f"AND data_registro <= '{last_day}' AND hora_registro > '00:01' "
             "ORDER BY data_registro DESC, linha"
         )
@@ -414,5 +414,23 @@ class GetData:
 
         if df.empty:
             raise ValueError("* --> Erro na leitura dos dados do DB TOTVSDB.")
+
+        return df
+
+    def get_maq_quality_data(self) -> pd.DataFrame:
+        """
+        Retrieves data from the 'maquina_qualidade' table in the AUTOMACAO database.
+
+        Returns:
+            DataFrame: A pandas DataFrame containing the retrieved data.
+        """
+
+        # Encontrando o primeiro dia de 6 meses atrás
+        first_day = pd.to_datetime("today").replace(day=1).strftime("%Y-%m-%d")
+
+        # Query para leitura dos dados de qualidade
+        query = f"SELECT * FROM AUTOMACAO.dbo.qualidade_ihm WHERE data_registro >= '{first_day}'"
+
+        df = self.db_read.get_automacao_data(query)
 
         return df

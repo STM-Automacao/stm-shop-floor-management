@@ -209,7 +209,7 @@ def update_grafana(_n, _n_intervals):
                                         children=[
                                             dmc.Center(
                                                 dmc.Text(
-                                                    f"{row[1]['parada_nome']}",
+                                                    (f"{row[1]['parada_nome']}").upper(),
                                                     truncate=True,
                                                     className="fs-4",
                                                 ),
