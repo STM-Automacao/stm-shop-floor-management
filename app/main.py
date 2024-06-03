@@ -168,7 +168,7 @@ def update_tabs(pathname):
     all_tabs = [dbc.Tab(layout, label=label, id=id) for layout, label, id in tabs_info]
 
     tabs = {
-        "/": all_tabs[0],
+        "/": all_tabs,
         "/1": all_tabs[:2],
         "/2": all_tabs[:3],
         "/3": all_tabs[:4],
