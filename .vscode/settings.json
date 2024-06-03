@@ -52,6 +52,7 @@
     "nunique",
     "OBDC",
     "odbc",
+    "paes",
     "pcards",
     "plotly",
     "producao",
