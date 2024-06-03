@@ -12,5 +12,5 @@ layout = [
         ],
         class_name="mt-3 mb-3",
     ),
-    dbc.Row(html.H2("Trabalhando aqui")),
+    dbc.Row(html.H2("Trabalhando aqui, entrará dados de perda")),
 ]
