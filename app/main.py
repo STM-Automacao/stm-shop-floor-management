@@ -70,6 +70,7 @@ scheduler.add_job(func=update_last_month, trigger="cron", hour=1)  # Atualiza a 
 
 scheduler.start()
 
+
 # ============================================ Layout ============================================ #
 
 app.layout = dmc.MantineProvider(

@@ -3,10 +3,11 @@ Módulo para criar o grid do pcp
 """
 
 import dash_ag_grid as dag
+import dash_mantine_components as dmc
 import pandas as pd
 
 
-class GridPcp:
+class ComponentsPcpBuilder:
     """
     Classe responsável por criar um grid do PCP.
     """
@@ -48,3 +49,23 @@ class GridPcp:
         )
 
         return grid
+
+    def generate_segmented_btn(self, btn_id: str, data: list, value: str) -> dmc.SegmentedControl:
+        """
+        Cria um botão segmentado.
+
+        Args:
+            btn_id (str): O ID do botão segmentado.
+            data (list): Os dados para preencher o botão segmentado.
+            value (str): O valor inicial do botão segmentado.
+
+        Returns:
+            dmc.SegmentedControl: O botão segmentado criado.
+        """
+
+        return dmc.SegmentedControl(
+            id=f"segmented-btn-{btn_id}",
+            data=data,
+            value=value,
+            w="85%",
+        )
