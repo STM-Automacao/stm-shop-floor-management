@@ -51,8 +51,8 @@ class GetPcpData:
             ', T1.CYV_HRRPBG AS "Hora_Registro"'
             ', T1.CYV_CDUSRP AS "Usuario_Registro"'
             ", COALESCE("
-            "CASE WHEN CHARINDEX(T1.CYV_CDUSRP, T3.X6_CONTEUD) > 0 THEN 'Fabrica 1' END,"
-            "CASE WHEN CHARINDEX(T1.CYV_CDUSRP, T4.X6_CONTEUD) > 0 THEN 'Fabrica 2' END,"
+            "CASE WHEN CHARINDEX(T1.CYV_CDUSRP, T3.X6_CONTEUD) > 0 THEN 'Fab. 1' END,"
+            "CASE WHEN CHARINDEX(T1.CYV_CDUSRP, T4.X6_CONTEUD) > 0 THEN 'Fab. 2' END,"
             "'Não identificado'"
             ') AS "Fabrica"'
         )
