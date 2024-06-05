@@ -7,6 +7,7 @@
     Para mais informações, acesse: https://dash.plotly.com/
 """
 
+import logging
 import os
 from threading import Lock
 from time import sleep
@@ -33,6 +34,10 @@ from app import app
 lock = Lock()
 last_month_ind = LastMonthInd()
 cache = MainDataCache(app)
+logging.basicConfig(
+    filename="app.log", filemode="w", format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
+logging.getLogger("apscheduler").setLevel(logging.DEBUG)
 
 # Seleção de temas para o App - Variáveis:
 URL_BOOTS = dbc.themes.BOOTSTRAP  # para o switch
@@ -56,8 +61,14 @@ def update_big_data():
     Esta função chama o método save_big_data para salvar os dados grandes.
 
     """
-    big_data = BigData()
-    big_data.save_big_data()
+    logging.info("Iniciando update de big data")
+    try:
+        big_data = BigData()
+        big_data.save_big_data()
+        logging.info("Update bem sucedido")
+    # pylint: disable=W0718
+    except Exception as err:
+        logging.error("Erro ao executar update de big data: %s", err)
 
 
 scheduler = BackgroundScheduler()
@@ -69,7 +80,6 @@ scheduler.add_job(func=cache.cache_daily_data, trigger="cron", hour=0, minute=1)
 scheduler.add_job(func=update_last_month, trigger="cron", hour=1)  # Atualiza a cada 24 horas
 
 scheduler.start()
-
 
 # ============================================ Layout ============================================ #
 
