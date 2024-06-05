@@ -62,8 +62,8 @@ class GetPcpData:
         join = (
             "JOIN CYB000 (NOLOCK) AS T2 ON T1.CYV_FILIAL = T2.CYB_FILIAL "
             "AND T1.CYV_CDMQ = T2.CYB_CDMQ AND T2.D_E_L_E_T_ <> '*'"
-            "LEFT JOIN SX6000 (NOLOCK) AS T3 ON T3.X6_VAR = 'MV_X_USRF1'"
-            "LEFT JOIN SX6000 (NOLOCK) AS T4 ON T4.X6_VAR = 'MV_X_USRF2'"
+            "LEFT JOIN SX6000 (NOLOCK) AS T3 ON T3.X6_VAR = 'MV_X_USRF1' "
+            "LEFT JOIN SX6000 (NOLOCK) AS T4 ON T4.X6_VAR = 'MV_X_USRF2' "
         )
 
         where = (

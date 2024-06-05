@@ -335,7 +335,7 @@ class GetData:
 
         return df
 
-    # cSpell: words fabr emissao hrrpbg ccca nrrpet cdmq codbem
+    # cSpell: words fabr emissao hrrpbg ccca nrrpet cdmq codbem usuario usrf
     def get_protheus_caixas_data(self) -> pd.DataFrame:
         """
         Retrieves data from the Protheus system for caixas.
@@ -355,14 +355,19 @@ class GetData:
 
         query = self.db_read.create_totvsdb_query(
             select=(
-                "CYB_X_FABR AS FABRICA, "
                 "T9_NOME AS MAQUINA, "
                 "B1_DESC AS PRODUTO, "
                 "D3_QUANT AS QTD, "
                 "D3_UM AS UNIDADE, "
                 "D3_EMISSAO AS EMISSAO, "
                 "CYV_HRRPBG AS HORA, "
-                "CYV_CCCA05 AS LOTE "
+                "CYV_CCCA05 AS LOTE, "
+                "CYV_CDUSRP AS USUARIO, "
+                "COALESCE( "
+                "CASE WHEN CHARINDEX(CYV.CYV_CDUSRP, T3.X6_CONTEUD) > 0 THEN 'Fab. 1' END,"
+                "CASE WHEN CHARINDEX(CYV.CYV_CDUSRP, T4.X6_CONTEUD) > 0 THEN 'Fab. 2' END,"
+                "'Não identificado'"
+                ") AS FABRICA"
             ),
             table="SD3000 SD3 WITH (NOLOCK)",
             join=(
@@ -373,7 +378,9 @@ class GetData:
                 "LEFT JOIN CYB000 CYB WITH (NOLOCK) "
                 "ON CYB_FILIAL=D3_FILIAL and CYB_CDMQ=CYV_CDMQ and CYB.D_E_L_E_T_<>'*' "
                 "LEFT JOIN ST9000 ST9 WITH (NOLOCK) "
-                "ON CYV_CDMQ=T9_CODBEM and ST9.D_E_L_E_T_<>'*'"
+                "ON CYV_CDMQ=T9_CODBEM and ST9.D_E_L_E_T_<>'*' "
+                "LEFT JOIN SX6000 (NOLOCK) AS T3 ON T3.X6_VAR = 'MV_X_USRF1' "
+                "LEFT JOIN SX6000 (NOLOCK) AS T4 ON T4.X6_VAR = 'MV_X_USRF2' "
             ),
             where=(
                 "D3_FILIAL = '0101' AND D3_LOCAL='CF' AND B1_TIPO = 'PA' AND D3_CF = 'PR0' "
