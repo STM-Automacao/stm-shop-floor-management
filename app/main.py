@@ -189,13 +189,12 @@ def update_tabs(pathname):
     all_tabs = [dbc.Tab(layout, label=label, id=id) for layout, label, id in tabs_info]
 
     tabs = {
-        "/": all_tabs,
+        "/": all_tabs[:3],
         "/1": all_tabs[:2],
         "/2": all_tabs[:3],
         "/3": all_tabs[:4],
         "/4": [all_tabs[0], all_tabs[4]] + all_tabs[1:4],
         "/5": all_tabs,
-        "/test": all_tabs[-1],
     }
 
     return dbc.Tabs(tabs[pathname])
