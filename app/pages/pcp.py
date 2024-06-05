@@ -64,6 +64,9 @@ layout = [
         ),
         class_name="p-2",
     ),
+    # ======================================= Teste De Pães ====================================== #
+    html.H1("Teste de Pães", className="text-center mt-3 mb-3"),
+    dbc.Row(id="teste-paes"),
 ]
 
 # ================================================================================================ #
@@ -210,5 +213,35 @@ def update_massadas_week_card(data, theme, choice):
     df["Data Inicial"] = pd.to_datetime(df["Data Inicial"]).dt.strftime("%d/%m")
 
     table = pcp_builder.create_grid_pcp(df, 2, theme)
+
+    return table
+
+
+# ========================================= Teste De Pães ======================================== #
+@callback(
+    Output("teste-paes", "children"),
+    [Input(ThemeSwitchAIO.ids.switch("theme"), "value"), Input("store-df-caixas-cf", "data")],
+)
+def update_teste_paes(theme, data):
+    """
+    Atualiza o card de teste de pães.
+
+    Args:
+        theme (str): O tema atual do dashboard.
+        data (str): Os dados no formato JSON para atualizar o card.
+
+    Returns:
+        dbc.Table: A tabela gerada a partir dos dados fornecidos.
+        Retorna a mensagem "Sem dados disponíveis." se data for None.
+    """
+
+    if data is None:
+        return "Sem dados disponíveis."
+
+    # Carregar os dados
+    # pylint: disable=no-member
+    df = pd.read_json(StringIO(data), orient="split")
+
+    table = pcp_builder.create_grid_pcp(df, 3, theme)
 
     return table
