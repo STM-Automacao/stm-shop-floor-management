@@ -74,7 +74,7 @@ class AnalysisPcpData:
             "Bolinha_Total",
         ]
 
-        df_massa_agg[cols] = df_massa_agg.apply(lambda col: col[cols].astype(int))
+        df_massa_agg[cols] = df_massa_agg[cols].astype(int)
 
         return df_massa_agg
 
@@ -83,7 +83,7 @@ class AnalysisPcpData:
         Retorna os dados agrupados por semana, fabrica e turno.
 
         Parâmetros:
-        - df: DataFrame contendo os dados de registro.
+        - df: DataFrame contendo os dados de registro somados.
 
         Retorno:
         - DataFrame contendo os dados agrupados por semana, fabrica e turno.
@@ -101,6 +101,8 @@ class AnalysisPcpData:
         - Baguete_Total: Total de pães baguete produzidos.
         - Bolinha_Total: Total de pães bolinha produzidos.
         """
+
+        df = df.copy()
 
         # Ajustar o dia da semana para começar no domingo
         df["Dia_Semana"] = df["Data_Registro"].dt.weekday
@@ -121,7 +123,7 @@ class AnalysisPcpData:
                 ]
             )
             .agg(
-                Qtd_Batidas_Cheias=("BQtd_Batidas_Cheias", "sum"),
+                Qtd_Batidas_Cheias=("Qtd_Batidas_Cheias", "sum"),
                 Peso_Batidas_Cheias=("Peso_Batidas_Cheias", "sum"),
                 Qtd_Batidas_Reprocesso=("Qtd_Batidas_Reprocesso", "sum"),
                 Peso_Batidas_Reprocesso=("Peso_Batidas_Reprocesso", "sum"),
