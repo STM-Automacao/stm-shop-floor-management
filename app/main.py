@@ -184,10 +184,10 @@ def update_tabs(pathname):
         "/3": all_tabs[:4],
         "/4": [all_tabs[0], all_tabs[4]] + all_tabs[1:4],
         "/5": all_tabs,
-        "/test": all_tabs[-1],
+        "/pcp": all_tabs[-1],
     }
 
-    return dbc.Tabs(tabs[pathname])
+    return dbc.Tabs(tabs.get(pathname, all_tabs[0]))
 
 
 # =================================== Switch De Cores Do Rodapé ================================== #

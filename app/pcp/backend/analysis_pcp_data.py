@@ -3,7 +3,7 @@ Módulo de análise dos dados do PCP
 """
 
 import pandas as pd
-from pcp.types_pcp import RENDIMENTO_BOLINHA, RENDIMENTO_CHEIA, RENDIMENTO_REPROCESSO
+from pcp.helpers.types_pcp import RENDIMENTO_BOLINHA, RENDIMENTO_CHEIA, RENDIMENTO_REPROCESSO
 
 
 class AnalysisPcpData:

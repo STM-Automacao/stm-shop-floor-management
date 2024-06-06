@@ -12,7 +12,7 @@ from service.join_data import JoinData
 from service.service_info_ihm import ServiceInfoIHM
 
 
-# cSpell: words automacao, ocorrencia dateadd datediff locpad
+# cSpell: words automacao, ocorrencia dateadd datediff locpad codigo
 class GetData:
     """
     Essa classe é responsável por realizar a leitura dos dados do banco de dados.
@@ -357,6 +357,7 @@ class GetData:
             select=(
                 "T9_NOME AS MAQUINA, "
                 "B1_DESC AS PRODUTO, "
+                "D3_COD AS CODIGO,"
                 "D3_QUANT AS QTD, "
                 "D3_UM AS UNIDADE, "
                 "D3_EMISSAO AS EMISSAO, "

@@ -64,7 +64,7 @@ class ComponentsPcpBuilder:
         """
 
         return dmc.SegmentedControl(
-            id=f"segmented-btn-{btn_id}",
+            id=f"segmented-btn-pcp-{btn_id}",
             data=data,
             value=value,
             w="85%",
