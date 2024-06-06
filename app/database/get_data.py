@@ -350,14 +350,13 @@ class GetData:
         # Encontrando primeiro dia do mês atual
         first_day = now.replace(day=1)
 
-        # Mantendo apenas a data
-        first_day = first_day.strftime("%Y-%m-%d")
+        # Mantendo apenas a data no formato yyyymmdd
+        first_day = first_day.strftime("%Y%m%d")
 
         query = self.db_read.create_totvsdb_query(
             select=(
                 "T9_NOME AS MAQUINA, "
                 "B1_DESC AS PRODUTO, "
-                "D3_COD AS CODIGO,"
                 "D3_QUANT AS QTD, "
                 "D3_UM AS UNIDADE, "
                 "D3_EMISSAO AS EMISSAO, "

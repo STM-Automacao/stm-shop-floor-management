@@ -23,40 +23,42 @@ pcp_builder = ComponentsPcpBuilder()
 # ================================================================================================ #
 #                                              LAYOUT                                              #
 # ================================================================================================ #
-layout = [
-    # =========================================== Body =========================================== #
-    html.H1("Batidas de Massa", className="text-center mt-3 mb-3"),
-    dbc.Row(
-        dbc.Col(
-            pcp_builder.generate_segmented_btn("batidas", ["Turno", "Total"], "Turno"),
-            md=3,
-            class_name="d-flex justify-content-center align-items-center",
+layout = dbc.Stack(
+    [
+        # ========================================= Body ========================================= #
+        html.H1("Batidas de Massa", className="text-center mt-3 mb-3"),
+        dbc.Row(
+            dbc.Col(
+                pcp_builder.generate_segmented_btn("batidas", ["Turno", "Total"], "Total"),
+                md=3,
+                class_name="d-flex justify-content-center align-items-center",
+            ),
+            justify="end",
+            align="center",
+            class_name="mb-3",
         ),
-        justify="end",
-        align="center",
-        class_name="mb-3",
-    ),
-    dbc.Row(
-        dbc.Card(
-            [
-                dbc.CardHeader("Batidas por Dia"),
-                dbc.CardBody(id="massadas"),
-            ],
-            class_name="p-0",
+        dbc.Row(
+            dbc.Card(
+                [
+                    dbc.CardHeader("Batidas por Dia"),
+                    dbc.CardBody(id="massadas"),
+                ],
+                class_name="p-0 shadow-sm",
+            ),
+            class_name="mb-3",
         ),
-        class_name="mb-3",
-    ),
-    dbc.Row(
-        dbc.Card(
-            [
-                dbc.CardHeader("Batidas por Semana"),
-                dbc.CardBody(id="massadas-week"),
-            ],
-            class_name="p-0",
+        dbc.Row(
+            dbc.Card(
+                [
+                    dbc.CardHeader("Batidas por Semana"),
+                    dbc.CardBody(id="massadas-week"),
+                ],
+                class_name="p-0 shadow-sm",
+            ),
+            class_name="mb-3",
         ),
-        class_name="mb-3",
-    ),
-]
+    ]
+)
 
 # ================================================================================================ #
 #                                            CALLBACK'S                                            #

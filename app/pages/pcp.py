@@ -7,7 +7,7 @@ import dash_mantine_components as dmc
 from apscheduler.schedulers.background import BackgroundScheduler
 from dash import Input, Output, callback, dcc
 from dash_iconify import DashIconify
-from pcp.frontend import massa_analysis_pcp, massa_batidas_pcp
+from pcp.frontend import massa_analysis_pcp, massa_batidas_pcp, producao_pcp
 from pcp.frontend.components_pcp import ComponentsPcpBuilder
 from pcp.helpers.cache_pcp import PcpDataCache
 
@@ -20,6 +20,7 @@ scheduler = BackgroundScheduler()
 pcp_builder = ComponentsPcpBuilder()
 layout_pcp_massa_analysis = massa_analysis_pcp.layout
 layout_pcp_massa_batidas = massa_batidas_pcp.layout
+layout_pcp_producao = producao_pcp.layout
 
 
 # ====================================== Cache Em Background ===================================== #
@@ -48,6 +49,12 @@ layout = [
     dmc.Drawer(
         id="pcp-drawer",
         children=[
+            dmc.NavLink(
+                label="Produção Semanal",
+                id="pcp-production-navlink",
+                href="#pcp-production",
+                leftSection=DashIconify(icon="mdi:calendar-week"),
+            ),
             dmc.NavLink(
                 label="Análise de Massa",
                 id="massa-analysis-navlink",
@@ -127,6 +134,7 @@ def update_content(hash_):
     hash_dict = {
         "#massa-analysis": layout_pcp_massa_analysis,
         "#massa-batidas": layout_pcp_massa_batidas,
+        "#pcp-production": layout_pcp_producao,
     }
 
     return hash_dict.get(hash_, layout_pcp_massa_analysis)
@@ -135,6 +143,7 @@ def update_content(hash_):
 @callback(
     Output("massa-analysis-navlink", "active"),
     Output("massa-batidas-navlink", "active"),
+    Output("pcp-production-navlink", "active"),
     Input("pcp-url", "hash"),
 )
 def update_navlink_active(hash_):
@@ -147,4 +156,4 @@ def update_navlink_active(hash_):
     Retorno:
     tuple: Um tuple contendo o estado de ativação dos NavLink.
     """
-    return hash_ == "#massa-analysis", hash_ == "#massa-batidas"
+    return hash_ == "#massa-analysis", hash_ == "#massa-batidas", hash_ == "#pcp-production"

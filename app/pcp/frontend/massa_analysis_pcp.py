@@ -9,57 +9,36 @@ import pandas as pd
 from dash import Input, Output, callback, html
 from dash_bootstrap_templates import ThemeSwitchAIO
 from pcp.frontend.components_pcp import ComponentsPcpBuilder
-from pcp.helpers.types_pcp import PAO_POR_BANDEJA
+from pcp.helpers.functions_pcp import AuxFuncPcp
 
 # =========================================== Variáveis ========================================== #
 pcp_builder = ComponentsPcpBuilder()
+afc = AuxFuncPcp()
 
 # ================================================================================================ #
 #                                              LAYOUT                                              #
 # ================================================================================================ #
-layout = [
-    html.H1("Pães", className="text-center mt-3 mb-3"),
-    dbc.Row(id="pcp-paes-analysis"),
-]
+layout = dbc.Stack(
+    [
+        dbc.Row(dbc.Card(id="pcp-paes-analysis", class_name="p-0 shadow-sm", body=True)),
+    ]
+)
+
 
 # ================================================================================================ #
 #                                             CALLBACKS                                            #
 # ================================================================================================ #
-
-
-# ========================================= Pães ======================================== #
-def clean_prod(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Limpa os dados de produção.
-
-    Args:
-        df (pd.DataFrame): O DataFrame contendo os dados de produção.
-
-    Returns:
-        pd.DataFrame: O DataFrame limpo.
-    """
-    # cSpell: words usuario
-    # Remover colunas desnecessárias
-    df = df.drop(columns=["MAQUINA", "UNIDADE", "LOTE", "USUARIO"])
-    df.PRODUTO = df.PRODUTO.str.strip()
-
-    # ==================================== Quantidade De Pães ==================================== #
-    # Transforma caixas em bandejas
-    df.QTD = df.QTD * 10
-
-    # Transforma bandejas em pães
-    df.QTD = df.QTD * df.PRODUTO.map(PAO_POR_BANDEJA)
-
-    return df
-
-
 @callback(
     Output("pcp-paes-analysis", "children"),
-    [Input(ThemeSwitchAIO.ids.switch("theme"), "value"), Input("store-df-caixas-cf", "data")],
+    [
+        Input(ThemeSwitchAIO.ids.switch("theme"), "value"),
+        Input("store-df-caixas-cf", "data"),
+        Input("df_week", "data"),
+    ],
 )
-def update_paes(theme, data):
+def update_paes(theme, prod_recheio, week_massa):
     """
-    Atualiza o card de teste de pães.
+    Atualiza o card análise de pães.
 
     Args:
         theme (str): O tema atual do dashboard.
@@ -70,16 +49,80 @@ def update_paes(theme, data):
         Retorna a mensagem "Sem dados disponíveis." se data for None.
     """
 
-    if data is None:
+    if prod_recheio is None:
         return "Sem dados disponíveis."
 
     # Carregar os dados
     # pylint: disable=no-member
-    df = pd.read_json(StringIO(data), orient="split")
+    df = pd.read_json(StringIO(prod_recheio), orient="split")
+    df_week = pd.read_json(StringIO(week_massa), orient="split")
 
-    # Limpar os dados
-    df_cleaned = clean_prod(df)
+    # =============================== Lidando Com Dados Do Recheio =============================== #
+    # Ajustar os dados
+    df_prod_recheio = afc.adjust_prod(df)
 
-    table = pcp_builder.create_grid_pcp(df_cleaned, 3, theme)
+    # Cria uma coluna para a quantidade caso o produto contenha "BOL", e a coluna QTD passa a ser 0
+    mask = df_prod_recheio["PRODUTO"].str.contains("BOL")
+    df_prod_recheio["QTD_BOL"] = mask.astype(int) * df_prod_recheio["QTD"]  # True = 1, False = 0
+    df_prod_recheio["QTD"] = (1 - mask.astype(int)) * df_prod_recheio["QTD"]
 
-    return table
+    # Agrupar por semana, fabrica
+    df_prod_recheio = (
+        df_prod_recheio.groupby(["week", "Data_Semana", "FABRICA"])
+        .sum()
+        .drop(columns="PRODUTO")
+        .reset_index()
+    )
+
+    # Renomear as colunas
+    df_prod_recheio = df_prod_recheio.rename(columns={"FABRICA": "Fabrica"})
+
+    # =============================== Lidando Com Dados Das Massas =============================== #
+    df_week = (
+        df_week.groupby(["week", "Data_Semana", "Fabrica"])
+        .sum()
+        .drop(columns="Turno")
+        .reset_index()
+    )
+
+    # Reordenar colunas
+    cols = df_week.columns.tolist()
+    cols = cols[:3] + cols[-2:]
+    df_week = df_week[cols]
+
+    # =================================== Unir As Duas Tabelas =================================== #
+    # Garantir que as duas datas sejam datetime
+    df_prod_recheio["Data_Semana"] = pd.to_datetime(df_prod_recheio["Data_Semana"])
+    df_week["Data_Semana"] = pd.to_datetime(df_week["Data_Semana"])
+
+    df_prod_recheio = df_prod_recheio.merge(
+        df_week, on=["week", "Data_Semana", "Fabrica"], how="outer"
+    )
+
+    # Reordenar as colunas
+    cols = df_prod_recheio.columns.tolist()
+    cols = cols[:3] + cols[-2:-1] + cols[3:4] + cols[-1:] + cols[4:5]
+    df_prod_recheio = df_prod_recheio[cols]
+
+    # Cria coluna com a diferença entre as quantidades entre baguete e QTD
+    df_prod_recheio["baguete_sobra"] = df_prod_recheio["Baguete_Total"] - df_prod_recheio["QTD"]
+    df_prod_recheio["bolinha_sobra"] = df_prod_recheio["Bolinha_Total"] - df_prod_recheio["QTD_BOL"]
+
+    # Renomear as colunas
+    df_prod_recheio.columns = [
+        "Semana",
+        "Data Inicial",
+        "Fábrica",
+        "Baguete Produzida",
+        "Baguete Consumida",
+        "Bolinha Produzida",
+        "Bolinha Consumida",
+        "Baguete Sobra",
+        "Bolinha Sobra",
+    ]
+
+    title = html.H1("Pães - Análise", className="text-center mt-3 mb-3")
+
+    table = pcp_builder.create_grid_pcp(df_prod_recheio, 4, theme)
+
+    return [title, table]
