@@ -10,7 +10,6 @@
 import logging
 import os
 from threading import Lock
-from time import sleep
 
 import dash_bootstrap_components as dbc
 import dash_mantine_components as dmc
@@ -63,8 +62,9 @@ def update_big_data():
     """
     logging.info("Iniciando update de big data")
     try:
-        big_data = BigData()
-        big_data.save_big_data()
+        with lock:
+            big_data = BigData()
+            big_data.save_big_data()
         logging.info("Update bem sucedido")
     # pylint: disable=W0718
     except Exception as err:
@@ -303,24 +303,19 @@ def update_store(_data):
 
 @callback(
     Output("is-data-store", "data"),
-    [
-        Input("store-info", "data"),
-        Input("store-prod", "data"),
-    ],
+    Input("is-data-store", "data"),
 )
-def update_is_data_store(data_info, data_prod):
+def update_is_data_store(data):
     """
     Função que atualiza o store com os dados do banco de dados.
     Utiliza dados do cache para agilizar o carregamento.
     """
-    if data_info is None or data_prod is None:
+    if data is False:
         cache.update_cache()
-        sleep(5)
         update_last_month()
-        sleep(5)
         update_big_data()
 
-        return False
+        return True
 
     return True
 
