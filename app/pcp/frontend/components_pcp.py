@@ -15,7 +15,9 @@ class ComponentsPcpBuilder:
     def __init__(self):
         pass
 
-    def create_grid_pcp(self, df: pd.DataFrame, grid_id: int, theme: bool) -> dag.AgGrid:
+    def create_grid_pcp(
+        self, df: pd.DataFrame, grid_id: int, theme: bool, defs: dict = None
+    ) -> dag.AgGrid:
         """
         Cria uma instância de dag.AgGrid com base nos parâmetros fornecidos.
 
@@ -35,7 +37,9 @@ class ComponentsPcpBuilder:
             "filterParams": {"buttons": ["apply", "reset"], "closeOnApply": "true"},
         }
 
-        cols_defs = [{"field": col, "headerTooltip": col} for col in df.columns]
+        cols_defs = (
+            [{"field": col, "headerTooltip": col} for col in df.columns] if defs is None else defs
+        )
 
         grid = dag.AgGrid(
             id=f"grid-pcp-{grid_id}",

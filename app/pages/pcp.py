@@ -32,8 +32,8 @@ scheduler.start()
 #                                              LAYOUT                                              #
 # ================================================================================================ #
 layout = [
-    dcc.Store(id="df_sum"),
-    dcc.Store(id="df_week"),
+    dcc.Store(id="df_sum", storage_type="local"),
+    dcc.Store(id="df_week", storage_type="local"),
     dcc.Interval(id="interval-component-pcp", interval=1000 * 60 * 5, n_intervals=0),
     dcc.Location(id="pcp-url"),
     # ============================================ Btn =========================================== #

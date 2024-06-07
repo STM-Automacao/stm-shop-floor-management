@@ -41,6 +41,10 @@
   border-radius: 5px;
 }
 
+.center-aligned-group-header .ag-header-group-cell-label {
+  justify-content: center;
+}
+
 /* ------------------- Buttons ------------------- */
 .radio-group .form-check {
   padding-left: 0;

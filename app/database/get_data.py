@@ -384,7 +384,7 @@ class GetData:
             ),
             where=(
                 "D3_FILIAL = '0101' AND D3_LOCAL='CF' AND B1_TIPO = 'PA' AND D3_CF = 'PR0' "
-                f"AND D3_ESTORNO <> 'S' AND D3_EMISSAO >= '{first_day}' AND SD3.D_E_L_E_T_<>'*'"
+                "AND D3_ESTORNO <> 'S' AND D3_EMISSAO >= '20240101' AND SD3.D_E_L_E_T_<>'*'"
             ),
             orderby="D3_EMISSAO DESC, CYV_HRRPBG DESC",
         )

@@ -10,6 +10,7 @@ from dash import Input, Output, callback, html
 from dash_bootstrap_templates import ThemeSwitchAIO
 from pcp.frontend.components_pcp import ComponentsPcpBuilder
 from pcp.helpers.functions_pcp import AuxFuncPcp
+from pcp.helpers.types_pcp import GRID_NUMBER_COLS
 
 # =========================================== Variáveis ========================================== #
 pcp_builder = ComponentsPcpBuilder()
@@ -99,30 +100,81 @@ def update_paes(theme, prod_recheio, week_massa):
         df_week, on=["week", "Data_Semana", "Fabrica"], how="outer"
     )
 
-    # Reordenar as colunas
-    cols = df_prod_recheio.columns.tolist()
-    cols = cols[:3] + cols[-2:-1] + cols[3:4] + cols[-1:] + cols[4:5]
-    df_prod_recheio = df_prod_recheio[cols]
-
     # Cria coluna com a diferença entre as quantidades entre baguete e QTD
     df_prod_recheio["baguete_sobra"] = df_prod_recheio["Baguete_Total"] - df_prod_recheio["QTD"]
     df_prod_recheio["bolinha_sobra"] = df_prod_recheio["Bolinha_Total"] - df_prod_recheio["QTD_BOL"]
 
-    # Renomear as colunas
-    df_prod_recheio.columns = [
-        "Semana",
-        "Data Inicial",
-        "Fábrica",
-        "Baguete Produzida",
-        "Baguete Consumida",
-        "Bolinha Produzida",
-        "Bolinha Consumida",
-        "Baguete Sobra",
-        "Bolinha Sobra",
+    # ============================== Definições De Estilo E Colunas ============================== #
+    class_rules = {"cellClassRules": {"text-light bg-danger": "params.value < 0"}}
+
+    # Definições personalizadas
+    defs = [
+        {
+            "headerName": "Semana",
+            "headerTooltip": "Número da semana",
+            "field": "week",
+            **GRID_NUMBER_COLS,
+        },
+        {
+            "headerName": "Data Inicial",
+            "headerTooltip": "Data de início da semana",
+            "field": "Data_Semana",
+        },
+        {"headerName": "Fábrica", "headerTooltip": "Fábrica", "field": "Fabrica"},
+        {
+            "headerName": "Baguetes",
+            "headerClass": "center-aligned-group-header",
+            "children": [
+                {
+                    "headerName": "Baguete Produzida",
+                    "headerTooltip": "Quantidade de baguetes produzidas (unidades)",
+                    "field": "Baguete_Total",
+                    **GRID_NUMBER_COLS,
+                },
+                {
+                    "headerName": "Baguete Consumida",
+                    "headerTooltip": "Quantidade de baguetes consumidas (unidades)",
+                    "field": "QTD",
+                    **GRID_NUMBER_COLS,
+                },
+                {
+                    "headerName": "Baguete Sobra",
+                    "headerTooltip": "Diferença de baguetes produzidas e consumidas (unidades)",
+                    "field": "baguete_sobra",
+                    **class_rules,
+                    **GRID_NUMBER_COLS,
+                },
+            ],
+        },
+        {
+            "headerName": "Bolinhas",
+            "headerClass": "center-aligned-group-header",
+            "children": [
+                {
+                    "headerName": "Bolinha Produzida",
+                    "headerTooltip": "Quantidade de bolinhas produzidas (unidades)",
+                    "field": "Bolinha_Total",
+                    **GRID_NUMBER_COLS,
+                },
+                {
+                    "headerName": "Bolinha Consumida",
+                    "headerTooltip": "Quantidade de bolinhas consumidas (unidades)",
+                    "field": "QTD_BOL",
+                    **GRID_NUMBER_COLS,
+                },
+                {
+                    "headerName": "Bolinha Sobra",
+                    "headerTooltip": "Diferença de bolinhas produzidas e consumidas (unidades)",
+                    "field": "bolinha_sobra",
+                    **class_rules,
+                    **GRID_NUMBER_COLS,
+                },
+            ],
+        },
     ]
 
     title = html.H1("Pães - Análise", className="text-center mt-3 mb-3")
 
-    table = pcp_builder.create_grid_pcp(df_prod_recheio, 4, theme)
+    table = pcp_builder.create_grid_pcp(df_prod_recheio, 4, theme, defs)
 
     return [title, table]
