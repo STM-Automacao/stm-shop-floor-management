@@ -105,15 +105,30 @@ layout = [
                         align="center",
                     ),
                     dbc.Col(
-                        dmc.Switch(
-                            id="switch-block",
-                            description="Mostrar não apontado",
-                            radius="md",
-                            checked=False,
-                            size="lg",
-                            color="grey",
-                            onLabel="ON",
-                            offLabel="OFF",
+                        dmc.Stack(
+                            children=[
+                                dmc.Switch(
+                                    id="switch-block",
+                                    description="Mostrar não apontado",
+                                    radius="md",
+                                    checked=False,
+                                    size="sm",
+                                    color="grey",
+                                    onLabel="ON",
+                                    offLabel="OFF",
+                                ),
+                                dmc.Switch(
+                                    id="switch-Programada-block",
+                                    description="Mostrar parada programada",
+                                    radius="md",
+                                    checked=True,
+                                    size="sm",
+                                    color="grey",
+                                    onLabel="ON",
+                                    offLabel="OFF",
+                                ),
+                            ],
+                            gap="xs",
                         ),
                         md=2,
                         class_name="p-2",
@@ -381,10 +396,11 @@ def update_general_chart(turn, line, date, toggle_theme):
         Input("multi-select-block", "value"),
         Input("date-picker-block", "value"),
         Input("switch-block", "checked"),
+        Input("switch-Programada-block", "checked"),
         Input(ThemeSwitchAIO.ids.switch("theme"), "value"),
     ],
 )
-def update_icicle(path, line, date, switch, toggle_theme):
+def update_icicle(path, line, date, switch, switch_programada, toggle_theme):
     """
     Atualiza o gráfico geral com base nos parâmetros fornecidos.
 
@@ -424,7 +440,7 @@ def update_icicle(path, line, date, switch, toggle_theme):
     # Instanciar chart
     ch = chart_history.ChartHistory()
 
-    return ch.create_icicle_chart(df, path, switch, template)
+    return ch.create_icicle_chart(df, path, switch, switch_programada, template)
 
 
 # ================================================================================================ #

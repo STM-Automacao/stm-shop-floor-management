@@ -7,8 +7,8 @@
     Para mais informações, acesse: https://dash.plotly.com/
 """
 
+import logging
 import os
-import traceback
 from threading import Lock
 
 import dash_bootstrap_components as dbc
@@ -33,6 +33,10 @@ from app import app
 lock = Lock()
 last_month_ind = LastMonthInd()
 cache = MainDataCache(app)
+logging.basicConfig(
+    filename="app.log", filemode="w", format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
+logging.getLogger("apscheduler").setLevel(logging.DEBUG)
 
 # Seleção de temas para o App - Variáveis:
 URL_BOOTS = dbc.themes.BOOTSTRAP  # para o switch
@@ -50,8 +54,7 @@ def update_last_month():
             last_month_ind.save_last_month_data()
     # pylint: disable=W0718
     except Exception as err:
-        print(f"Erro em update_last_month: {err}")
-        traceback.print_exc()
+        logging.error("Erro ao executar update de last month: %s", err)
 
 
 def update_big_data():
@@ -61,14 +64,17 @@ def update_big_data():
     Esta função chama o método save_big_data para salvar os dados grandes.
 
     """
+    logger = logging.getLogger("update_big_data").setLevel(logging.DEBUG)
+
+    logging.info("Iniciando update de big data")
     try:
         with lock:
-        big_data = BigData()
-        big_data.save_big_data()
+            big_data = BigData()
+            big_data.save_big_data()
+        logging.info("Update bem sucedido")
     # pylint: disable=W0718
     except Exception as err:
-        print(f"Erro em update_big_data: {err}")
-        traceback.print_exc()
+        logging.error("Erro ao executar update de big data: %s", err)
 
 
 def update_cache():
@@ -79,8 +85,7 @@ def update_cache():
         cache.update_cache()
     # pylint: disable=W0718
     except Exception as err:
-        print(f"Erro em update_cache: {err}")
-        traceback.print_exc()
+        logging.error("Erro ao executar update de cache: %s", err)
 
 
 def cache_daily_data():
@@ -91,8 +96,7 @@ def cache_daily_data():
         cache.cache_daily_data()
     # pylint: disable=W0718
     except Exception as err:
-        print(f"Erro em cache_daily_data: {err}")
-        traceback.print_exc()
+        logging.error("Erro ao executar update daily data: %s", err)
 
 
 scheduler = BackgroundScheduler()
@@ -210,12 +214,13 @@ def update_tabs(pathname):
     all_tabs = [dbc.Tab(layout, label=label, id=id) for layout, label, id in tabs_info]
 
     tabs = {
-        "/": all_tabs,
+        "/": all_tabs[:3],
         "/1": all_tabs[:2],
         "/2": all_tabs[:3],
         "/3": all_tabs[:4],
         "/4": [all_tabs[0], all_tabs[4]] + all_tabs[1:4],
         "/5": all_tabs,
+
         "/pcp": all_tabs[-1],
     }
 
