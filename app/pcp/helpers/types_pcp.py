@@ -30,3 +30,11 @@ GRID_NUMBER_COLS = {
     "filterParams": {"buttons": ["apply", "reset"], "closeOnApply": "true"},
     "headerClass": "center-aligned-header",
 }
+
+GRID_STR_NUM_COLS = {
+    "filter": "agNumberColumnFilter",
+    "cellClass": "center-aligned-cell",
+    "cellDataType": "string",
+    "filterParams": {"buttons": ["apply", "reset"], "closeOnApply": "true"},
+    "headerClass": "center-aligned-header",
+}

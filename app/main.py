@@ -8,8 +8,8 @@
 """
 
 import os
+import traceback
 from threading import Lock
-from time import sleep
 
 import dash_bootstrap_components as dbc
 import dash_mantine_components as dmc
@@ -45,8 +45,13 @@ def update_last_month():
     """
     Função que salva imagens de gauge do mês anterior.
     """
-    with lock:
-        last_month_ind.save_last_month_data()
+    try:
+        with lock:
+            last_month_ind.save_last_month_data()
+    # pylint: disable=W0718
+    except Exception as err:
+        print(f"Erro em update_last_month: {err}")
+        traceback.print_exc()
 
 
 def update_big_data():
@@ -56,16 +61,43 @@ def update_big_data():
     Esta função chama o método save_big_data para salvar os dados grandes.
 
     """
-    big_data = BigData()
-    big_data.save_big_data()
+    try:
+        big_data = BigData()
+        big_data.save_big_data()
+    # pylint: disable=W0718
+    except Exception as err:
+        print(f"Erro em update_big_data: {err}")
+        traceback.print_exc()
+
+
+def update_cache():
+    """
+    Atualiza cache
+    """
+    try:
+        cache.update_cache()
+    # pylint: disable=W0718
+    except Exception as err:
+        print(f"Erro em update_cache: {err}")
+        traceback.print_exc()
+
+
+def cache_daily_data():
+    """
+    Função que atualiza o cache diariamente.
+    """
+    try:
+        cache.cache_daily_data()
+    # pylint: disable=W0718
+    except Exception as err:
+        print(f"Erro em cache_daily_data: {err}")
+        traceback.print_exc()
 
 
 scheduler = BackgroundScheduler()
-scheduler.add_job(
-    func=cache.update_cache, trigger="interval", seconds=600
-)  # Atualiza a cada 10 minutos
+scheduler.add_job(func=update_cache, trigger="interval", seconds=600)  # Atualiza a cada 10 minutos
 scheduler.add_job(func=update_big_data, trigger="cron", hour=5)
-scheduler.add_job(func=cache.cache_daily_data, trigger="cron", hour=0, minute=1)
+scheduler.add_job(func=cache_daily_data, trigger="cron", hour=0, minute=1)
 scheduler.add_job(func=update_last_month, trigger="cron", hour=1)  # Atualiza a cada 24 horas
 
 scheduler.start()
@@ -288,30 +320,6 @@ def update_store(_data):
         df_caixas_cf_tot,
         df_info_pure,
     )
-
-
-@callback(
-    Output("is-data-store", "data"),
-    [
-        Input("store-info", "data"),
-        Input("store-prod", "data"),
-    ],
-)
-def update_is_data_store(data_info, data_prod):
-    """
-    Função que atualiza o store com os dados do banco de dados.
-    Utiliza dados do cache para agilizar o carregamento.
-    """
-    if data_info is None or data_prod is None:
-        cache.update_cache()
-        sleep(5)
-        update_last_month()
-        sleep(5)
-        update_big_data()
-
-        return False
-
-    return True
 
 
 # ================================================================================================ #

@@ -10,7 +10,7 @@ from dash import Input, Output, callback, html
 from dash_bootstrap_templates import ThemeSwitchAIO
 from pcp.frontend.components_pcp import ComponentsPcpBuilder
 from pcp.helpers.functions_pcp import AuxFuncPcp
-from pcp.helpers.types_pcp import GRID_NUMBER_COLS
+from pcp.helpers.types_pcp import GRID_NUMBER_COLS, GRID_STR_NUM_COLS
 
 # =========================================== Variáveis ========================================== #
 pcp_builder = ComponentsPcpBuilder()
@@ -109,6 +109,9 @@ def update_paes(theme, prod_recheio, week_massa):
         ["year", "week", "Fabrica"], ascending=[False, False, True]
     )
 
+    # Formatar a data para dd/mm
+    df_prod_recheio.Data_Semana = df_prod_recheio.Data_Semana.dt.strftime("%d/%m")
+
     # ============================== Definições De Estilo E Colunas ============================== #
     class_rules = {"cellClassRules": {"text-light bg-danger": "params.value < 0"}}
 
@@ -119,19 +122,22 @@ def update_paes(theme, prod_recheio, week_massa):
             "headerTooltip": "Ano da semana",
             "field": "year",
             **GRID_NUMBER_COLS,
+            "maxWidth": 125,
         },
         {
             "headerName": "Semana",
             "headerTooltip": "Número da semana",
             "field": "week",
             **GRID_NUMBER_COLS,
+            "maxWidth": 125,
         },
         {
             "headerName": "Data Inicial",
             "headerTooltip": "Data de início da semana",
             "field": "Data_Semana",
+            "maxWidth": 125,
         },
-        {"headerName": "Fábrica", "headerTooltip": "Fábrica", "field": "Fabrica"},
+        {"headerName": "Fábrica", "headerTooltip": "Fábrica", "field": "Fabrica", "maxWidth": 125},
         {
             "headerName": "Baguetes",
             "headerClass": "center-aligned-group-header",
@@ -140,20 +146,29 @@ def update_paes(theme, prod_recheio, week_massa):
                     "headerName": "Baguete Produzida",
                     "headerTooltip": "Quantidade de baguetes produzidas (unidades)",
                     "field": "Baguete_Total",
-                    **GRID_NUMBER_COLS,
+                    "valueFormatter": {
+                        "function": "params.value.toLocaleString('pt-BR')",
+                    },
+                    **GRID_STR_NUM_COLS,
                 },
                 {
                     "headerName": "Baguete Consumida",
                     "headerTooltip": "Quantidade de baguetes consumidas (unidades)",
                     "field": "QTD",
-                    **GRID_NUMBER_COLS,
+                    "valueFormatter": {
+                        "function": "params.value.toLocaleString('pt-BR')",
+                    },
+                    **GRID_STR_NUM_COLS,
                 },
                 {
                     "headerName": "Baguete Sobra",
                     "headerTooltip": "Diferença de baguetes produzidas e consumidas (unidades)",
                     "field": "baguete_sobra",
+                    "valueFormatter": {
+                        "function": "params.value.toLocaleString('pt-BR')",
+                    },
                     **class_rules,
-                    **GRID_NUMBER_COLS,
+                    **GRID_STR_NUM_COLS,
                 },
             ],
         },
@@ -165,20 +180,29 @@ def update_paes(theme, prod_recheio, week_massa):
                     "headerName": "Bolinha Produzida",
                     "headerTooltip": "Quantidade de bolinhas produzidas (unidades)",
                     "field": "Bolinha_Total",
-                    **GRID_NUMBER_COLS,
+                    "valueFormatter": {
+                        "function": "params.value.toLocaleString('pt-BR')",
+                    },
+                    **GRID_STR_NUM_COLS,
                 },
                 {
                     "headerName": "Bolinha Consumida",
                     "headerTooltip": "Quantidade de bolinhas consumidas (unidades)",
                     "field": "QTD_BOL",
-                    **GRID_NUMBER_COLS,
+                    "valueFormatter": {
+                        "function": "params.value.toLocaleString('pt-BR')",
+                    },
+                    **GRID_STR_NUM_COLS,
                 },
                 {
                     "headerName": "Bolinha Sobra",
                     "headerTooltip": "Diferença de bolinhas produzidas e consumidas (unidades)",
                     "field": "bolinha_sobra",
+                    "valueFormatter": {
+                        "function": "params.value.toLocaleString('pt-BR')",
+                    },
                     **class_rules,
-                    **GRID_NUMBER_COLS,
+                    **GRID_STR_NUM_COLS,
                 },
             ],
         },
