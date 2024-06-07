@@ -62,6 +62,7 @@ def update_big_data():
 
     """
     try:
+        with lock:
         big_data = BigData()
         big_data.save_big_data()
     # pylint: disable=W0718
