@@ -5,7 +5,7 @@ Limpa os dados do PCP
 from datetime import datetime
 
 import pandas as pd
-from pcp.types_pcp import MASSADA_BOLINHA, MASSADA_CHEIA, MASSADA_REPROCESSO
+from pcp.helpers.types_pcp import MASSADA_BOLINHA, MASSADA_CHEIA, MASSADA_REPROCESSO
 
 # cSpell: words codigo descricao usuario
 

@@ -49,8 +49,12 @@ def update_last_month():
     """
     Função que salva imagens de gauge do mês anterior.
     """
-    with lock:
-        last_month_ind.save_last_month_data()
+    try:
+        with lock:
+            last_month_ind.save_last_month_data()
+    # pylint: disable=W0718
+    except Exception as err:
+        logging.error("Erro ao executar update de last month: %s", err)
 
 
 def update_big_data():
@@ -60,6 +64,8 @@ def update_big_data():
     Esta função chama o método save_big_data para salvar os dados grandes.
 
     """
+    logger = logging.getLogger("update_big_data").setLevel(logging.DEBUG)
+
     logging.info("Iniciando update de big data")
     try:
         with lock:
@@ -71,12 +77,32 @@ def update_big_data():
         logging.error("Erro ao executar update de big data: %s", err)
 
 
+def update_cache():
+    """
+    Atualiza cache
+    """
+    try:
+        cache.update_cache()
+    # pylint: disable=W0718
+    except Exception as err:
+        logging.error("Erro ao executar update de cache: %s", err)
+
+
+def cache_daily_data():
+    """
+    Função que atualiza o cache diariamente.
+    """
+    try:
+        cache.cache_daily_data()
+    # pylint: disable=W0718
+    except Exception as err:
+        logging.error("Erro ao executar update daily data: %s", err)
+
+
 scheduler = BackgroundScheduler()
-scheduler.add_job(
-    func=cache.update_cache, trigger="interval", seconds=600
-)  # Atualiza a cada 10 minutos
+scheduler.add_job(func=update_cache, trigger="interval", seconds=600)  # Atualiza a cada 10 minutos
 scheduler.add_job(func=update_big_data, trigger="cron", hour=5)
-scheduler.add_job(func=cache.cache_daily_data, trigger="cron", hour=0, minute=1)
+scheduler.add_job(func=cache_daily_data, trigger="cron", hour=0, minute=1)
 scheduler.add_job(func=update_last_month, trigger="cron", hour=1)  # Atualiza a cada 24 horas
 
 scheduler.start()
@@ -113,7 +139,7 @@ app.layout = dmc.MantineProvider(
                             aio_id="theme",
                             themes=[URL_BOOTS, URL_DARKY],
                         ),
-                        class_name="h-100 d-flex align-items-center justify-content-end",
+                        class_name="h-100 d-flex align-items-center justify-content-end mt-3 mr-3",
                     ),
                 ),
                 dbc.Row(
@@ -124,7 +150,6 @@ app.layout = dmc.MantineProvider(
                         dcc.Location(id="url"),
                     ],
                 ),
-                html.Hr(),
                 dbc.Row(
                     id="dbc-tabs",
                     class_name="mb-5",
@@ -195,9 +220,11 @@ def update_tabs(pathname):
         "/3": all_tabs[:4],
         "/4": [all_tabs[0], all_tabs[4]] + all_tabs[1:4],
         "/5": all_tabs,
+
+        "/pcp": all_tabs[-1],
     }
 
-    return dbc.Tabs(tabs[pathname])
+    return dbc.Tabs(tabs.get(pathname, all_tabs[0]))
 
 
 # =================================== Switch De Cores Do Rodapé ================================== #
@@ -299,25 +326,6 @@ def update_store(_data):
         df_caixas_cf_tot,
         df_info_pure,
     )
-
-
-@callback(
-    Output("is-data-store", "data"),
-    Input("is-data-store", "data"),
-)
-def update_is_data_store(data):
-    """
-    Função que atualiza o store com os dados do banco de dados.
-    Utiliza dados do cache para agilizar o carregamento.
-    """
-    if data is False:
-        cache.update_cache()
-        update_last_month()
-        update_big_data()
-
-        return True
-
-    return True
 
 
 # ================================================================================================ #

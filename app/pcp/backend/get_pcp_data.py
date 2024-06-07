@@ -40,7 +40,13 @@ class GetPcpData:
             DataFrame contendo os dados de massa do PCP.
         """
         # ================================== Definindo As Datas ================================== #
-        first_day = pd.Timestamp.today().replace(day=1).strftime("%Y%m%d")
+        # Obtendo a data do primeiro dia do semestre atual ou do ano atual
+        today = pd.Timestamp.today()
+        if today.month >= 6:
+            first_day = today.replace(month=1, day=1).strftime("%Y%m%d")
+        else:
+            six_months_ago = today - pd.DateOffset(months=6)
+            first_day = six_months_ago.replace(day=1).strftime("%Y%m%d")
 
         # ================================== Preparando A Query ================================== #
         select = (
@@ -62,8 +68,8 @@ class GetPcpData:
         join = (
             "JOIN CYB000 (NOLOCK) AS T2 ON T1.CYV_FILIAL = T2.CYB_FILIAL "
             "AND T1.CYV_CDMQ = T2.CYB_CDMQ AND T2.D_E_L_E_T_ <> '*'"
-            "LEFT JOIN SX6000 (NOLOCK) AS T3 ON T3.X6_VAR = 'MV_X_USRF1'"
-            "LEFT JOIN SX6000 (NOLOCK) AS T4 ON T4.X6_VAR = 'MV_X_USRF2'"
+            "LEFT JOIN SX6000 (NOLOCK) AS T3 ON T3.X6_VAR = 'MV_X_USRF1' "
+            "LEFT JOIN SX6000 (NOLOCK) AS T4 ON T4.X6_VAR = 'MV_X_USRF2' "
         )
 
         where = (

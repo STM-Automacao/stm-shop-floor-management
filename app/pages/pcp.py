@@ -1,16 +1,15 @@
 """
-Módulo com a aba do PCP.
+Módulo com dados de Batidas de massa.
 """
 
-from io import StringIO
-
 import dash_bootstrap_components as dbc
-import pandas as pd
+import dash_mantine_components as dmc
 from apscheduler.schedulers.background import BackgroundScheduler
-from dash import Input, Output, callback, dcc, html
-from dash_bootstrap_templates import ThemeSwitchAIO
-from pcp.cache_pcp import PcpDataCache
-from pcp.components_pcp import ComponentsPcpBuilder
+from dash import Input, Output, callback, dcc
+from dash_iconify import DashIconify
+from pcp.frontend import massa_analysis_pcp, massa_batidas_pcp, producao_pcp
+from pcp.frontend.components_pcp import ComponentsPcpBuilder
+from pcp.helpers.cache_pcp import PcpDataCache
 
 from app import app
 
@@ -19,6 +18,10 @@ pcp_data = PcpDataCache(app)
 update_massa_cache = pcp_data.cache_massa_data
 scheduler = BackgroundScheduler()
 pcp_builder = ComponentsPcpBuilder()
+layout_pcp_massa_analysis = massa_analysis_pcp.layout
+layout_pcp_massa_batidas = massa_batidas_pcp.layout
+layout_pcp_producao = producao_pcp.layout
+
 
 # ====================================== Cache Em Background ===================================== #
 
@@ -29,41 +32,45 @@ scheduler.start()
 #                                              LAYOUT                                              #
 # ================================================================================================ #
 layout = [
-    dcc.Store(id="df_sum"),
-    dcc.Store(id="df_week"),
-    dcc.Interval(id="interval-component", interval=1000 * 60 * 5, n_intervals=0),
+    dcc.Store(id="df_sum", storage_type="local"),
+    dcc.Store(id="df_week", storage_type="local"),
+    dcc.Interval(id="interval-component-pcp", interval=1000 * 60 * 5, n_intervals=0),
+    dcc.Location(id="pcp-url"),
+    # ============================================ Btn =========================================== #
+    dbc.Button(
+        id="pcp-drawer-btn",
+        color="secondary",
+        outline=True,
+        children=DashIconify(icon="mdi:menu"),
+        style={"width": "50px"},
+        class_name="d-flex justify-content-center align-items-center float-left mt-2 ml-2",
+    ),
+    # ========================================== Drawer ========================================== #
+    dmc.Drawer(
+        id="pcp-drawer",
+        children=[
+            dmc.NavLink(
+                label="Produção Semanal",
+                id="pcp-production-navlink",
+                href="#pcp-production",
+                leftSection=DashIconify(icon="mdi:calendar-week"),
+            ),
+            dmc.NavLink(
+                label="Análise de Massa",
+                id="massa-analysis-navlink",
+                href="#massa-analysis",
+                leftSection=DashIconify(icon="mdi:bread"),
+            ),
+            dmc.NavLink(
+                label="Batidas de Massa",
+                id="massa-batidas-navlink",
+                href="#massa-batidas",
+                leftSection=DashIconify(icon="game-icons:dough-roller"),
+            ),
+        ],
+    ),
     # =========================================== Body =========================================== #
-    html.H1("Batidas de Massa", className="text-center mt-3 mb-3"),
-    dbc.Row(
-        dbc.Col(
-            pcp_builder.generate_segmented_btn("batidas", ["Turno", "Total"], "Turno"),
-            md=3,
-            class_name="d-flex justify-content-center align-items-center",
-        ),
-        justify="end",
-        align="center",
-        className="p-2",
-    ),
-    dbc.Row(
-        dbc.Card(
-            [
-                dbc.CardHeader("Batidas por Dia"),
-                dbc.CardBody(id="massadas"),
-            ],
-            class_name="p-0",
-        ),
-        class_name="p-2",
-    ),
-    dbc.Row(
-        dbc.Card(
-            [
-                dbc.CardHeader("Batidas por Semana"),
-                dbc.CardBody(id="massadas-week"),
-            ],
-            class_name="p-0",
-        ),
-        class_name="p-2",
-    ),
+    dbc.Row(id="pcp-main-content", children=layout_pcp_massa_analysis, class_name="p-2"),
 ]
 
 # ================================================================================================ #
@@ -75,7 +82,7 @@ layout = [
 @callback(
     Output("df_sum", "data"),
     Output("df_week", "data"),
-    Input("interval-component", "n_intervals"),
+    Input("interval-component-pcp", "n_intervals"),
 )
 def update_store(_):
     """
@@ -95,120 +102,58 @@ def update_store(_):
     )
 
 
-# ===================================== Atualização Dos Cards ==================================== #
+# ============================================ Drawer ============================================ #
 @callback(
-    Output("massadas", "children"),
-    [
-        Input("df_sum", "data"),
-        Input(ThemeSwitchAIO.ids.switch("theme"), "value"),
-        Input("segmented-btn-batidas", "value"),
-    ],
+    Output("pcp-drawer", "opened"), Input("pcp-drawer-btn", "n_clicks"), prevent_initial_call=True
 )
-def update_massadas_card(data, theme, choice):
+def toggle_drawer(_):
     """
-    Atualiza o conteúdo do card de massadas.
-
-    Args:
-        data (str): Os dados no formato JSON para atualizar o card.
-
-    Returns:
-        dbc.Table: A tabela gerada a partir dos dados fornecidos.
-        Retorna a mensagem "Sem dados disponíveis." se data for None.
-    """
-
-    if data is None:
-        return "Sem dados disponíveis."
-
-    # Carregar os dados
-    # pylint: disable=no-member
-    df = pd.read_json(StringIO(data), orient="split")
-
-    # Renomear as colunas
-    df.columns = [
-        "Data",
-        "Turno",
-        "Fábrica",
-        "Batidas Cheias(qtd)",
-        "Batidas Cheias(Peso)",
-        "Batidas Reprocesso(qtd)",
-        "Batidas Reprocesso(Peso)",
-        "Batidas Bolinha(qtd)",
-        "Batidas Bolinha(peso)",
-        "Baguete Total(un)",
-        "Bolinha Total(un)",
-    ]
-
-    # ----------------------- Filtro ----------------------- #
-    df_filter = {
-        "Turno": df,
-        "Total": df.groupby(["Data", "Fábrica"]).sum().drop(columns="Turno").reset_index(),
-    }
-    df = df_filter[choice]
-
-    # Ajustar o formato da data
-    df["Data"] = pd.to_datetime(df["Data"]).dt.strftime("%d/%m")
-
-    table = pcp_builder.create_grid_pcp(df, 1, theme)
-
-    return table
-
-
-@callback(
-    Output("massadas-week", "children"),
-    [
-        Input("df_week", "data"),
-        Input(ThemeSwitchAIO.ids.switch("theme"), "value"),
-        Input("segmented-btn-batidas", "value"),
-    ],
-)
-def update_massadas_week_card(data, theme, choice):
-    """
-    Atualiza o cartão de semana de massadas com os dados fornecidos.
+    Abre ou fecha o drawer.
 
     Parâmetros:
-    - data: str ou None. Os dados a serem exibidos no cartão.
-        Se for None, exibe a mensagem "Sem dados disponíveis."
+    _ (qualquer): Parâmetro não utilizado.
 
-    Retorna:
-    - table: dbc.Table. A tabela gerada a partir dos dados fornecidos.
+    Retorno:
+    bool: True se o drawer estiver aberto, False caso contrário.
     """
+    return True
 
-    if data is None:
-        return "Sem dados disponíveis."
 
-    df = pd.read_json(StringIO(data), orient="split")
+# =========================================== Location =========================================== #
+@callback(Output("pcp-main-content", "children"), Input("pcp-url", "hash"))
+def update_content(hash_):
+    """
+    Atualiza o conteúdo principal.
 
-    df.columns = [
-        "Ano",
-        "Semana",
-        "Data Inicial",
-        "Turno",
-        "Fábrica",
-        "Batidas Cheias(qtd)",
-        "Batidas Cheias(Peso)",
-        "Batidas Reprocesso(qtd)",
-        "Batidas Reprocesso(Peso)",
-        "Batidas Bolinha(qtd)",
-        "Batidas Bolinha(peso)",
-        "Baguete Total(un)",
-        "Bolinha Total(un)",
-    ]
+    Parâmetros:
+    hash_ (str): O hash da URL.
 
-    # pylint: disable=no-member
-    df.drop(columns=["Ano"], inplace=True)
-
-    # ----------------------- Filtro ----------------------- #
-    df_filter = {
-        "Turno": df,
-        "Total": df.groupby(["Semana", "Data Inicial", "Fábrica"])
-        .sum()
-        .drop(columns="Turno")
-        .reset_index(),
+    Retorno:
+    list: A lista de componentes a serem exibidos.
+    """
+    hash_dict = {
+        "#massa-analysis": layout_pcp_massa_analysis,
+        "#massa-batidas": layout_pcp_massa_batidas,
+        "#pcp-production": layout_pcp_producao,
     }
-    df = df_filter[choice]
 
-    df["Data Inicial"] = pd.to_datetime(df["Data Inicial"]).dt.strftime("%d/%m")
+    return hash_dict.get(hash_, layout_pcp_massa_analysis)
 
-    table = pcp_builder.create_grid_pcp(df, 2, theme)
 
-    return table
+@callback(
+    Output("massa-analysis-navlink", "active"),
+    Output("massa-batidas-navlink", "active"),
+    Output("pcp-production-navlink", "active"),
+    Input("pcp-url", "hash"),
+)
+def update_navlink_active(hash_):
+    """
+    Atualiza o NavLink ativo.
+
+    Parâmetros:
+    hash_ (str): O hash da URL.
+
+    Retorno:
+    tuple: Um tuple contendo o estado de ativação dos NavLink.
+    """
+    return hash_ == "#massa-analysis", hash_ == "#massa-batidas", hash_ == "#pcp-production"

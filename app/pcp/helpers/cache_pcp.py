@@ -3,12 +3,27 @@ Este módulo cria uma classe para armazenar os dados de massa do PCP.
 """
 
 from helpers.cache import CacheManager
-from pcp.analysis_pcp_data import AnalysisPcpData
-from pcp.clean_pcp_data import CleanPcpData
-from pcp.get_pcp_data import GetPcpData
+from pcp.backend.analysis_pcp_data import AnalysisPcpData
+from pcp.backend.clean_pcp_data import CleanPcpData
+from pcp.backend.get_pcp_data import GetPcpData
 
 
 class PcpDataCache(CacheManager):
+    """
+    Classe responsável por gerenciar o cache dos dados do PCP.
+
+    Args:
+        app: Instância da aplicação Flask.
+
+    Attributes:
+        __get_data: Método para obter os dados do PCP.
+        __get_analysis: Instância da classe AnalysisPcpData para análise dos dados.
+        __clean_data: Método para limpar os dados do PCP.
+
+    Methods:
+        cache_massa_data: Método para armazenar os dados do PCP no cache.
+    """
+
     def __init__(self, app) -> None:
         self.__get_data = GetPcpData().get_massa_data
         self.__get_analysis = AnalysisPcpData()
@@ -16,7 +31,18 @@ class PcpDataCache(CacheManager):
         super().__init__(app)
 
     def cache_massa_data(self) -> None:
+        """
+        Armazena os dados do PCP no cache.
 
+        Steps:
+        1. Obtém os dados do banco de dados.
+        2. Limpa os dados obtidos.
+        3. Realiza a análise dos dados.
+        4. Salva os dados no cache.
+
+        Returns:
+            None
+        """
         # Lê os dados do banco de dados
         data = self.__get_data()
 
