@@ -75,7 +75,20 @@ def update_paes(theme, data):
     df_cleaned["Pães(cx)"] = df_cleaned["Pães(cx)"].apply(lambda x: f"{x:,.0f}".replace(",", "."))
 
     # Renomear colunas
-    df_cleaned.columns = ["Semana", "Data Inicial", "Produto", "Fábrica", "Pães(un)", "Pães(cx)"]
+    df_cleaned.columns = [
+        "Ano",
+        "Semana",
+        "Data Inicial",
+        "Produto",
+        "Fábrica",
+        "Pães(un)",
+        "Pães(cx)",
+    ]
+
+    # Ordenar as colunas
+    df_cleaned = df_cleaned.sort_values(
+        by=["Ano", "Semana", "Fábrica", "Produto"], ascending=[False, False, True, True]
+    )
 
     table = pcp_builder.create_grid_pcp(df_cleaned, 3, theme)
 

@@ -164,18 +164,19 @@ def update_massadas_week_card(data, theme, choice):
         "Bolinha Total(un)",
     ]
 
-    # pylint: disable=no-member
-    df.drop(columns=["Ano"], inplace=True)
-
     # ----------------------- Filtro ----------------------- #
+    # pylint: disable=no-member
     df_filter = {
         "Turno": df,
-        "Total": df.groupby(["Semana", "Data Inicial", "Fábrica"])
+        "Total": df.groupby(["Ano", "Semana", "Data Inicial", "Fábrica"])
         .sum()
         .drop(columns="Turno")
         .reset_index(),
     }
     df = df_filter[choice]
+
+    # Ordenar por ano, semana e fábrica
+    df = df.sort_values(["Ano", "Semana", "Fábrica"], ascending=[False, False, True])
 
     df["Data Inicial"] = pd.to_datetime(df["Data Inicial"]).dt.strftime("%d/%m")
 

@@ -69,7 +69,7 @@ def update_paes(theme, prod_recheio, week_massa):
 
     # Agrupar por semana, fabrica
     df_prod_recheio = (
-        df_prod_recheio.groupby(["week", "Data_Semana", "FABRICA"])
+        df_prod_recheio.groupby(["year", "week", "Data_Semana", "FABRICA"])
         .sum()
         .drop(columns="PRODUTO")
         .reset_index()
@@ -80,7 +80,7 @@ def update_paes(theme, prod_recheio, week_massa):
 
     # =============================== Lidando Com Dados Das Massas =============================== #
     df_week = (
-        df_week.groupby(["week", "Data_Semana", "Fabrica"])
+        df_week.groupby(["year", "week", "Data_Semana", "Fabrica"])
         .sum()
         .drop(columns="Turno")
         .reset_index()
@@ -88,7 +88,7 @@ def update_paes(theme, prod_recheio, week_massa):
 
     # Reordenar colunas
     cols = df_week.columns.tolist()
-    cols = cols[:3] + cols[-2:]
+    cols = cols[:4] + cols[-2:]
     df_week = df_week[cols]
 
     # =================================== Unir As Duas Tabelas =================================== #
@@ -97,18 +97,29 @@ def update_paes(theme, prod_recheio, week_massa):
     df_week["Data_Semana"] = pd.to_datetime(df_week["Data_Semana"])
 
     df_prod_recheio = df_prod_recheio.merge(
-        df_week, on=["week", "Data_Semana", "Fabrica"], how="outer"
+        df_week, on=["year", "week", "Data_Semana", "Fabrica"], how="outer"
     )
 
     # Cria coluna com a diferença entre as quantidades entre baguete e QTD
     df_prod_recheio["baguete_sobra"] = df_prod_recheio["Baguete_Total"] - df_prod_recheio["QTD"]
     df_prod_recheio["bolinha_sobra"] = df_prod_recheio["Bolinha_Total"] - df_prod_recheio["QTD_BOL"]
 
+    # Ordenar a tabela
+    df_prod_recheio = df_prod_recheio.sort_values(
+        ["year", "week", "Fabrica"], ascending=[False, False, True]
+    )
+
     # ============================== Definições De Estilo E Colunas ============================== #
     class_rules = {"cellClassRules": {"text-light bg-danger": "params.value < 0"}}
 
     # Definições personalizadas
     defs = [
+        {
+            "headerName": "Ano",
+            "headerTooltip": "Ano da semana",
+            "field": "year",
+            **GRID_NUMBER_COLS,
+        },
         {
             "headerName": "Semana",
             "headerTooltip": "Número da semana",

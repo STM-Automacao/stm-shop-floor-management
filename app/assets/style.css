@@ -41,7 +41,7 @@
   border-radius: 5px;
 }
 
-.center-aligned-group-header .ag-header-group-cell-label {
+.center-aligned-group-header {
   justify-content: center;
 }
 

@@ -51,7 +51,15 @@ class AuxFuncPcp:
 
         # Agrupar por semana, fabrica e produto
         df = (
-            df.groupby([df.Data_Semana.dt.isocalendar().week, "Data_Semana", "PRODUTO", "FABRICA"])
+            df.groupby(
+                [
+                    df.Data_Semana.dt.isocalendar().year,
+                    df.Data_Semana.dt.isocalendar().week,
+                    "Data_Semana",
+                    "PRODUTO",
+                    "FABRICA",
+                ]
+            )
             .QTD.sum()
             .reset_index()
         )
