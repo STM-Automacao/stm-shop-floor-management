@@ -152,7 +152,7 @@ app.layout = dmc.MantineProvider(
                     ],
                 ),
                 dbc.Row(
-                    id="dbc-tabs",
+                    id="tab-row",
                     class_name="mb-5",
                 ),
                 dmc.AppShell(
@@ -190,7 +190,7 @@ app.layout = dmc.MantineProvider(
 
 # ======================================== Caminhos E Abas ======================================= #
 @callback(
-    Output("dbc-tabs", "children"),
+    Output("tab-row", "children"),
     Input("url", "pathname"),
 )
 def update_tabs(pathname):
@@ -212,7 +212,7 @@ def update_tabs(pathname):
         (pcp.layout, "PCP", "tab-pcp"),
     ]
 
-    all_tabs = [dbc.Tab(layout, label=label, id=id) for layout, label, id in tabs_info]
+    all_tabs = [dbc.Tab(layout, label=label, tab_id=tab_id) for layout, label, tab_id in tabs_info]
 
     tabs = {
         "/": all_tabs[:3],
@@ -224,7 +224,27 @@ def update_tabs(pathname):
         "/pcp": all_tabs[-1],
     }
 
-    return dbc.Tabs(tabs.get(pathname, all_tabs[0]))
+    print(all_tabs[0])
+
+    return dbc.Tabs(tabs.get(pathname, all_tabs), id="dbc-tabs")
+
+
+@callback(
+    Output("url", "hash"),
+    Input("dbc-tabs", "active_tab"),
+)
+def update_hash(active_tab):
+    """
+    Função que atualiza o hash da URL com base na aba ativa.
+
+    Parâmetros:
+    active_tab (str): O ID da aba ativa.
+
+    Retorna:
+    str: O hash da URL.
+    """
+
+    return f"#{active_tab}"
 
 
 # =================================== Switch De Cores Do Rodapé ================================== #
