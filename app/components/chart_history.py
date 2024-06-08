@@ -166,6 +166,9 @@ class ChartHistory:
         # Preenche equipamentos nulos
         df["equipamento"] = df["equipamento"].fillna("Sem Equipamento")
 
+        # Preenche problemas nulos
+        df["problema"] = df["problema"].fillna("Sem Problema")
+
         # Se path_choice for equipamento, remove linhas sem equipamento
         if path_choice in ("Equipamento", "Manutenção"):
             df = df[df["equipamento"] != "Sem Equipamento"].reset_index(drop=True)

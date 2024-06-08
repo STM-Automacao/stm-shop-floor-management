@@ -64,17 +64,18 @@ def update_big_data():
     Esta função chama o método save_big_data para salvar os dados grandes.
 
     """
-    logger = logging.getLogger("update_big_data").setLevel(logging.DEBUG)
+    logger = logging.getLogger("update_big_data")
+    logger.setLevel(logging.INFO)
 
-    logging.info("Iniciando update de big data")
+    logger.info("Iniciando update de big data")
     try:
         with lock:
             big_data = BigData()
             big_data.save_big_data()
-        logging.info("Update bem sucedido")
+        logger.info("Update bem sucedido")
     # pylint: disable=W0718
     except Exception as err:
-        logging.error("Erro ao executar update de big data: %s", err)
+        logger.error("Erro ao executar update de big data: %s", err)
 
 
 def update_cache():
@@ -220,7 +221,6 @@ def update_tabs(pathname):
         "/3": all_tabs[:4],
         "/4": [all_tabs[0], all_tabs[4]] + all_tabs[1:4],
         "/5": all_tabs,
-
         "/pcp": all_tabs[-1],
     }
 

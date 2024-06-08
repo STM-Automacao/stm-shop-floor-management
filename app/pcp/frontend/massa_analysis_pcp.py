@@ -50,7 +50,7 @@ def update_paes(theme, prod_recheio, week_massa):
         Retorna a mensagem "Sem dados disponíveis." se data for None.
     """
 
-    if prod_recheio is None:
+    if prod_recheio is None or week_massa is None:
         return "Sem dados disponíveis."
 
     # Carregar os dados
