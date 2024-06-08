@@ -11,7 +11,7 @@ import pandas as pd
 import plotly.express as px
 import seaborn as sns
 from babel.dates import format_date
-from components import chart_history, grid_eff, history_components
+from components import chart_history, grid_eff, history_components, segmented_btn
 from dash import Input, Output, callback, dcc, html
 from dash.exceptions import PreventUpdate
 from dash_bootstrap_templates import ThemeSwitchAIO
@@ -21,6 +21,7 @@ from service.big_data import BigData
 
 last_month = LastMonthInd()
 hc = history_components.HistoryComponents()
+seg_btn = segmented_btn.SegmentedBtn()
 ge = grid_eff.GridEff()
 
 # ============================================ Layout =========================================== #
@@ -37,8 +38,8 @@ layout = [
             dbc.Row(
                 [
                     dbc.Col(
-                        hc.create_btn_segmented(
-                            "segmented_btn_general",
+                        seg_btn.create_segmented_btn(
+                            "segmented_btn_general-history",
                             ["Noturno", "Matutino", "Vespertino", "Total"],
                             "Matutino",
                         ),
@@ -79,8 +80,8 @@ layout = [
             dbc.Row(
                 [
                     dbc.Col(
-                        hc.create_btn_segmented(
-                            "segmented_btn_block",
+                        seg_btn.create_segmented_btn(
+                            "segmented_btn_block-history",
                             ["Manutenção", "Equipamento", "Turno", "Motivo"],
                             "Turno",
                         ),
@@ -340,7 +341,7 @@ def adjust_df(date: list[str], line: list[str], turn: str = None) -> pd.DataFram
 @callback(
     Output("bar-chart-geral-history", "children"),
     [
-        Input("segmented_btn_general", "value"),
+        Input("segmented_btn_general-history", "value"),
         Input("multi-select-general", "value"),
         Input("date-picker-general", "value"),
         Input(ThemeSwitchAIO.ids.switch("theme"), "value"),
@@ -392,7 +393,7 @@ def update_general_chart(turn, line, date, toggle_theme):
 @callback(
     Output("icicle-chart-block", "children"),
     [
-        Input("segmented_btn_block", "value"),
+        Input("segmented_btn_block-history", "value"),
         Input("multi-select-block", "value"),
         Input("date-picker-block", "value"),
         Input("switch-block", "checked"),

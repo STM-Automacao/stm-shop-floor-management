@@ -22,7 +22,7 @@ from dash_bootstrap_templates import ThemeSwitchAIO
 # pylint: disable=E0401
 from database.last_month_ind import LastMonthInd
 from helpers.cache import MainDataCache
-from pages import grafana, hour_prod, main_page, management, pcp
+from pages import grafana, hour_prod, main_page, management, management_old, pcp
 from service.big_data import BigData
 from waitress import serve
 
@@ -210,6 +210,7 @@ def update_tabs(pathname):
         (management.layout, "Gestão de Produção", "tab-management"),
         (hour_prod.layout, "Produção por Hora", "tab-hour-prod"),
         (pcp.layout, "PCP", "tab-pcp"),
+        (management_old.layout, "Gestão de Produção Antiga", "tab-management-old"),
     ]
 
     all_tabs = [dbc.Tab(layout, label=label, tab_id=tab_id) for layout, label, tab_id in tabs_info]
@@ -221,7 +222,7 @@ def update_tabs(pathname):
         "/3": all_tabs[:4],
         "/4": [all_tabs[0], all_tabs[4]] + all_tabs[1:4],
         "/5": all_tabs,
-        "/pcp": all_tabs[-1],
+        "/man": all_tabs[2:3] + all_tabs[5:6],
     }
 
     return dbc.Tabs(tabs.get(pathname, all_tabs), id="dbc-tabs")

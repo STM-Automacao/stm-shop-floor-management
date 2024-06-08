@@ -74,6 +74,13 @@ MODAL_RADIO = [
     ["TOT", "Total", "orange"],
 ]
 
+TURN_SEGMENTED_DICT = {
+    "Noturno": "NOT",
+    "Matutino": "MAT",
+    "Vespertino": "VES",
+    "Total": "TOT",
+}
+
 
 class TemplateType(Enum):
     """Template types"""

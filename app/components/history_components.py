@@ -20,26 +20,6 @@ class HistoryComponents:
     def __init__(self) -> None:
         pass
 
-    def create_btn_segmented(self, btn_id: str, data: list, value: str) -> dmc.SegmentedControl:
-        """
-        Cria um botão segmentado.
-
-        Args:
-            btn_id (str): O ID do botão segmentado.
-            data (list): Os dados para preencher o botão segmentado.
-            value (str): O valor inicial do botão segmentado.
-
-        Returns:
-            dmc.SegmentedControl: O botão segmentado criado.
-        """
-
-        return dmc.SegmentedControl(
-            id=btn_id,
-            data=data,
-            value=value,
-            w="85%",
-        )
-
     def create_date_picker(self, picker_id: str, months: int = 6) -> dmc.DatePicker:
         """
         Cria um componente de seleção de data. Múltiplos dias podem ser selecionados.
