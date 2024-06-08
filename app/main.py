@@ -224,8 +224,6 @@ def update_tabs(pathname):
         "/pcp": all_tabs[-1],
     }
 
-    print(all_tabs[0])
-
     return dbc.Tabs(tabs.get(pathname, all_tabs), id="dbc-tabs")
 
 
