@@ -56,6 +56,7 @@ class ServiceInfoIHM:
         df["hora_registro_ihm"] = df.groupby("group")["hora_registro_ihm"].transform(
             lambda x: x.ffill().bfill()
         )
+        df["s_backup"] = df.groupby("group")["s_backup"].transform(lambda x: x.ffill().bfill())
 
         # Se os dado de uma coluna for '' ou ' ', substituir por NaN
         df = df.replace(r"^s*$", None, regex=True)
@@ -85,6 +86,7 @@ class ServiceInfoIHM:
                 operador_id=("operador_id", "first"),
                 data_registro_ihm=("data_registro_ihm", "first"),
                 hora_registro_ihm=("hora_registro_ihm", "first"),
+                s_backup=("s_backup", "first"),
                 data_hora=("data_hora", "first"),
                 change=("change", "first"),
                 maquina_id_change=("maquina_id_change", "first"),
@@ -121,6 +123,9 @@ class ServiceInfoIHM:
         # Determina a data e hora atual
         now = pd.Timestamp.now()
 
+        # Nova coluna para indicar se a data é a mesma do dia atual
+        df["is_today"] = pd.to_datetime(df["data_hora"]).dt.date == now.date()
+
         # Determina o turno atual com base na hora atual
         if now.hour in range(0, 8):
             current_shift = "NOT"
@@ -131,8 +136,9 @@ class ServiceInfoIHM:
 
         # Atualiza a hora final caso haja mudança de turno e o turno não seja o turno atual
         mask = (df["turno"] != df["turno"].shift(-1)) & ~(
-            (df["data_hora"].dt.date == now.date()) & (df["turno"] == current_shift)
+            (df["is_today"]) & (df["turno"] == current_shift)
         )
+
         df["data_hora_final"] = np.where(
             mask & (df["turno"] == "VES"),
             (df["data_hora"].dt.normalize() + pd.DateOffset(days=1)) + df["turno_end_time"],
@@ -143,8 +149,11 @@ class ServiceInfoIHM:
             ),
         )
 
+        # Se a data_hora_final for nula, atualiza com a data_hora + 1 minuto
+        df["data_hora_final"] = df["data_hora_final"].fillna(df["data_hora"] + pd.Timedelta("1m"))
+
         # Remove coluna auxiliar
-        df = df.drop(columns=["turno_end_time"])
+        df = df.drop(columns=["turno_end_time", "is_today"])
 
         # Caso a data_hora_final seja nula, remove a linha
         df = df.dropna(subset=["data_hora_final"]).reset_index(drop=True)

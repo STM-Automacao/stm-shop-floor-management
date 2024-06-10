@@ -11,22 +11,25 @@ import pandas as pd
 import plotly.express as px
 import seaborn as sns
 from babel.dates import format_date
-from components import chart_history, grid_eff, history_components, segmented_btn
+from components import (bar_chart_details, chart_history, date_picker_dmc,
+                        grid_eff, history_components, segmented_btn)
 from dash import Input, Output, callback, dcc, html
 from dash.exceptions import PreventUpdate
 from dash_bootstrap_templates import ThemeSwitchAIO
 from database.last_month_ind import LastMonthInd
-from helpers.my_types import TemplateType
+from helpers.my_types import TURN_SEGMENTED_DICT, TemplateType
 from service.big_data import BigData
 
 last_month = LastMonthInd()
 hc = history_components.HistoryComponents()
 seg_btn = segmented_btn.SegmentedBtn()
 ge = grid_eff.GridEff()
+dpd = date_picker_dmc.DatePickerDMC()
+bcd = bar_chart_details.BarChartDetails()
 
 # ============================================ Layout =========================================== #
 layout = [
-    dcc.Interval(id="interval-component", interval=24 * 60 * 60 * 1000),
+    dcc.Interval(id="interval-component", interval=60 * 1000),
     dbc.Row(dbc.Card(dcc.Graph(id="graph-history-modal-perdas"), className="p-2")),
     html.Hr(),
     html.H4("Desempenho Mensal", className="inter"),
@@ -54,11 +57,7 @@ layout = [
                         align="center",
                     ),
                     dbc.Col(
-                        dmc.DatesProvider(
-                            id="dates-provider-history",
-                            children=hc.create_date_picker("date-picker-general", 4),
-                            settings={"locale": "pt-br"},
-                        ),
+                        dpd.create_date_picker("date-picker-general"),
                         md=3,
                         class_name="p-2",
                         align="center",
@@ -96,11 +95,7 @@ layout = [
                         align="center",
                     ),
                     dbc.Col(
-                        dmc.DatesProvider(
-                            id="dates-provider-block",
-                            children=hc.create_date_picker("date-picker-block", 4),
-                            settings={"locale": "pt-br"},
-                        ),
+                        dpd.create_date_picker("date-picker-block"),
                         md=3,
                         class_name="p-2",
                         align="center",
@@ -150,6 +145,65 @@ layout = [
 
 
 # ========================================= Callbacks ========================================= #
+@callback(
+    [
+        Output("date-picker-general", "minDate"),
+        Output("date-picker-general", "maxDate"),
+        Output("date-picker-general", "type"),
+        Output("date-picker-general", "placeholder"),
+    ],
+    Input("interval-component", "n_intervals"),
+)
+def date_picker_general_update(__n_int):
+    """
+    Atualiza as datas mínima e máxima do seletor de data do modal de histórico.
+
+    Args:
+        _: O número de intervalos.
+
+    Returns:
+        tuple: Uma tupla contendo a data mínima, a data máxima e o tipo de seleção de data.
+    """
+
+    now = pd.Timestamp.now()
+    placeholder = ("Selecione a(s) data(s)",)
+    select_type = "multiple"
+    min_date = pd.to_datetime(now.replace(day=1) - pd.DateOffset(months=4))
+    max_date = pd.to_datetime(now - pd.DateOffset(days=1)).date()
+
+    return str(min_date), str(max_date), select_type, placeholder
+
+
+@callback(
+    [
+        Output("date-picker-block", "minDate"),
+        Output("date-picker-block", "maxDate"),
+        Output("date-picker-block", "type"),
+        Output("date-picker-block", "placeholder"),
+    ],
+    Input("interval-component", "n_intervals"),
+)
+def date_picker_block_update(_):
+    """
+    Atualiza as datas mínima e máxima do seletor de data do modal de histórico.
+
+    Args:
+        _: O número de intervalos.
+
+    Returns:
+        tuple: Uma tupla contendo a data mínima, a data máxima e o tipo de seleção de data.
+    """
+
+    now = pd.Timestamp.now()
+
+    placeholder = ("Selecione a(s) data(s)",)
+    select_type = "multiple"
+    min_date = now.replace(day=1) - pd.DateOffset(months=4)
+    max_date = pd.to_datetime(now - pd.DateOffset(days=1)).date()
+
+    return str(min_date), str(max_date), select_type, placeholder
+
+
 @callback(
     Output("graph-history-modal-perdas", "figure"),
     [Input("store-info", "data"), Input(ThemeSwitchAIO.ids.switch("theme"), "value")],
@@ -300,16 +354,8 @@ bg = BigData()
 df_big = bg.get_big_data()
 df_stops, _, _ = last_month.get_historic_data_analysis()
 
-# Ajuste de turno
-turn_options = {
-    "Noturno": "NOT",
-    "Matutino": "MAT",
-    "Vespertino": "VES",
-    "Total": "TOT",
-}
 
-
-def adjust_df(date: list[str], line: list[str], turn: str = None) -> pd.DataFrame:
+def adjust_df(date: list[str], line: list[str]) -> pd.DataFrame:
     """
     Ajusta o DataFrame de acordo com os filtros de data, turno e linha.
 
@@ -324,13 +370,6 @@ def adjust_df(date: list[str], line: list[str], turn: str = None) -> pd.DataFram
 
     # Filtrar os dados de acordo com a data
     df, date = date_filter(date, df_big.copy(), df_stops.copy())
-
-    if turn is not None:
-        turn = turn_options[turn]
-
-        # Filtrar os dados de acordo com o turno
-        if turn != "TOT":
-            df = df[df["turno"] == turn]
 
     # Filtrar os dados de acordo com a linha
     df = line_filter(line, df)
@@ -365,7 +404,7 @@ def update_general_chart(turn, line, date, toggle_theme):
     template = TemplateType.LIGHT if toggle_theme else TemplateType.DARK
 
     # Ajustes no dataframe
-    df = adjust_df(date, line, turn)
+    df = adjust_df(date, line)
 
     # Se selecionar apenas uma data e ela não estiver no df devolver texto de aviso
     if (
@@ -384,10 +423,9 @@ def update_general_chart(turn, line, date, toggle_theme):
             },
         )
 
-    # Instanciar chart
-    ch = chart_history.ChartHistory()
+    turn = TURN_SEGMENTED_DICT[turn]
 
-    return ch.create_bar_chart_details(df, template)
+    return bcd.create_bar_chart_details(df, template, turn, alt=True)
 
 
 @callback(
@@ -442,33 +480,3 @@ def update_icicle(path, line, date, switch, switch_programada, toggle_theme):
     ch = chart_history.ChartHistory()
 
     return ch.create_icicle_chart(df, path, switch, switch_programada, template)
-
-
-# ================================================================================================ #
-#                                     CORREÇÃO PARA DATE PICKER                                    #
-# ================================================================================================ #
-
-
-@callback(
-    [
-        Output("dates-provider-block", "children"),
-        Output("dates-provider-history", "children"),
-    ],
-    Input("interval-component", "n_intervals"),
-)
-def update_dates(_):
-    """
-    Atualiza as datas dos seletores de data.
-
-    Retorna dois seletores de data criados usando a função `hc.create_date_picker`.
-
-    Parâmetros:
-    - _: Parâmetro não utilizado.
-
-    Retorno:
-    - date_picker_block: Seletor de data para o bloco.
-    - date_picker_general: Seletor de data geral.
-    """
-    return hc.create_date_picker("date-picker-block", 4), hc.create_date_picker(
-        "date-picker-general", 4
-    )

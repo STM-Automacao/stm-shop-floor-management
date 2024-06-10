@@ -7,16 +7,15 @@ from io import StringIO
 import dash_bootstrap_components as dbc
 import dash_mantine_components as dmc
 import pandas as pd
-from components import segmented_btn
+from components import bar_chart_details, date_picker_dmc, segmented_btn
 from dash import Input, Output, callback, html
 from dash.exceptions import PreventUpdate
 from dash_bootstrap_templates import ThemeSwitchAIO
-from dash_iconify import DashIconify
-from helpers.my_types import TURN_SEGMENTED_DICT, IndicatorType, TemplateType
-from management.components import bar_chart_details
+from helpers.my_types import TURN_SEGMENTED_DICT, TemplateType
 
 # =========================================== Variáveis ========================================== #
 seg_btn = segmented_btn.SegmentedBtn()
+dpd = date_picker_dmc.DatePickerDMC()
 
 # ============================================ Layout ============================================ #
 layout = (
@@ -36,25 +35,13 @@ layout = (
             ),
             dbc.Row(
                 dbc.Col(
-                    dmc.DatesProvider(
-                        id="dates-provider",
-                        children=dmc.DatePicker(
-                            id="date-picker",
-                            label="Data",
-                            placeholder="Selecione uma data",
-                            valueFormat="dddd - D MMM, YYYY",
-                            firstDayOfWeek=0,
-                            clearable=True,
-                            variant="filled",
-                            leftSection=DashIconify(icon="uiw:date"),
-                        ),
-                        settings={"locale": "pt-br"},
-                    ),
+                    dpd.create_date_picker("date-picker"),
                     md=4,
                     xl=2,
                 ),
                 className="inter",
                 justify="center",
+                class_name="mb-2",
             ),
             dbc.Row(id="bar-chart-details"),
         ],
@@ -135,8 +122,6 @@ def details_bar_chart(info, turn, data_picker, working, toggle_theme):
     df_info = pd.read_json(StringIO(info), orient="split")
     df_working = pd.read_json(StringIO(working), orient="split")
 
-    bcd = bar_chart_details.BarChartDetails(df_info)
+    bcd = bar_chart_details.BarChartDetails()
 
-    return bcd.create_bar_chart_details(
-        IndicatorType.EFFICIENCY, template, turn, data_picker, df_working
-    )
+    return bcd.create_bar_chart_details(df_info, template, turn, data_picker, df_working)

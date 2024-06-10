@@ -13,6 +13,7 @@ from threading import Lock
 
 import dash_bootstrap_components as dbc
 import dash_mantine_components as dmc
+import pandas as pd
 from apscheduler.schedulers.background import BackgroundScheduler
 from dash import callback, dcc, html
 from dash.dependencies import Input, Output
@@ -42,7 +43,10 @@ logging.getLogger("apscheduler").setLevel(logging.DEBUG)
 URL_BOOTS = dbc.themes.BOOTSTRAP  # para o switch
 URL_DARKY = dbc.themes.DARKLY
 
+
 # ================================== Atualizações Em Background ================================== #
+def get_current_time():
+    return pd.Timestamp.now()
 
 
 def update_last_month():
@@ -101,12 +105,15 @@ def cache_daily_data():
 
 
 scheduler = BackgroundScheduler()
-scheduler.add_job(func=update_cache, trigger="interval", seconds=600)  # Atualiza a cada 10 minutos
+scheduler.add_job(func=get_current_time, trigger="interval", minutes=1)
+scheduler.add_job(func=update_cache, trigger="interval", minutes=10)
 scheduler.add_job(func=update_big_data, trigger="cron", hour=5)
 scheduler.add_job(func=cache_daily_data, trigger="cron", hour=0, minute=1)
 scheduler.add_job(func=update_last_month, trigger="cron", hour=1)  # Atualiza a cada 24 horas
 
 scheduler.start()
+
+update_cache()
 
 # ============================================ Layout ============================================ #
 

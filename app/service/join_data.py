@@ -88,6 +88,7 @@ class JoinData:
                 "operador_id",
                 "data_registro_y",
                 "hora_registro_y",
+                "s_backup",
             ]
         ]
 
