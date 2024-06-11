@@ -9,19 +9,35 @@ from io import StringIO
 import dash_bootstrap_components as dbc
 import dash_mantine_components as dmc
 import pandas as pd
-from components import btn_modal, grid_eff, grid_occ, modal_estoque, modal_history
-from dash import Input, Output, State, callback, html
+from components import btn_modal, grid_aggrid, grid_occ
+from dash import Input, Output, callback, html
 from dash.exceptions import PreventUpdate
 from dash_bootstrap_templates import ThemeSwitchAIO
 from dash_iconify import DashIconify
-from helpers.my_types import IndicatorType
+from helpers.my_types import (
+    GRID_FORMAT_NUMBER_BR,
+    GRID_NUMBER_COLS,
+    GRID_STR_NUM_COLS,
+    IndicatorType,
+)
 
+# =========================================== Variáveis ========================================== #
+gag = grid_aggrid.GridAgGrid()
 radio_itens_turn = btn_modal.create_radio_btn_turn("management")
 
-# ========================================== Layout ============================================ #
-layout = html.Div(
+# ================================================================================================ #
+#                                              LAYOUT                                              #
+# ================================================================================================ #
+layout = dmc.Stack(
     [
-        dbc.Row(dbc.Col(btn_modal.btn_opt, md=3), className="mt-2"),
+        dmc.Card(
+            [
+                html.H3("Tabela de Eficiência", className="text-center mb-3"),
+                dbc.Row(id="eficiencia-table-management"),
+            ],
+            shadow="sm",
+        ),
+        # NOTE: Formatar daqui em diante
         dbc.Card(
             [
                 dbc.CardBody(
@@ -63,87 +79,77 @@ layout = html.Div(
                             ),
                             className="p-2",
                         ),
-                        html.Hr(),
-                        dbc.Row(
-                            dbc.Card(
-                                id="grid-eff-modal-management",
-                                className="mt-2 shadow-lg p-2 mb-2 rounded",
-                            ),
-                            className="p-2",
-                        ),
                     ]
                 ),
             ],
-        ),
-        # Incluir detalhes de produção
-        # ---------------- Modal History ---------------- #
-        dmc.Modal(
-            children=modal_history.layout,
-            id="modal-history-eff",
-            fullScreen=True,
-            title="Histórico",
-            opened=False,
-            className="inter",
-        ),
-        # ---------------- Modal Estoque ---------------- #
-        dbc.Modal(
-            children=modal_estoque.layout,
-            id="modal-estoque",
-            size="xl",
-            fullscreen="lg-down",
-            scrollable=True,
-            modal_class_name="inter",
-            is_open=False,
         ),
     ],
     id="management-content",
 )
 
 
-# --------------------- Modal History --------------------- #
+# ================================================================================================ #
+#                                             CALLBACKS                                            #
+# ================================================================================================ #
+
+
+# ======================================= Eficiencia Table ======================================= #
 @callback(
-    Output("modal-history-eff", "opened"),
-    [Input("history-btn", "n_clicks")],
-    [State("modal-history-eff", "opened")],
+    Output("eficiencia-table-management", "children"),
+    [
+        Input("store-df-eff", "data"),
+        Input(ThemeSwitchAIO.ids.switch("theme"), "value"),
+    ],
 )
-def toggle_modal_history(n, is_open):
+def update_eficiencia_table(data, theme):
     """
-    Toggles the history modal.
-
-    Args:
-        n (int): The number of clicks on the history button.
-        is_open (bool): The current state of the modal.
-
-    Returns:
-        bool: The new state of the modal.
+    Função que atualiza a tabela de eficiência.
     """
-    if n:
-        return not is_open
-    return is_open
+    if data is None:
+        raise PreventUpdate
+
+    # Carregue a string JSON em um DataFrame
+    df = pd.read_json(StringIO(data), orient="split")
+
+    # Garantir que data registro é pd.datetime apenas com a data
+    df.data_registro = pd.to_datetime(df.data_registro).dt.strftime("%d/%m")
+
+    # Ajustar eficiência
+    df.eficiencia = (df.eficiencia * 100).round(2)
+
+    # Ajustar produção esperada para int
+    df.producao_esperada = df.producao_esperada.astype(int)
+
+    defs = [
+        {"field": "fabrica", "headerName": "Fábrica", "maxWidth": 150, **GRID_NUMBER_COLS},
+        {"field": "linha", "headerName": "Linha", "maxWidth": 150, **GRID_NUMBER_COLS},
+        {"field": "maquina_id", "headerName": "Máquina"},
+        {"field": "data_registro", "headerName": "Data", "maxWidth": 150},
+        {"field": "turno", "headerName": "Turno", "maxWidth": 150},
+        {"field": "tempo", "headerName": "Tempo Parada", **GRID_NUMBER_COLS},
+        {"field": "desconto", "headerName": "Tempo Descontado", **GRID_NUMBER_COLS},
+        {"field": "tempo_esperado", "headerName": "Tempo Esperado", **GRID_NUMBER_COLS},
+        {
+            "field": "producao_esperada",
+            "headerName": "Deveria Produzir",
+            **GRID_STR_NUM_COLS,
+            **GRID_FORMAT_NUMBER_BR,
+        },
+        {
+            "field": "total_produzido",
+            "headerName": "Produzido",
+            **GRID_STR_NUM_COLS,
+            **GRID_FORMAT_NUMBER_BR,
+        },
+        {"field": "eficiencia", "headerName": "Eficiência %", **GRID_NUMBER_COLS},
+    ]
+
+    return gag.create_grid_ag(df, "eff-table-management", theme, defs)
 
 
-@callback(
-    Output("modal-estoque", "is_open"),
-    [Input("estoque-btn", "n_clicks")],
-    [State("modal-estoque", "is_open")],
-)
-def toggle_modal_estoque(n, is_open):
-    """
-    Toggles the estoque modal.
-
-    Args:
-        n (int): The number of clicks on the estoque button.
-        is_open (bool): The current state of the modal.
-
-    Returns:
-        bool: The new state of the modal.
-    """
-    if n:
-        return not is_open
-    return is_open
+# NOTE: Formatar daqui pra baixo
 
 
-# ========================================= Callbacks =========================================== #
 # =================================== Details Of The Production ================================== #
 @callback(
     [
@@ -211,40 +217,4 @@ def update_grid_occ_modal(info, prod, turn, data_picker, theme):
     return [
         html.H5(f"Ocorrências - {turns[turn]}", className="text-center"),
         goe.create_grid_occ(df_info, IndicatorType.EFFICIENCY, turn, theme, data_picker),
-    ]
-
-
-@callback(
-    Output("grid-eff-modal-management", "children"),
-    [
-        Input("store-df-eff", "data"),
-        Input("radio-items-management", "value"),
-        Input("date-picker-1", "value"),
-        Input(ThemeSwitchAIO.ids.switch("theme"), "value"),
-    ],
-)
-def update_grid_eff_modal_management(data, turn, data_picker, theme):
-    """
-    Função que atualiza o grid de eficiência do modal.
-    """
-    if data is None:
-        raise PreventUpdate
-
-    # Carregue a string JSON em um DataFrame
-    df = pd.read_json(StringIO(data), orient="split")
-
-    # Filtra pelo turno
-    if turn != "TOT":
-        df = df[df["turno"] == turn]
-
-    # Se houver data, filtrar pelo dia selecionado
-    if data_picker is not None:
-        df["data_registro"] = pd.to_datetime(df["data_registro"]).dt.date
-        df = df[(df["data_registro"]) == pd.to_datetime(data_picker).date()]
-
-    ge = grid_eff.GridEff()
-
-    return [
-        html.H5("Eficiência", className="text-center"),
-        ge.create_grid_eff(df, theme),
     ]

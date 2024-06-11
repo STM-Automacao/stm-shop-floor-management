@@ -6,14 +6,14 @@ from io import StringIO
 
 import dash_bootstrap_components as dbc
 import pandas as pd
+from components.grid_aggrid import GridAgGrid
 from dash import Input, Output, callback, html
 from dash_bootstrap_templates import ThemeSwitchAIO
-from pcp.frontend.components_pcp import ComponentsPcpBuilder
+from helpers.my_types import GRID_FORMAT_NUMBER_BR, GRID_NUMBER_COLS, GRID_STR_NUM_COLS
 from pcp.helpers.functions_pcp import AuxFuncPcp
-from pcp.helpers.types_pcp import GRID_NUMBER_COLS, GRID_STR_NUM_COLS
 
 # =========================================== Variáveis ========================================== #
-pcp_builder = ComponentsPcpBuilder()
+pcp_builder = GridAgGrid()
 afc = AuxFuncPcp()
 
 # ================================================================================================ #
@@ -146,27 +146,21 @@ def update_paes(theme, prod_recheio, week_massa):
                     "headerName": "Baguete Produzida",
                     "headerTooltip": "Quantidade de baguetes produzidas (unidades)",
                     "field": "Baguete_Total",
-                    "valueFormatter": {
-                        "function": "params.value.toLocaleString('pt-BR')",
-                    },
+                    **GRID_FORMAT_NUMBER_BR,
                     **GRID_STR_NUM_COLS,
                 },
                 {
                     "headerName": "Baguete Consumida",
                     "headerTooltip": "Quantidade de baguetes consumidas (unidades)",
                     "field": "QTD",
-                    "valueFormatter": {
-                        "function": "params.value.toLocaleString('pt-BR')",
-                    },
+                    **GRID_FORMAT_NUMBER_BR,
                     **GRID_STR_NUM_COLS,
                 },
                 {
                     "headerName": "Baguete Sobra",
                     "headerTooltip": "Diferença de baguetes produzidas e consumidas (unidades)",
                     "field": "baguete_sobra",
-                    "valueFormatter": {
-                        "function": "params.value.toLocaleString('pt-BR')",
-                    },
+                    **GRID_FORMAT_NUMBER_BR,
                     **class_rules,
                     **GRID_STR_NUM_COLS,
                 },
@@ -180,27 +174,21 @@ def update_paes(theme, prod_recheio, week_massa):
                     "headerName": "Bolinha Produzida",
                     "headerTooltip": "Quantidade de bolinhas produzidas (unidades)",
                     "field": "Bolinha_Total",
-                    "valueFormatter": {
-                        "function": "params.value.toLocaleString('pt-BR')",
-                    },
+                    **GRID_FORMAT_NUMBER_BR,
                     **GRID_STR_NUM_COLS,
                 },
                 {
                     "headerName": "Bolinha Consumida",
                     "headerTooltip": "Quantidade de bolinhas consumidas (unidades)",
                     "field": "QTD_BOL",
-                    "valueFormatter": {
-                        "function": "params.value.toLocaleString('pt-BR')",
-                    },
+                    **GRID_FORMAT_NUMBER_BR,
                     **GRID_STR_NUM_COLS,
                 },
                 {
                     "headerName": "Bolinha Sobra",
                     "headerTooltip": "Diferença de bolinhas produzidas e consumidas (unidades)",
                     "field": "bolinha_sobra",
-                    "valueFormatter": {
-                        "function": "params.value.toLocaleString('pt-BR')",
-                    },
+                    **GRID_FORMAT_NUMBER_BR,
                     **class_rules,
                     **GRID_STR_NUM_COLS,
                 },
@@ -210,6 +198,6 @@ def update_paes(theme, prod_recheio, week_massa):
 
     title = html.H1("Pães - Análise", className="text-center mt-3 mb-3")
 
-    table = pcp_builder.create_grid_pcp(df_prod_recheio, 4, theme, defs)
+    table = pcp_builder.create_grid_ag(df_prod_recheio, "grid-pcp-4", theme, defs)
 
     return [title, table]

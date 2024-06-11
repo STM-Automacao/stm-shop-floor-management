@@ -6,9 +6,10 @@ Esta é a página de gestão da produção.
 
 import dash_bootstrap_components as dbc
 import dash_mantine_components as dmc
-from dash import Input, Output, callback, dcc
+from dash import Input, Output, State, callback, dcc
 from dash_iconify import DashIconify
-from management.pages import dashboards_pg, production_cards_pg
+from management.components import modal_estoque
+from management.pages import dashboards_pg, history_pg, production_cards_pg
 
 # ================================================================================================ #
 #                                              LAYOUT                                              #
@@ -33,7 +34,7 @@ layout = dbc.Stack(
                     label=dmc.Text("Produção Dia/Mês", size="xl"),
                     id="production-cards-navlink",
                     href="#production-cards",
-                    leftSection=DashIconify(icon="fluent:box-24-filled"),
+                    leftSection=DashIconify(icon="solar:box-outline"),
                     fz=30,
                 ),
                 dmc.NavLink(
@@ -43,10 +44,43 @@ layout = dbc.Stack(
                     leftSection=DashIconify(icon="system-uicons:graph-bar"),
                     fz=30,
                 ),
+                dmc.NavLink(
+                    label=dmc.Text("Tabelas", size="xl"),
+                    id="tables-navlink",
+                    href="#management-tables",
+                    leftSection=DashIconify(icon="carbon:table"),
+                    fz=30,
+                ),
+                dmc.NavLink(
+                    label=dmc.Text("Histórico", size="xl"),
+                    id="history-navlink",
+                    href="#management-history",
+                    leftSection=DashIconify(
+                        icon="material-symbols-light:deployed-code-history-outline"
+                    ),
+                    fz=30,
+                ),
+                dmc.NavLink(
+                    label=dmc.Text("Estoque", size="xl"),
+                    description=dmc.Text("Atualizado às 00hs", size="sm"),
+                    id="estoque-navlink",
+                    leftSection=DashIconify(icon="maki:warehouse"),
+                    fz=30,
+                ),
             ],
         ),
         # ========================================= Body ========================================= #
         dbc.Row(id="management-main-content", class_name="p-2"),
+        # =================================== Modal De Estoque =================================== #
+        dbc.Modal(
+            children=modal_estoque.layout,
+            id="modal-estoque",
+            size="xl",
+            fullscreen="lg-down",
+            scrollable=True,
+            modal_class_name="inter",
+            is_open=False,
+        ),
     ]
 )
 
@@ -59,9 +93,10 @@ layout = dbc.Stack(
 @callback(
     Output("management-drawer", "opened"),
     Input("management-drawer-btn", "n_clicks"),
+    Input("modal-estoque", "is_open"),
     prevent_initial_call=True,
 )
-def management_toggle_drawer(_):
+def management_toggle_drawer(_, estoque_is_open):
     """
     Abre ou fecha o drawer.
 
@@ -71,6 +106,8 @@ def management_toggle_drawer(_):
     Retorno:
     bool: True se o drawer estiver aberto, False caso contrário.
     """
+    if estoque_is_open:
+        return False
     return True
 
 
@@ -92,6 +129,7 @@ def management_render_page(hash_):
     hash_dict = {
         "#production-cards": production_cards_pg.layout,
         "#dashboards-management": dashboards_pg.layout,
+        "#management-history": history_pg.layout,
     }
 
     return hash_dict.get(hash_, production_cards_pg.layout)
@@ -101,6 +139,7 @@ def management_render_page(hash_):
 @callback(
     Output("production-cards-navlink", "active"),
     Output("dashboards-navlink-management", "active"),
+    Output("history-navlink", "active"),
     Input("management-url", "hash"),
 )
 def update_active_navlink_management(hash_):
@@ -113,4 +152,29 @@ def update_active_navlink_management(hash_):
     Retorno:
     bool: True se o NavLink estiver ativo, False caso contrário.
     """
-    return hash_ == "#production-cards", hash_ == "#dashboards-management"
+    return (
+        hash_ == "#production-cards",
+        hash_ == "#dashboards-management",
+        hash_ == "#management-history",
+    )
+
+
+# ============================================= Modal ============================================ #
+@callback(
+    Output("modal-estoque", "is_open"),
+    Input("estoque-navlink", "n_clicks"),
+    State("modal-estoque", "is_open"),
+    prevent_initial_call=True,
+)
+def toggle_modal_estoque(_, is_open):
+    """
+    Abre ou fecha o modal de estoque.
+
+    Parâmetros:
+    _ (int): Número de cliques no NavLink.
+    is_open (bool): Estado atual do modal.
+
+    Retorno:
+    bool: True se o modal estiver aberto, False caso contrário.
+    """
+    return not is_open, False

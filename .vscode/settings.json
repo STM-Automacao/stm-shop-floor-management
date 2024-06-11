@@ -2,6 +2,7 @@
   "python.analysis.extraPaths": ["./app"],
   "cSpell.words": [
     "aggfunc",
+    "aggrid",
     "apscheduler",
     "asof",
     "astype",
@@ -41,6 +42,7 @@
     "isin",
     "iterrows",
     "lightgray",
+    "maki",
     "mantine",
     "MANUT",
     "mcolors",

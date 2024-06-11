@@ -1,5 +1,5 @@
 """
-    Este módulo é o responsável por criar o layout do modal de histórico.
+    Este módulo é o responsável por criar o layout da página de histórico.
 """
 
 import textwrap
@@ -11,137 +11,164 @@ import pandas as pd
 import plotly.express as px
 import seaborn as sns
 from babel.dates import format_date
-from components import (bar_chart_details, chart_history, date_picker_dmc,
-                        grid_eff, history_components, segmented_btn)
+from components import bar_chart_details, date_picker_dmc, grid_aggrid, icicle_chart, segmented_btn
 from dash import Input, Output, callback, dcc, html
 from dash.exceptions import PreventUpdate
 from dash_bootstrap_templates import ThemeSwitchAIO
 from database.last_month_ind import LastMonthInd
-from helpers.my_types import TURN_SEGMENTED_DICT, TemplateType
+from helpers.my_types import (
+    GRID_FORMAT_NUMBER_BR,
+    GRID_STR_NUM_COLS,
+    TURN_SEGMENTED_DICT,
+    TemplateType,
+)
+from management.components import history_components
 from service.big_data import BigData
 
 last_month = LastMonthInd()
 hc = history_components.HistoryComponents()
 seg_btn = segmented_btn.SegmentedBtn()
-ge = grid_eff.GridEff()
+gag = grid_aggrid.GridAgGrid()
 dpd = date_picker_dmc.DatePickerDMC()
 bcd = bar_chart_details.BarChartDetails()
 
 # ============================================ Layout =========================================== #
-layout = [
-    dcc.Interval(id="interval-component", interval=60 * 1000),
-    dbc.Row(dbc.Card(dcc.Graph(id="graph-history-modal-perdas"), className="p-2")),
-    html.Hr(),
-    html.H4("Desempenho Mensal", className="inter"),
-    dbc.Row(dbc.Card(id="table-history-modal", className="p-2")),
-    html.Hr(),
-    html.H4("Dados de Paradas", className="inter"),
-    dbc.Card(
-        [
-            dbc.Row(
-                [
-                    dbc.Col(
-                        seg_btn.create_segmented_btn(
-                            "segmented_btn_general-history",
-                            ["Noturno", "Matutino", "Vespertino", "Total"],
-                            "Matutino",
+layout = dmc.Stack(
+    [
+        dcc.Interval(id="interval-component", interval=60 * 1000),
+        dbc.Row(
+            [
+                dbc.Col(
+                    dbc.Card(
+                        dcc.Graph(id="graph-history-pg-perdas"),
+                        className="p-2",
+                    ),
+                    xl=6,
+                    md=12,
+                    class_name="p-2",
+                ),
+                dbc.Col(
+                    dbc.Card(
+                        children=[
+                            html.H6("Desempenho Mensal", className="inter text-center mb-3 mt-3"),
+                            dbc.Row(id="table-history-pg"),
+                        ],
+                        className="p-2",
+                    ),
+                    xl=6,
+                    md=12,
+                    class_name="p-2",
+                ),
+            ],
+            justify="between",
+            align="center",
+        ),
+        html.Hr(),
+        html.H5("Apontamentos de Paradas dos Últimos 4 meses", className="inter"),
+        dbc.Card(
+            [
+                dbc.Row(
+                    [
+                        dbc.Col(
+                            seg_btn.create_segmented_btn(
+                                "segmented_btn_general-history",
+                                ["Noturno", "Matutino", "Vespertino", "Total"],
+                                "Matutino",
+                            ),
+                            class_name=("d-flex justify-content-center align-items-center p-2"),
+                            md=3,
+                            align="center",
                         ),
-                        class_name=("d-flex justify-content-center align-items-center p-2"),
-                        md=3,
-                        align="center",
-                    ),
-                    dbc.Col(
-                        hc.create_multiselect("multi-select-general"),
-                        md=3,
-                        class_name="p-2",
-                        align="center",
-                    ),
-                    dbc.Col(
-                        dpd.create_date_picker("date-picker-general"),
-                        md=3,
-                        class_name="p-2",
-                        align="center",
-                    ),
-                ],
-                justify="evenly",
-            ),
-            dbc.Row(
-                id="bar-chart-geral-history",
-            ),
-        ],
-        outline=True,
-        class_name="p-2 mb-5 shadow-lg",
-    ),
-    html.Hr(),
-    html.H4("Dados de Paradas por blocos", className="inter"),
-    dbc.Card(
-        [
-            dbc.Row(
-                [
-                    dbc.Col(
-                        seg_btn.create_segmented_btn(
-                            "segmented_btn_block-history",
-                            ["Manutenção", "Equipamento", "Turno", "Motivo"],
-                            "Turno",
+                        dbc.Col(
+                            hc.create_multiselect("multi-select-general"),
+                            md=3,
+                            class_name="p-2",
+                            align="center",
                         ),
-                        class_name=("d-flex justify-content-center align-items-center p-2"),
-                        md=3,
-                        align="center",
-                    ),
-                    dbc.Col(
-                        hc.create_multiselect("multi-select-block"),
-                        md=3,
-                        class_name="p-2",
-                        align="center",
-                    ),
-                    dbc.Col(
-                        dpd.create_date_picker("date-picker-block"),
-                        md=3,
-                        class_name="p-2",
-                        align="center",
-                    ),
-                    dbc.Col(
-                        dmc.Stack(
-                            children=[
-                                dmc.Switch(
-                                    id="switch-block",
-                                    description="Mostrar não apontado",
-                                    radius="md",
-                                    checked=False,
-                                    size="sm",
-                                    color="grey",
-                                    onLabel="ON",
-                                    offLabel="OFF",
-                                ),
-                                dmc.Switch(
-                                    id="switch-Programada-block",
-                                    description="Mostrar parada programada",
-                                    radius="md",
-                                    checked=True,
-                                    size="sm",
-                                    color="grey",
-                                    onLabel="ON",
-                                    offLabel="OFF",
-                                ),
-                            ],
-                            gap="xs",
+                        dbc.Col(
+                            dpd.create_date_picker("date-picker-general"),
+                            md=3,
+                            class_name="p-2",
+                            align="center",
                         ),
-                        md=2,
-                        class_name="p-2",
-                        align="center",
-                    ),
-                ],
-                justify="evenly",
-            ),
-            dbc.Row(
-                id="icicle-chart-block",
-                class_name="inter",
-            ),
-        ],
-        outline=True,
-        class_name="p-2 mb-5 shadow-lg",
-    ),
-]
+                    ],
+                    justify="evenly",
+                ),
+                dbc.Row(
+                    id="bar-chart-geral-history",
+                ),
+            ],
+            outline=True,
+            class_name="p-2 mb-5 shadow-sm",
+        ),
+        html.Hr(),
+        html.H4("Análise das paradas dos Últimos 4 meses", className="inter"),
+        dbc.Card(
+            [
+                dbc.Row(
+                    [
+                        dbc.Col(
+                            seg_btn.create_segmented_btn(
+                                "segmented_btn_block-history",
+                                ["Manutenção", "Equipamento", "Turno", "Motivo"],
+                                "Turno",
+                            ),
+                            class_name=("d-flex justify-content-center align-items-center p-2"),
+                            md=3,
+                            align="center",
+                        ),
+                        dbc.Col(
+                            hc.create_multiselect("multi-select-block"),
+                            md=3,
+                            class_name="p-2",
+                            align="center",
+                        ),
+                        dbc.Col(
+                            dpd.create_date_picker("date-picker-block"),
+                            md=3,
+                            class_name="p-2",
+                            align="center",
+                        ),
+                        dbc.Col(
+                            dmc.Stack(
+                                children=[
+                                    dmc.Switch(
+                                        id="switch-block",
+                                        description="Mostrar não apontado",
+                                        radius="md",
+                                        checked=False,
+                                        size="sm",
+                                        color="grey",
+                                        onLabel="ON",
+                                        offLabel="OFF",
+                                    ),
+                                    dmc.Switch(
+                                        id="switch-Programada-block",
+                                        description="Mostrar parada programada",
+                                        radius="md",
+                                        checked=True,
+                                        size="sm",
+                                        color="grey",
+                                        onLabel="ON",
+                                        offLabel="OFF",
+                                    ),
+                                ],
+                                gap="xs",
+                            ),
+                            md=2,
+                            class_name="p-2",
+                            align="center",
+                        ),
+                    ],
+                    justify="evenly",
+                ),
+                dbc.Row(id="icicle-chart-block", class_name="inter"),
+            ],
+            outline=True,
+            class_name="p-2 mb-5 shadow-sm",
+        ),
+    ]
+)
 
 
 # ========================================= Callbacks ========================================= #
@@ -156,7 +183,7 @@ layout = [
 )
 def date_picker_general_update(__n_int):
     """
-    Atualiza as datas mínima e máxima do seletor de data do modal de histórico.
+    Atualiza as datas mínima e máxima do seletor de data da pg de histórico.
 
     Args:
         _: O número de intervalos.
@@ -185,7 +212,7 @@ def date_picker_general_update(__n_int):
 )
 def date_picker_block_update(_):
     """
-    Atualiza as datas mínima e máxima do seletor de data do modal de histórico.
+    Atualiza as datas mínima e máxima do seletor de data da pg de histórico.
 
     Args:
         _: O número de intervalos.
@@ -205,12 +232,12 @@ def date_picker_block_update(_):
 
 
 @callback(
-    Output("graph-history-modal-perdas", "figure"),
+    Output("graph-history-pg-perdas", "figure"),
     [Input("store-info", "data"), Input(ThemeSwitchAIO.ids.switch("theme"), "value")],
 )
-def update_graph_history_modal(_, light_theme):
+def update_graph_history_pg(_, light_theme):
     """
-    Função que atualiza o gráfico de perdas do modal de histórico.
+    Função que atualiza o gráfico de perdas do pg de histórico.
     """
     df_history, df_top_stops = last_month.get_historic_data()
 
@@ -268,12 +295,12 @@ def update_graph_history_modal(_, light_theme):
 
 
 @callback(
-    Output("table-history-modal", "children"),
+    Output("table-history-pg", "children"),
     Input(ThemeSwitchAIO.ids.switch("theme"), "value"),
 )
-def update_table_history_modal(light_theme):
+def update_table_history_pg(light_theme):
     """
-    Função que atualiza a tabela de desempenho mensal do modal de histórico.
+    Função que atualiza a tabela de desempenho mensal da pg de histórico.
     """
     df_history, _ = last_month.get_historic_data()
 
@@ -286,7 +313,28 @@ def update_table_history_modal(light_theme):
         lambda x: format_date(x, "MMM/yy", locale="pt_BR").replace(".", "").capitalize()
     )
 
-    table = ge.create_grid_history(df_history, light_theme)
+    df_history.eficiencia = (df_history.eficiencia * 100).map(lambda x: f"{x:.0f}%")
+    df_history.performance = (df_history.performance * 100).map(lambda x: f"{x:.0f}%")
+    df_history.reparo = (df_history.reparo * 100).map(lambda x: f"{x:.0f}%")
+    df_history.parada_programada = df_history.parada_programada.map(
+        lambda x: f"{x:,.0f} min".replace(",", ".")
+    )
+
+    defs = [
+        {"headerName": "Mês/Ano", "field": "data_registro", "maxWidth": 150},
+        {
+            "headerName": "Produção Total",
+            "field": "total_caixas",
+            **GRID_STR_NUM_COLS,
+            **GRID_FORMAT_NUMBER_BR,
+        },
+        {"headerName": "Eficiência", "field": "eficiencia", "maxWidth": 150},
+        {"headerName": "Performance", "field": "performance", "maxWidth": 150},
+        {"headerName": "Reparos", "field": "reparo", "maxWidth": 150},
+        {"headerName": "Parada Programada", "field": "parada_programada"},
+    ]
+
+    table = gag.create_grid_ag(df_history, "table-history-ag", light_theme, defs, 400)
 
     return table
 
@@ -477,6 +525,6 @@ def update_icicle(path, line, date, switch, switch_programada, toggle_theme):
         )
 
     # Instanciar chart
-    ch = chart_history.ChartHistory()
+    ch = icicle_chart.IcicleChart()
 
     return ch.create_icicle_chart(df, path, switch, switch_programada, template)

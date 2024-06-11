@@ -9,7 +9,7 @@ from plotly import express as px
 from service.df_for_indicators import DFIndicators
 
 
-class ChartHistory:
+class IcicleChart:
     """
     Classe responsável por criar gráficos de barras para exibir os detalhes de tempo das paradas.
 
@@ -23,107 +23,6 @@ class ChartHistory:
 
     def __init__(self):
         self.df_indicator = DFIndicators
-
-    def create_bar_chart_details(
-        self,
-        df: pd.DataFrame,
-        template: TemplateType,
-        working: pd.DataFrame = None,
-    ) -> dcc.Graph:
-        """
-        Cria um gráfico de barras para exibir os detalhes de tempo das paradas.
-
-        Args:
-            df (pd.DataFrame): O DataFrame contendo os dados das paradas.
-            template (TemplateType): O tipo de template a ser utilizado no gráfico.
-            working (pd.DataFrame, optional): O DataFrame contendo os dados de trabalho.
-                Defaults to None.
-
-        Returns:
-            dcc.Graph: O gráfico de barras com os detalhes de tempo das paradas.
-        """
-
-        # Instanciar DFIndicators
-        class_indicators = DFIndicators(df)
-
-        # Ajustar df para indicador de eficiência
-        df = class_indicators.adjust_df_for_bar_lost(
-            df, IndicatorType.EFFICIENCY, working_minutes=working
-        )
-
-        # Se motivo for Rodando, problema e causa são "Sem Problema" e "Sem Causa"
-        df.loc[df["motivo"] == "Rodando", ["problema", "causa"]] = " "
-
-        # Criar coluna sort para ordenar os dados
-        df["sort"] = (
-            df["motivo"].map({"Rodando": 0, "Parada Programada": 2, "Limpeza": 1}).fillna(9)
-        )
-
-        # Ordenar por sort e tempo_registro_min
-        df = df.sort_values(
-            by=["linha", "sort", "data_registro", "tempo"],
-            ascending=[True, True, True, False],
-        )
-
-        # Ajustar a coluna data_registro para exibir apenas o dia e mês
-        df["data_registro"] = pd.to_datetime(df["data_registro"]).dt.strftime("%d/%m")
-
-        # Ajustar a coluna data_hora para exibir apenas a hora e o minuto
-        df["data_hora"] = pd.to_datetime(df["data_hora"]).dt.time
-
-        # Ajustar data_hora qdo motivo é Rodando
-        df.loc[df["motivo"] == "Rodando", "data_hora"] = " "
-
-        # Remover a coluna sort
-        df = df.drop(columns=["sort"])
-
-        # Criação do gráfico
-        fig = px.bar(
-            df,
-            x="motivo",
-            y="tempo",
-            color="motivo",
-            barmode="stack",
-            color_discrete_map=COLOR_DICT,
-            title="Paradas de Produção",
-            labels={
-                "tempo": "Tempo (min)",
-                "motivo": "Motivo",
-            },
-            template=template.value,
-            custom_data=["problema", "causa", "data_registro", "data_hora", "linha"],
-        )
-
-        tick_color = "gray" if template == TemplateType.LIGHT else "lightgray"
-
-        fig.update_traces(
-            hovertemplate=(
-                "Tempo: %{y}<br>"
-                "Problema: %{customdata[0]}<br>"
-                "Causa: %{customdata[1]}<br>"
-                "Linha: %{customdata[4]}<br>"
-                "Dia: %{customdata[2]}<br>"
-                "Hora: %{customdata[3]}"
-            )
-        )
-
-        # Atualizar layout
-        fig.update_layout(
-            xaxis=dict(
-                categoryorder="category ascending",
-                tickvals=df["motivo"].unique(),
-                tickfont=dict(color=tick_color),
-            ),
-            yaxis=dict(tickfont=dict(color=tick_color)),
-            title_x=0.5,
-            xaxis_title="Motivo",
-            yaxis_title="Tempo (min)",
-            legend_title="Paradas",
-            plot_bgcolor="RGBA(0,0,0,0.01)",
-            margin=dict(t=40, b=40, l=40, r=40),
-        )
-
-        return dcc.Graph(figure=fig)
 
     def create_icicle_chart(
         self,
@@ -223,7 +122,6 @@ class ChartHistory:
             values="tempo",
             color=color_column,
             color_discrete_map=color_map,
-            title="Paradas de Produção",
             height=800,
             template=template.value,
         )
@@ -231,6 +129,7 @@ class ChartHistory:
         # Atualizar layout
         fig.update_layout(
             plot_bgcolor="RGBA(0,0,0,0.01)",
+            margin=dict(l=40, r=40, t=40, b=40),
         )
 
         # Adicionar a porcentagem

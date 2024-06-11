@@ -6,13 +6,13 @@ from io import StringIO
 
 import dash_bootstrap_components as dbc
 import pandas as pd
+from components.grid_aggrid import GridAgGrid
 from dash import Input, Output, callback, html
 from dash_bootstrap_templates import ThemeSwitchAIO
-from pcp.frontend.components_pcp import ComponentsPcpBuilder
 from pcp.helpers.functions_pcp import AuxFuncPcp
 
 # =========================================== Variáveis ========================================== #
-pcp_builder = ComponentsPcpBuilder()
+pcp_builder = GridAgGrid()
 afc = AuxFuncPcp()
 
 # ================================================================================================ #
@@ -90,6 +90,6 @@ def update_paes(theme, data):
         by=["Ano", "Semana", "Fábrica", "Produto"], ascending=[False, False, True, True]
     )
 
-    table = pcp_builder.create_grid_pcp(df_cleaned, 3, theme)
+    table = pcp_builder.create_grid_ag(df_cleaned, "grid-pcp-3", theme)
 
     return table

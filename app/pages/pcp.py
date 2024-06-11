@@ -5,10 +5,10 @@ Módulo com dados de Batidas de massa.
 import dash_bootstrap_components as dbc
 import dash_mantine_components as dmc
 from apscheduler.schedulers.background import BackgroundScheduler
+from components.grid_aggrid import GridAgGrid
 from dash import Input, Output, callback, dcc
 from dash_iconify import DashIconify
 from pcp.frontend import massa_analysis_pcp, massa_batidas_pcp, producao_pcp
-from pcp.frontend.components_pcp import ComponentsPcpBuilder
 from pcp.helpers.cache_pcp import PcpDataCache
 
 from app import app
@@ -17,7 +17,7 @@ from app import app
 pcp_data = PcpDataCache(app)
 update_massa_cache = pcp_data.cache_massa_data
 scheduler = BackgroundScheduler()
-pcp_builder = ComponentsPcpBuilder()
+pcp_builder = GridAgGrid()
 layout_pcp_massa_analysis = massa_analysis_pcp.layout
 layout_pcp_massa_batidas = massa_batidas_pcp.layout
 layout_pcp_producao = producao_pcp.layout
@@ -50,22 +50,25 @@ layout = [
         id="pcp-drawer",
         children=[
             dmc.NavLink(
-                label="Produção Semanal",
+                label=dmc.Text("Produção Semanal", size="xl"),
                 id="pcp-production-navlink",
                 href="#pcp-production",
                 leftSection=DashIconify(icon="mdi:calendar-week"),
+                fz=30,
             ),
             dmc.NavLink(
-                label="Análise de Massa",
+                label=dmc.Text("Análise de Massa", size="xl"),
                 id="massa-analysis-navlink",
                 href="#massa-analysis",
                 leftSection=DashIconify(icon="mdi:bread"),
+                fz=30,
             ),
             dmc.NavLink(
-                label="Batidas de Massa",
+                label=dmc.Text("Batidas de Massa", size="xl"),
                 id="massa-batidas-navlink",
                 href="#massa-batidas",
                 leftSection=DashIconify(icon="game-icons:dough-roller"),
+                fz=30,
             ),
         ],
     ),
