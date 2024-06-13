@@ -22,7 +22,7 @@ dash-bootstrap-templates==1.1.2
 dash-core-components==2.0.0
 dash-html-components==2.0.0
 dash-iconify==0.1.2
-dash-mantine-components==0.14
+dash-mantine-components==0.14.0
 dash-table==5.0.0
 dash_ag_grid==31.0.1
 debugpy==1.8.1
