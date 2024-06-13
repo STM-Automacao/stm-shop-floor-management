@@ -11,7 +11,7 @@ Inclui aba de Gestão de Produção.
 
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/Poetry)
 
-
+# 🚧 Pendente de atualização no readme! 👷
 
 
 ## Funcionalidades
