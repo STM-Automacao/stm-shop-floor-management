@@ -53,6 +53,7 @@ layout = [
                 label=dmc.Text("Análise de Massa", size="xl"),
                 id="massa-analysis-navlink",
                 href="#massa-analysis",
+                active=True,
                 leftSection=DashIconify(icon="mdi:bread"),
                 fz=30,
             ),
@@ -123,40 +124,37 @@ def toggle_drawer(_):
 
 
 # =========================================== Location =========================================== #
-@callback(Output("pcp-main-content", "children"), Input("pcp-url", "hash"))
-def update_content(hash_):
+@callback(
+    Output("pcp-main-content", "children"),
+    Output("massa-analysis-navlink", "active"),
+    Output("massa-batidas-navlink", "active"),
+    Output("pcp-production-navlink", "active"),
+    Input("pcp-url", "hash"),
+)
+def update_content_and_navlink_active(hash_):
     """
-    Atualiza o conteúdo principal.
+    Atualiza o conteúdo principal e o NavLink ativo.
 
     Parâmetros:
     hash_ (str): O hash da URL.
 
     Retorno:
-    list: A lista de componentes a serem exibidos.
+    tuple: Um tuple contendo a lista de componentes e o estado de ativação dos NavLink.
     """
+
+    # Dicionário de hash e layout
     hash_dict = {
         "#massa-analysis": layout_pcp_massa_analysis,
         "#massa-batidas": layout_pcp_massa_batidas,
         "#pcp-production": layout_pcp_producao,
     }
 
-    return hash_dict.get(hash_, layout_pcp_massa_analysis)
+    # Verifica se o hash está no dicionário de hash, se não estiver, pega o primeiro hash
+    if hash_ not in hash_dict:
+        hash_ = list(hash_dict.keys())[0]
 
+    # Pega o conteúdo e verifica qual NavLink está ativo
+    content = hash_dict.get(hash_, layout_pcp_massa_analysis)
+    active_navlinks = tuple(hash_ == hash_option for hash_option in hash_dict.keys())
 
-@callback(
-    Output("massa-analysis-navlink", "active"),
-    Output("massa-batidas-navlink", "active"),
-    Output("pcp-production-navlink", "active"),
-    Input("pcp-url", "hash"),
-)
-def update_navlink_active(hash_):
-    """
-    Atualiza o NavLink ativo.
-
-    Parâmetros:
-    hash_ (str): O hash da URL.
-
-    Retorno:
-    tuple: Um tuple contendo o estado de ativação dos NavLink.
-    """
-    return hash_ == "#massa-analysis", hash_ == "#massa-batidas", hash_ == "#pcp-production"
+    return content, *active_navlinks
