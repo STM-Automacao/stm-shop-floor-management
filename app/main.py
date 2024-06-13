@@ -223,11 +223,11 @@ def update_tabs(pathname):
 
     tabs = {
         "/": all_tabs[:3],
-        "/1": all_tabs[:2],
-        "/2": all_tabs[:3],
-        "/3": all_tabs[:4],
-        "/4": [all_tabs[0], all_tabs[4]] + all_tabs[1:4],
-        "/5": all_tabs,
+        "/88334": all_tabs[:2],
+        "/2703448294": all_tabs[:3],
+        "/39943361394": all_tabs[:4],
+        "/030": [all_tabs[0], all_tabs[4]] + all_tabs[1:4],
+        "/7186": all_tabs,
     }
 
     return dbc.Tabs(tabs.get(pathname, all_tabs), id="dbc-tabs")
