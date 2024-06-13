@@ -87,6 +87,9 @@ class GridEff:
         return grid
 
     def create_grid_history(self, df_history: pd.DataFrame, light_theme: bool) -> dag.AgGrid:
+        """
+        Cria uma grade de histórico de eficiência com base nos dados fornecidos.
+        """
 
         # -------------------- Tabela de Desempenho Mensal -------------------- #
 
@@ -122,7 +125,7 @@ class GridEff:
             rowData=df_history.to_dict("records"),
             columnSize="responsiveSizeToFit",
             dashGridOptions={"pagination": True, "paginationAutoPageSize": True},
-            style={"height": "600px"},
+            style={"height": "400px"},
         )
 
         return table

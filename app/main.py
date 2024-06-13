@@ -13,6 +13,7 @@ from threading import Lock
 
 import dash_bootstrap_components as dbc
 import dash_mantine_components as dmc
+import pandas as pd
 from apscheduler.schedulers.background import BackgroundScheduler
 from dash import callback, dcc, html
 from dash.dependencies import Input, Output
@@ -42,7 +43,10 @@ logging.getLogger("apscheduler").setLevel(logging.DEBUG)
 URL_BOOTS = dbc.themes.BOOTSTRAP  # para o switch
 URL_DARKY = dbc.themes.DARKLY
 
+
 # ================================== Atualizações Em Background ================================== #
+def get_current_time():
+    return pd.Timestamp.now()
 
 
 def update_last_month():
@@ -64,17 +68,18 @@ def update_big_data():
     Esta função chama o método save_big_data para salvar os dados grandes.
 
     """
-    logger = logging.getLogger("update_big_data").setLevel(logging.DEBUG)
+    logger = logging.getLogger("update_big_data")
+    logger.setLevel(logging.INFO)
 
-    logging.info("Iniciando update de big data")
+    logger.info("Iniciando update de big data")
     try:
         with lock:
             big_data = BigData()
             big_data.save_big_data()
-        logging.info("Update bem sucedido")
+        logger.info("Update bem sucedido")
     # pylint: disable=W0718
     except Exception as err:
-        logging.error("Erro ao executar update de big data: %s", err)
+        logger.error("Erro ao executar update de big data: %s", err)
 
 
 def update_cache():
@@ -100,12 +105,15 @@ def cache_daily_data():
 
 
 scheduler = BackgroundScheduler()
-scheduler.add_job(func=update_cache, trigger="interval", seconds=600)  # Atualiza a cada 10 minutos
+scheduler.add_job(func=get_current_time, trigger="interval", minutes=1)
+scheduler.add_job(func=update_cache, trigger="interval", minutes=10)
 scheduler.add_job(func=update_big_data, trigger="cron", hour=5)
 scheduler.add_job(func=cache_daily_data, trigger="cron", hour=0, minute=1)
 scheduler.add_job(func=update_last_month, trigger="cron", hour=1)  # Atualiza a cada 24 horas
 
 scheduler.start()
+
+update_cache()
 
 # ============================================ Layout ============================================ #
 
@@ -151,7 +159,7 @@ app.layout = dmc.MantineProvider(
                     ],
                 ),
                 dbc.Row(
-                    id="dbc-tabs",
+                    id="tab-row",
                     class_name="mb-5",
                 ),
                 dmc.AppShell(
@@ -189,7 +197,7 @@ app.layout = dmc.MantineProvider(
 
 # ======================================== Caminhos E Abas ======================================= #
 @callback(
-    Output("dbc-tabs", "children"),
+    Output("tab-row", "children"),
     Input("url", "pathname"),
 )
 def update_tabs(pathname):
@@ -211,7 +219,7 @@ def update_tabs(pathname):
         (pcp.layout, "PCP", "tab-pcp"),
     ]
 
-    all_tabs = [dbc.Tab(layout, label=label, id=id) for layout, label, id in tabs_info]
+    all_tabs = [dbc.Tab(layout, label=label, tab_id=tab_id) for layout, label, tab_id in tabs_info]
 
     tabs = {
         "/": all_tabs[:3],
@@ -220,11 +228,27 @@ def update_tabs(pathname):
         "/3": all_tabs[:4],
         "/4": [all_tabs[0], all_tabs[4]] + all_tabs[1:4],
         "/5": all_tabs,
-
-        "/pcp": all_tabs[-1],
     }
 
-    return dbc.Tabs(tabs.get(pathname, all_tabs[0]))
+    return dbc.Tabs(tabs.get(pathname, all_tabs), id="dbc-tabs")
+
+
+@callback(
+    Output("url", "hash"),
+    Input("dbc-tabs", "active_tab"),
+)
+def update_hash(active_tab):
+    """
+    Função que atualiza o hash da URL com base na aba ativa.
+
+    Parâmetros:
+    active_tab (str): O ID da aba ativa.
+
+    Retorna:
+    str: O hash da URL.
+    """
+
+    return f"#{active_tab}"
 
 
 # =================================== Switch De Cores Do Rodapé ================================== #

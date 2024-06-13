@@ -18,6 +18,13 @@ class IndicatorType(Enum):
     EFFICIENCY = "eficiencia"
 
 
+class TemplateType(Enum):
+    """Template types"""
+
+    LIGHT = "bootstrap"
+    DARK = "darkly"
+
+
 class BSColorsEnum(Enum):
     """Bootstrap colors"""
 
@@ -74,12 +81,35 @@ MODAL_RADIO = [
     ["TOT", "Total", "orange"],
 ]
 
+TURN_SEGMENTED_DICT = {
+    "Noturno": "NOT",
+    "Matutino": "MAT",
+    "Vespertino": "VES",
+    "Total": "TOT",
+}
 
-class TemplateType(Enum):
-    """Template types"""
 
-    LIGHT = "bootstrap"
-    DARK = "darkly"
+GRID_NUMBER_COLS = {
+    "filter": "agNumberColumnFilter",
+    "cellClass": "center-aligned-cell",
+    "cellDataType": "number",
+    "filterParams": {"buttons": ["apply", "reset"], "closeOnApply": "true"},
+    "headerClass": "center-aligned-header",
+}
+
+GRID_STR_NUM_COLS = {
+    "filter": "agNumberColumnFilter",
+    "cellClass": "center-aligned-cell",
+    "cellDataType": "string",
+    "filterParams": {"buttons": ["apply", "reset"], "closeOnApply": "true"},
+    "headerClass": "center-aligned-header",
+}
+
+GRID_FORMAT_NUMBER_BR = {
+    "valueFormatter": {
+        "function": "params.value.toLocaleString('pt-BR')",
+    },
+}
 
 
 # Usado nos dados ao vivo do 'grafana'

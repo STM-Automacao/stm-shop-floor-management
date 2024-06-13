@@ -7,9 +7,10 @@ from io import StringIO
 import dash_bootstrap_components as dbc
 import pandas as pd
 from apscheduler.schedulers.background import BackgroundScheduler
+from components import segmented_btn
+from components.grid_aggrid import GridAgGrid
 from dash import Input, Output, callback, html
 from dash_bootstrap_templates import ThemeSwitchAIO
-from pcp.frontend.components_pcp import ComponentsPcpBuilder
 from pcp.helpers.cache_pcp import PcpDataCache
 
 from app import app
@@ -18,7 +19,8 @@ from app import app
 pcp_data = PcpDataCache(app)
 update_massa_cache = pcp_data.cache_massa_data
 scheduler = BackgroundScheduler()
-pcp_builder = ComponentsPcpBuilder()
+pcp_builder = GridAgGrid()
+seg_btn = segmented_btn.SegmentedBtn()
 
 # ================================================================================================ #
 #                                              LAYOUT                                              #
@@ -29,7 +31,7 @@ layout = dbc.Stack(
         html.H1("Batidas de Massa", className="text-center mt-3 mb-3"),
         dbc.Row(
             dbc.Col(
-                pcp_builder.generate_segmented_btn("batidas", ["Turno", "Total"], "Total"),
+                seg_btn.create_segmented_btn("btn-pcp-batidas", ["Turno", "Total"], "Total"),
                 md=3,
                 class_name="d-flex justify-content-center align-items-center",
             ),
@@ -44,6 +46,7 @@ layout = dbc.Stack(
                     dbc.CardBody(id="massadas"),
                 ],
                 class_name="p-0 shadow-sm",
+                outline=False,
             ),
             class_name="mb-3",
         ),
@@ -71,7 +74,7 @@ layout = dbc.Stack(
     [
         Input("df_sum", "data"),
         Input(ThemeSwitchAIO.ids.switch("theme"), "value"),
-        Input("segmented-btn-pcp-batidas", "value"),
+        Input("btn-pcp-batidas", "value"),
     ],
 )
 def update_massadas_card(data, theme, choice):
@@ -118,7 +121,7 @@ def update_massadas_card(data, theme, choice):
     # Ajustar o formato da data
     df["Data"] = pd.to_datetime(df["Data"]).dt.strftime("%d/%m")
 
-    table = pcp_builder.create_grid_pcp(df, 1, theme)
+    table = pcp_builder.create_grid_ag(df, "grid-pcp-1", theme)
 
     return table
 
@@ -128,7 +131,7 @@ def update_massadas_card(data, theme, choice):
     [
         Input("df_week", "data"),
         Input(ThemeSwitchAIO.ids.switch("theme"), "value"),
-        Input("segmented-btn-pcp-batidas", "value"),
+        Input("btn-pcp-batidas", "value"),
     ],
 )
 def update_massadas_week_card(data, theme, choice):
@@ -180,6 +183,6 @@ def update_massadas_week_card(data, theme, choice):
 
     df["Data Inicial"] = pd.to_datetime(df["Data Inicial"]).dt.strftime("%d/%m")
 
-    table = pcp_builder.create_grid_pcp(df, 2, theme)
+    table = pcp_builder.create_grid_ag(df, "grid-pcp-2", theme)
 
     return table

@@ -5,15 +5,25 @@ Módulo que contém a página de produção por hora.
 from io import StringIO
 
 import dash_bootstrap_components as dbc
+import dash_mantine_components as dmc
 import numpy as np
 import pandas as pd
+from components import grid_aggrid
 from dash import Input, Output, callback
+from dash_bootstrap_templates import ThemeSwitchAIO
+
+gag = grid_aggrid.GridAgGrid()
 
 # ================================================================================================ #
 #                                              LAYOUT                                              #
 # ================================================================================================ #
 layout = dbc.Row(
-    id="hour-prod-table",
+    [
+        dmc.Card(
+            id="hour-prod-table",
+            shadow="sm",
+        )
+    ],
 )
 
 
@@ -23,8 +33,9 @@ layout = dbc.Row(
 @callback(
     Output("hour-prod-table", "children"),
     Input("store-df-info-pure", "data"),
+    Input(ThemeSwitchAIO.ids.switch("theme"), "value"),
 )
-def update_hour_prod_table(data):
+def update_hour_prod_table(data, theme):
     """
     Função que atualiza a tabela de produção por hora.
 
@@ -93,11 +104,7 @@ def update_hour_prod_table(data):
 
     # Cria uma nova coluna que representa o intervalo de tempo
     df_pivot["Intervalo"] = (
-        "Entre "
-        + df_pivot.index.hour.astype(str)
-        + "hs e "
-        + (df_pivot.index.hour + 1).astype(str)
-        + "hs"
+        df_pivot.index.hour.astype(str) + "hs à " + (df_pivot.index.hour + 1).astype(str) + "hs"
     )
 
     # Reordena as colunas para que 'Intervalo' seja a primeira coluna
@@ -106,11 +113,4 @@ def update_hour_prod_table(data):
     # Renomeia as colunas para que sejam mais legíveis
     df_pivot.columns = [col if col == "Intervalo" else f"Linha {col}" for col in df_pivot.columns]
 
-    return dbc.Table.from_dataframe(
-        df_pivot,
-        striped=True,
-        bordered=True,
-        hover=True,
-        responsive=True,
-        className="inter",
-    )
+    return gag.create_grid_ag(df_pivot, "hour-prod-table", theme, hei="1100px")
