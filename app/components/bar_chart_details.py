@@ -12,27 +12,19 @@ from service.df_for_indicators import DFIndicators
 class BarChartDetails:
     """
     Represents a class for creating bar chart details based on provided data.
-
-    Args:
-        df_maq_stopped (pd.DataFrame): The input dataframe containing the data.
-
-    Attributes:
-        df_maq_stopped (pd.DataFrame): The input dataframe containing the data.
-        df_indicator (DFIndicators): The dataframe for indicators.
     """
 
-    def __init__(self, df_maq_stopped: pd.DataFrame):
-        self.df_maq_stopped = df_maq_stopped
-        self.df_indicator = DFIndicators(self.df_maq_stopped)
+    def __init__(self):
+        self.df_indicator = DFIndicators
 
     def create_bar_chart_details(
         self,
-        indicator: IndicatorType,
+        df_maq_stopped: pd.DataFrame,
         template: TemplateType,
-        turn: str,
+        turn: str = None,
         selected_data: str = None,
         working: pd.DataFrame = None,
-        choice: str = "motivo",
+        alt=False,
     ) -> dcc.Graph:
         """
         Creates a bar chart with details based on the provided data.
@@ -48,8 +40,11 @@ class BarChartDetails:
         Returns:
             dcc.Graph: The bar chart as a Dash component.
         """
-        df = self.df_indicator.adjust_df_for_bar_lost(
-            self.df_maq_stopped, indicator, turn, working_minutes=working
+        # Instanciar DFIndicators
+        class_indicators = DFIndicators(df_maq_stopped)
+
+        df = class_indicators.adjust_df_for_bar_lost(
+            df_maq_stopped, IndicatorType.EFFICIENCY, turn, working_minutes=working
         )
 
         # Garantis que data_registro tenha apenas o dia
@@ -62,52 +57,60 @@ class BarChartDetails:
             else df
         )
 
-        if choice == "motivo":
-            # Se motivo for Rodando, problema e causa são "Sem Problema" e "Sem Causa"
-            df.loc[df["motivo"] == "Rodando", ["problema", "causa"]] = " "
+        # Se motivo for Rodando, problema e causa são "Sem Problema" e "Sem Causa"
+        df.loc[df["motivo"] == "Rodando", ["problema", "causa"]] = " "
 
-            # Criar coluna sort para ordenar os dados
-            df["sort"] = (
-                df["motivo"].map({"Rodando": 0, "Parada Programada": 2, "Limpeza": 1}).fillna(9)
-            )
+        # Criar coluna sort para ordenar os dados
+        df["sort"] = (
+            df["motivo"].map({"Rodando": 0, "Parada Programada": 2, "Limpeza": 1}).fillna(9)
+        )
 
-            # Ordenar por sort e tempo_registro_min
-            df = df.sort_values(
-                by=["linha", "sort", "data_registro", "tempo"],
-                ascending=[True, True, True, False],
-            )
+        # Ordenar por sort e tempo_registro_min
+        df = df.sort_values(
+            by=["linha", "sort", "data_registro", "tempo"],
+            ascending=[True, True, True, False],
+        )
 
-            # Ajustar a coluna data_registro para exibir apenas o dia
-            df["data_registro"] = pd.to_datetime(df["data_registro"]).dt.strftime("%d/%m")
+        # Ajustar a coluna data_registro para exibir apenas o dia
+        df["data_registro"] = pd.to_datetime(df["data_registro"]).dt.strftime("%d/%m")
 
-            # Ajustar a coluna data_hora para exibir apenas a hora e o minuto
-            df["data_hora"] = pd.to_datetime(df["data_hora"]).dt.time
+        # Ajustar a coluna data_hora para exibir apenas a hora e o minuto
+        df["data_hora"] = pd.to_datetime(df["data_hora"]).dt.time
 
-            # Ajustar data_hora qdo motivo é Rodando
-            df.loc[df["motivo"] == "Rodando", "data_hora"] = " "
+        # Ajustar data_hora qdo motivo é Rodando
+        df.loc[df["motivo"] == "Rodando", "data_hora"] = " "
 
-            # Ajustar causa quando motivo é limpeza
-            df.loc[df["motivo"] == "Limpeza", "causa"] = "Parada de Fábrica"
+        # Ajustar causa quando motivo é limpeza
+        df.loc[df["motivo"] == "Limpeza", "causa"] = "Parada de Fábrica"
 
-            # Remover a coluna sort
-            df = df.drop(columns=["sort"])
+        # Se não houver a coluna s_backup, criar com valor ""
+        if "s_backup" not in df.columns:
+            df["s_backup"] = ""
+
+        # Preencher valores nulos de s_backup com ""
+        df["s_backup"] = df["s_backup"].fillna("")
+
+        # Remover a coluna sort
+        df = df.drop(columns=["sort"])
+
+        alt_choice = "motivo" if alt else "linha"
 
         # Criação do gráfico
         fig = px.bar(
             df,
-            x="linha",
+            x=alt_choice,
             y="tempo",
-            color=choice,
+            color="motivo",
             barmode="stack",
             color_discrete_map=COLOR_DICT,
             title="Detalhes de Tempo",
             labels={
                 "tempo": "Tempo (min)",
-                "linha": "Linha",
-                choice: choice.capitalize(),
+                alt_choice: alt_choice.capitalize(),
+                "motivo": "motivo".capitalize(),
             },
             template=template.value,
-            custom_data=["problema", "causa", "data_registro", "data_hora"],
+            custom_data=["problema", "causa", "data_registro", "data_hora", "s_backup"],
         )
 
         tick_color = "gray" if template == TemplateType.LIGHT else "lightgray"
@@ -119,7 +122,8 @@ class BarChartDetails:
                 "Problema: %{customdata[0]}<br>"
                 "Causa: %{customdata[1]}<br>"
                 "Dia: %{customdata[2]}<br>"
-                "Hora: %{customdata[3]}"
+                "Hora: %{customdata[3]}<br>"
+                "Saída de Backup p/ linha: %{customdata[4]}"
             )
         )
 
@@ -134,7 +138,7 @@ class BarChartDetails:
             title_x=0.5,
             xaxis_title="Linha",
             yaxis_title="Tempo (min)",
-            legend_title=choice.capitalize(),
+            legend_title="motivo".capitalize(),
             plot_bgcolor="RGBA(0,0,0,0.01)",
             margin=dict(t=40, b=40, l=40, r=40),
         )

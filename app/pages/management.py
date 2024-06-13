@@ -1,102 +1,77 @@
 """
-    Esta é a página de gestão da produção.
+Esta é a página de gestão da produção.
     - Autor: Bruno Tomaz
     - Data de criação: 13/03/2024
 """
 
-from io import StringIO
-
 import dash_bootstrap_components as dbc
 import dash_mantine_components as dmc
-import pandas as pd
-from components import (
-    bar_chart_details,
-    btn_modal,
-    grid_eff,
-    grid_occ,
-    modal_estoque,
-    modal_history,
-    production_cards,
-)
-from dash import Input, Output, State, callback, html
-from dash.exceptions import PreventUpdate
-from dash_bootstrap_templates import ThemeSwitchAIO
+from dash import Input, Output, State, callback, dcc
 from dash_iconify import DashIconify
-from helpers.my_types import IndicatorType, TemplateType
+from management.components import modal_estoque
+from management.pages import dashboards_pg, history_pg, production_cards_pg, tables_management_pg
 
-radio_itens_turn = btn_modal.create_radio_btn_turn("management")
-
-# ========================================== Layout ============================================ #
-layout = html.Div(
+# ================================================================================================ #
+#                                              LAYOUT                                              #
+# ================================================================================================ #
+layout = dbc.Stack(
     [
-        dbc.Row(dbc.Col(btn_modal.btn_opt, md=3), className="mt-2"),
-        dbc.Card(id="production-card", class_name="mb-3 mt-2"),
-        dbc.Card(
-            [
-                dbc.CardHeader("Detalhes da Produção do Mês Corrente"),
-                dbc.CardBody(
-                    [
-                        dbc.Row(
-                            dbc.Col(
-                                radio_itens_turn,
-                                class_name="radio-group",
-                                md=4,
-                                xl=4,
-                            ),
-                        ),
-                        dbc.Row(
-                            dbc.Col(
-                                dmc.DatesProvider(
-                                    id="dates-provider",
-                                    children=dmc.DatePicker(
-                                        id="date-picker",
-                                        label="Data",
-                                        placeholder="Selecione uma data",
-                                        valueFormat="dddd - D MMM, YYYY",
-                                        firstDayOfWeek=0,
-                                        clearable=True,
-                                        variant="filled",
-                                        leftSection=DashIconify(icon="uiw:date"),
-                                    ),
-                                    settings={"locale": "pt-br"},
-                                ),
-                                md=4,
-                                xl=2,
-                            ),
-                            className="inter",
-                            justify="center",
-                        ),
-                        dbc.Row(id="bar-chart-details"),
-                        dbc.Row(
-                            dbc.Card(
-                                id="grid-occ-modal",
-                                className="mt-2 shadow-lg p-2 mb-2 rounded",
-                            ),
-                            className="p-2",
-                        ),
-                        html.Hr(),
-                        dbc.Row(
-                            dbc.Card(
-                                id="grid-eff-modal-management",
-                                className="mt-2 shadow-lg p-2 mb-2 rounded",
-                            ),
-                            className="p-2",
-                        ),
-                    ]
+        dcc.Location(id="management-url"),
+        # ====================================== Drawer Btn ====================================== #
+        dbc.Button(
+            id="management-drawer-btn",
+            color="secondary",
+            outline=True,
+            children=DashIconify(icon="mdi:menu"),
+            style={"width": "50px"},
+            class_name="d-flex justify-content-center align-items-center float-left mt-2 ml-2",
+        ),
+        # ======================================== Drawer ======================================== #
+        dmc.Drawer(
+            id="management-drawer",
+            children=[
+                dmc.NavLink(
+                    label=dmc.Text("Produção do Dia/Mês", size="xl"),
+                    id="production-cards-navlink",
+                    href="#production-cards",
+                    leftSection=DashIconify(icon="solar:box-outline"),
+                    fz=30,
+                ),
+                dmc.NavLink(
+                    label=dmc.Text("Dashboards", size="xl"),
+                    id="dashboards-navlink-management",
+                    href="#dashboards-management",
+                    leftSection=DashIconify(icon="system-uicons:graph-bar"),
+                    fz=30,
+                ),
+                dmc.NavLink(
+                    label=dmc.Text("Tabelas", size="xl"),
+                    id="tables-navlink",
+                    href="#management-tables",
+                    leftSection=DashIconify(icon="carbon:table"),
+                    fz=30,
+                ),
+                dmc.NavLink(
+                    label=dmc.Text("Histórico", size="xl"),
+                    id="history-navlink",
+                    href="#management-history",
+                    leftSection=DashIconify(
+                        icon="material-symbols-light:deployed-code-history-outline"
+                    ),
+                    fz=30,
+                ),
+                dmc.NavLink(
+                    label=dmc.Text("Estoque", size="xl"),
+                    description=dmc.Text("Atualizado às 00hs", size="sm"),
+                    id="estoque-navlink",
+                    leftSection=DashIconify(icon="maki:warehouse"),
+                    fz=30,
                 ),
             ],
         ),
-        # Incluir detalhes de produção
-        # ---------------- Modal History ---------------- #
-        dmc.Modal(
-            children=modal_history.layout,
-            id="modal-history-eff",
-            fullScreen=True,
-            title="Histórico",
-            opened=False,
-            className="inter",
-        ),
-        # ---------------- Modal Estoque ---------------- #
+        # ========================================= Body ========================================= #
+        dbc.Row(id="management-main-content", class_name="p-2"),
+        # =================================== Modal De Estoque =================================== #
         dbc.Modal(
             children=modal_estoque.layout,
             id="modal-estoque",
@@ -106,258 +81,103 @@ layout = html.Div(
             modal_class_name="inter",
             is_open=False,
         ),
-    ],
-    id="management-content",
-)
-
-
-# --------------------- Modal History --------------------- #
-@callback(
-    Output("modal-history-eff", "opened"),
-    [Input("history-btn", "n_clicks")],
-    [State("modal-history-eff", "opened")],
-)
-def toggle_modal_history(n, is_open):
-    """
-    Toggles the history modal.
-
-    Args:
-        n (int): The number of clicks on the history button.
-        is_open (bool): The current state of the modal.
-
-    Returns:
-        bool: The new state of the modal.
-    """
-    if n:
-        return not is_open
-    return is_open
-
-
-@callback(
-    Output("modal-estoque", "is_open"),
-    [Input("estoque-btn", "n_clicks")],
-    [State("modal-estoque", "is_open")],
-)
-def toggle_modal_estoque(n, is_open):
-    """
-    Toggles the estoque modal.
-
-    Args:
-        n (int): The number of clicks on the estoque button.
-        is_open (bool): The current state of the modal.
-
-    Returns:
-        bool: The new state of the modal.
-    """
-    if n:
-        return not is_open
-    return is_open
-
-
-# ========================================= Callbacks =========================================== #
-
-
-# ---------------- Production Cards ---------------- #
-@callback(
-    Output("production-card", "children"),
-    [
-        Input("store-info", "data"),
-        Input("store-prod", "data"),
-        Input("store-df-caixas-cf", "data"),
-        Input("store-df-caixas-cf-tot", "data"),
-    ],
-)
-def update_production_card(store_info, store_prod, store_caixas, caixas_cf_tot):
-    """
-    Update the production card based on the given store information and store production data.
-
-    Args:
-        store_info (str): JSON string containing store information.
-        store_prod (str): JSON string containing store production data.
-
-    Returns:
-        list: A list containing the updated production card components.
-
-    Raises:
-        PreventUpdate: If either store_info or store_prod is empty or None.
-    """
-    if not store_info or not store_prod:
-        raise PreventUpdate
-
-    pcards = production_cards.ProductionCards()
-
-    df_maq_info = pd.DataFrame(pd.read_json(StringIO(store_info), orient="split"))
-    df_maq_prod = pd.DataFrame(pd.read_json(StringIO(store_prod), orient="split"))
-    df_caixas = pd.DataFrame(pd.read_json(StringIO(store_caixas), orient="split"))
-    df_caixas_cf_tot = (
-        pd.DataFrame(pd.read_json(StringIO(caixas_cf_tot), orient="split"))
-        if caixas_cf_tot
-        else pd.DataFrame(columns=["QTD"])
-    )
-
-    total_estoque = df_caixas_cf_tot["QTD"].sum()
-
-    return [
-        dbc.CardHeader("Produção"),
-        dbc.CardBody(
-            [
-                dbc.Row(pcards.create_card(df_maq_info, df_maq_prod)),
-                html.Hr(),
-                dbc.Row(pcards.create_card(df_maq_info, df_maq_prod, today=True)),
-                html.Hr(),
-                dbc.Row(
-                    pcards.create_card(df_maq_info, df_caixas, cf=True, total=int(total_estoque))
-                ),
-            ]
-        ),
     ]
-
-
-# =================================== Details Of The Production ================================== #
-@callback(
-    [
-        Output("date-picker", "minDate"),
-        Output("date-picker", "maxDate"),
-    ],
-    Input("store-info", "data"),
 )
-def details_picker(info):
-    """
-    Creates and returns a date picker component for efficiency indicator.
 
-    Args:
-        info: The information to be used for creating the date picker component.
-
-    Returns:
-        The created date picker component.
-
-    Raises:
-        PreventUpdate: If the info parameter is None.
-    """
-
-    if info is None:
-        raise PreventUpdate
-
-    df = pd.read_json(StringIO(info), orient="split")
-
-    min_date = pd.to_datetime(df["data_registro"]).min().date()
-    max_date = pd.to_datetime(df["data_registro"]).max().date()
-
-    return str(min_date), str(max_date)
+# ================================================================================================ #
+#                                             CALLBACKS                                            #
+# ================================================================================================ #
 
 
+# ============================================ Drawer ============================================ #
 @callback(
-    Output("bar-chart-details", "children"),
-    [
-        Input("store-info", "data"),
-        Input("radio-items-management", "value"),
-        Input("date-picker", "value"),
-        Input("store-df_working_time", "data"),
-        Input(ThemeSwitchAIO.ids.switch("theme"), "value"),
-    ],
+    Output("management-drawer", "opened"),
+    Input("management-drawer-btn", "n_clicks"),
+    Input("modal-estoque", "is_open"),
+    prevent_initial_call=True,
 )
-def details_bar_chart(info, turn, data_picker, working, toggle_theme):
+def management_toggle_drawer(_, estoque_is_open):
     """
-    Creates a collapsed bar chart details based on the provided information.
+    Abre ou fecha o drawer.
 
-    Args:
-        info (str): The JSON string containing the information for the bar chart.
-        turn (str): The turn value for the bar chart.
-        data_picker (str): The data picker value for the bar chart.
-        working (bool): Indicates whether the bar chart is in working mode or not.
-        toggle_theme (bool): Indicates whether the bar chart should use a light or dark template.
+    Parâmetros:
+    _ (qualquer): Parâmetro não utilizado.
 
-    Returns:
-        dict: The collapsed bar chart details.
-
-    Raises:
-        PreventUpdate: If the info parameter is None.
+    Retorno:
+    bool: True se o drawer estiver aberto, False caso contrário.
     """
-
-    if info is None:
-        raise PreventUpdate
-
-    template = TemplateType.LIGHT if toggle_theme else TemplateType.DARK
-
-    # Carrega o string json em um dataframe
-    df_info = pd.read_json(StringIO(info), orient="split")
-    df_working = pd.read_json(StringIO(working), orient="split")
-
-    bcd = bar_chart_details.BarChartDetails(df_info)
-
-    return bcd.create_bar_chart_details(
-        IndicatorType.EFFICIENCY, template, turn, data_picker, df_working
-    )
+    if estoque_is_open:
+        return False
+    return True
 
 
-# ---------------------- Grid ---------------------- #
+# =========================================== Locations ========================================== #
 @callback(
-    Output("grid-occ-modal", "children"),
-    [
-        Input("store-info", "data"),
-        Input("store-prod", "data"),
-        Input("radio-items-management", "value"),
-        Input("date-picker", "value"),
-        Input(ThemeSwitchAIO.ids.switch("theme"), "value"),
-    ],
+    Output("management-main-content", "children"),
+    Input("management-url", "hash"),
 )
-def update_grid_occ_modal(info, prod, turn, data_picker, theme):
+def management_render_page(hash_):
     """
-    Função que atualiza o grid de eficiência do modal.
+    Renderiza a página de acordo com o hash.
+
+    Parâmetros:
+    hash_ (str): Hash da URL.
+
+    Retorno:
+    list: Layout da página.
     """
-    if info is None:
-        raise PreventUpdate
-
-    # Carregue a string JSON em um DataFrame
-    df_info = pd.read_json(StringIO(info), orient="split")
-    df_prod = pd.read_json(StringIO(prod), orient="split")
-
-    goe = grid_occ.GridOcc(df_info, df_prod)
-
-    turns = {
-        "NOT": "Noturno",
-        "MAT": "Matutino",
-        "VES": "Vespertino",
-        "TOT": "Geral",
+    hash_dict = {
+        "#production-cards": production_cards_pg.layout,
+        "#dashboards-management": dashboards_pg.layout,
+        "#management-history": history_pg.layout,
+        "#management-tables": tables_management_pg.layout,
     }
 
-    return [
-        html.H5(f"Ocorrências - {turns[turn]}", className="text-center"),
-        goe.create_grid_occ(df_info, IndicatorType.EFFICIENCY, turn, theme, data_picker),
-    ]
+    return hash_dict.get(hash_, production_cards_pg.layout)
 
 
+# Atualizar hash da URL
 @callback(
-    Output("grid-eff-modal-management", "children"),
-    [
-        Input("store-df-eff", "data"),
-        Input("radio-items-management", "value"),
-        Input("date-picker", "value"),
-        Input(ThemeSwitchAIO.ids.switch("theme"), "value"),
-    ],
+    Output("production-cards-navlink", "active"),
+    Output("dashboards-navlink-management", "active"),
+    Output("history-navlink", "active"),
+    Output("tables-navlink", "active"),
+    Input("management-url", "hash"),
 )
-def update_grid_eff_modal_management(data, turn, data_picker, theme):
+def update_active_navlink_management(hash_):
     """
-    Função que atualiza o grid de eficiência do modal.
+    Atualiza o NavLink ativo.
+
+    Parâmetros:
+    hash_ (str): Hash da URL.
+
+    Retorno:
+    bool: True se o NavLink estiver ativo, False caso contrário.
     """
-    if data is None:
-        raise PreventUpdate
+    return (
+        hash_ == "#production-cards",
+        hash_ == "#dashboards-management",
+        hash_ == "#management-history",
+        hash_ == "#management-tables",
+    )
 
-    # Carregue a string JSON em um DataFrame
-    df = pd.read_json(StringIO(data), orient="split")
 
-    # Filtra pelo turno
-    if turn != "TOT":
-        df = df[df["turno"] == turn]
+# ============================================= Modal ============================================ #
+@callback(
+    Output("modal-estoque", "is_open"),
+    Input("estoque-navlink", "n_clicks"),
+    State("modal-estoque", "is_open"),
+    prevent_initial_call=True,
+)
+def toggle_modal_estoque(_, is_open):
+    """
+    Abre ou fecha o modal de estoque.
 
-    # Se houver data, filtrar pelo dia selecionado
-    if data_picker is not None:
-        df["data_registro"] = pd.to_datetime(df["data_registro"]).dt.date
-        df = df[(df["data_registro"]) == pd.to_datetime(data_picker).date()]
+    Parâmetros:
+    _ (int): Número de cliques no NavLink.
+    is_open (bool): Estado atual do modal.
 
-    ge = grid_eff.GridEff()
-
-    return [
-        html.H5("Eficiência", className="text-center"),
-        ge.create_grid_eff(df, theme),
-    ]
+    Retorno:
+    bool: True se o modal estiver aberto, False caso contrário.
+    """
+    return not is_open, False
