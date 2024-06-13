@@ -264,6 +264,10 @@ class ServiceInfoIHM:
         # Se o tempo for maior que 480 minutos, ajustar para 480
         df_joined["tempo"] = df_joined["tempo"].clip(upper=480)
 
+        # Se o motivo não for saída para backup, ajustar s_backup para null
+        mask = df_joined["motivo"] != "Saída para Backup"
+        df_joined["s_backup"] = np.where(mask, np.nan, df_joined["s_backup"])
+
         # Remove colunas auxiliares
         df_joined = df_joined.drop(
             columns=[

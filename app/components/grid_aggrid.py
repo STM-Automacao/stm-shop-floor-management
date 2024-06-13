@@ -15,7 +15,13 @@ class GridAgGrid:
         pass
 
     def create_grid_ag(
-        self, df: pd.DataFrame, grid_id: int, theme: bool, defs: dict = None, hei: int = 500
+        self,
+        df: pd.DataFrame,
+        grid_id: int,
+        theme: bool,
+        defs: list[dict] = None,
+        col_deft: dict = None,
+        hei: str = "500px",
     ) -> dag.AgGrid:
         """
         Cria uma instância de dag.AgGrid com base nos parâmetros fornecidos.
@@ -31,6 +37,8 @@ class GridAgGrid:
             dag.AgGrid: A instância de dag.AgGrid criada.
         """
 
+        theme_str = "ag-theme-quartz" if theme else "ag-theme-alpine-dark"
+
         column_defaults = {
             "resizable": True,
             "sortable": True,
@@ -38,19 +46,22 @@ class GridAgGrid:
             "filterParams": {"buttons": ["apply", "reset"], "closeOnApply": "true"},
         }
 
+        if col_deft is not None:
+            column_defaults.update(col_deft)
+
         cols_defs = (
             [{"field": col, "headerTooltip": col} for col in df.columns] if defs is None else defs
         )
 
         grid = dag.AgGrid(
             id=grid_id,
-            className="ag-theme-quartz" if theme else "ag-theme-alpine-dark",
+            className=theme_str,
             columnDefs=cols_defs,
             defaultColDef=column_defaults,
             rowData=df.to_dict("records"),
             columnSize="responsiveSizeToFit",
             dashGridOptions={"pagination": True, "paginationAutoPageSize": "true"},
-            style={"height": f"{hei}px"},
+            style={"height": hei},
         )
 
         return grid

@@ -1,7 +1,5 @@
 """
-    Esta é a página de gestão da produção.
-    - Autor: Bruno Tomaz
-    - Data de criação: 13/03/2024
+    Este modulo contém a página de gerenciamento de eficiência e ocorrências.
 """
 
 from io import StringIO
@@ -9,21 +7,20 @@ from io import StringIO
 import dash_bootstrap_components as dbc
 import dash_mantine_components as dmc
 import pandas as pd
-from components import btn_modal, grid_aggrid, grid_occ
+from components import grid_aggrid
 from dash import Input, Output, callback, html
 from dash.exceptions import PreventUpdate
 from dash_bootstrap_templates import ThemeSwitchAIO
-from dash_iconify import DashIconify
 from helpers.my_types import (
     GRID_FORMAT_NUMBER_BR,
     GRID_NUMBER_COLS,
     GRID_STR_NUM_COLS,
     IndicatorType,
 )
+from service.df_for_indicators import DFIndicators
 
 # =========================================== Variáveis ========================================== #
 gag = grid_aggrid.GridAgGrid()
-radio_itens_turn = btn_modal.create_radio_btn_turn("management")
 
 # ================================================================================================ #
 #                                              LAYOUT                                              #
@@ -37,54 +34,16 @@ layout = dmc.Stack(
             ],
             shadow="sm",
         ),
-        # NOTE: Formatar daqui em diante
-        dbc.Card(
+        dmc.Card(
             [
-                dbc.CardBody(
-                    [
-                        dbc.Row(
-                            dbc.Col(
-                                radio_itens_turn,
-                                class_name="radio-group",
-                                md=4,
-                                xl=4,
-                            ),
-                        ),
-                        dbc.Row(
-                            dbc.Col(
-                                dmc.DatesProvider(
-                                    id="dates-provider-1",
-                                    children=dmc.DatePicker(
-                                        id="date-picker-1",
-                                        label="Data",
-                                        placeholder="Selecione uma data",
-                                        valueFormat="dddd - D MMM, YYYY",
-                                        firstDayOfWeek=0,
-                                        clearable=True,
-                                        variant="filled",
-                                        leftSection=DashIconify(icon="uiw:date"),
-                                    ),
-                                    settings={"locale": "pt-br"},
-                                ),
-                                md=4,
-                                xl=2,
-                            ),
-                            className="inter",
-                            justify="center",
-                        ),
-                        dbc.Row(
-                            dbc.Card(
-                                id="grid-occ-modal",
-                                className="mt-2 shadow-lg p-2 mb-2 rounded",
-                            ),
-                            className="p-2",
-                        ),
-                    ]
+                html.H3("Ocorrências da Produção", className="text-center mb-3"),
+                dbc.Row(
+                    id="grid-occ-modal",
                 ),
             ],
+            shadow="sm",
         ),
     ],
-    id="management-content",
 )
 
 
@@ -147,40 +106,7 @@ def update_eficiencia_table(data, theme):
     return gag.create_grid_ag(df, "eff-table-management", theme, defs)
 
 
-# NOTE: Formatar daqui pra baixo
-
-
 # =================================== Details Of The Production ================================== #
-@callback(
-    [
-        Output("date-picker-1", "minDate"),
-        Output("date-picker-1", "maxDate"),
-    ],
-    Input("store-info", "data"),
-)
-def details_picker(info):
-    """
-    Creates and returns a date picker component for efficiency indicator.
-
-    Args:
-        info: The information to be used for creating the date picker component.
-
-    Returns:
-        The created date picker component.
-
-    Raises:
-        PreventUpdate: If the info parameter is None.
-    """
-
-    if info is None:
-        raise PreventUpdate
-
-    df = pd.read_json(StringIO(info), orient="split")
-
-    min_date = pd.to_datetime(df["data_registro"]).min().date()
-    max_date = pd.to_datetime(df["data_registro"]).max().date()
-
-    return str(min_date), str(max_date)
 
 
 # ---------------------- Grid ---------------------- #
@@ -189,12 +115,10 @@ def details_picker(info):
     [
         Input("store-info", "data"),
         Input("store-prod", "data"),
-        Input("radio-items-management", "value"),
-        Input("date-picker-1", "value"),
         Input(ThemeSwitchAIO.ids.switch("theme"), "value"),
     ],
 )
-def update_grid_occ_modal(info, prod, turn, data_picker, theme):
+def update_grid_occ_modal(info, prod, theme):
     """
     Função que atualiza o grid de eficiência do modal.
     """
@@ -205,16 +129,41 @@ def update_grid_occ_modal(info, prod, turn, data_picker, theme):
     df_info = pd.read_json(StringIO(info), orient="split")
     df_prod = pd.read_json(StringIO(prod), orient="split")
 
-    goe = grid_occ.GridOcc(df_info, df_prod)
+    # Ajustar os dados para a tabela
+    df_info = DFIndicators(df_info, df_prod).adjust_df_for_bar_lost(
+        df_info, IndicatorType.EFFICIENCY
+    )
 
-    turns = {
-        "NOT": "Noturno",
-        "MAT": "Matutino",
-        "VES": "Vespertino",
-        "TOT": "Geral",
+    # Ajustar data_registro para dd/mm
+    df_info.data_registro = pd.to_datetime(df_info.data_registro).dt.strftime("%d/%m")
+
+    # Ajustar data_hora para hh:mm
+    df_info.data_hora = pd.to_datetime(df_info.data_hora).dt.strftime("%H:%M")
+    df_info.data_hora_final = pd.to_datetime(df_info.data_hora_final).dt.strftime("%H:%M")
+
+    defs = [
+        {"field": "fabrica", "headerName": "Fábrica", "maxWidth": 150, **GRID_NUMBER_COLS},
+        {"field": "linha", "headerName": "Linha", "maxWidth": 150, **GRID_NUMBER_COLS},
+        {"field": "maquina_id", "headerName": "Máquina"},
+        {"field": "data_registro", "headerName": "Data", "maxWidth": 150},
+        {"field": "turno", "headerName": "Turno", "maxWidth": 150},
+        {"field": "motivo", "headerName": "Motivo", "tooltipField": "motivo"},
+        {"field": "equipamento", "headerName": "Equipamento", "tooltipField": "equipamento"},
+        {"field": "problema", "headerName": "Problema", "tooltipField": "problema"},
+        {"field": "causa", "headerName": "Causa", "tooltipField": "causa"},
+        {"field": "s_backup", "headerName": "Saída p/ Linha", **GRID_NUMBER_COLS},
+        {"field": "os_numero", "headerName": "Número OS", **GRID_STR_NUM_COLS},
+        {"field": "operador_id", "headerName": "Operador", **GRID_STR_NUM_COLS},
+        {"field": "tempo", "headerName": "Tempo Parada", **GRID_NUMBER_COLS},
+        {"field": "excedente", "headerName": "Afeta Eficiência", **GRID_NUMBER_COLS},
+        {"field": "desconto", "headerName": "Não afeta Eficiência", **GRID_NUMBER_COLS},
+        {"field": "data_hora", "headerName": "Hora Início"},
+        {"field": "data_hora_final", "headerName": "Hora Fim"},
+    ]
+
+    col_deft = {
+        "wrapHeaderText": True,
+        "autoHeight": True,
     }
 
-    return [
-        html.H5(f"Ocorrências - {turns[turn]}", className="text-center"),
-        goe.create_grid_occ(df_info, IndicatorType.EFFICIENCY, turn, theme, data_picker),
-    ]
+    return gag.create_grid_ag(df_info, "grid-occ-modal", theme, defs, col_deft)

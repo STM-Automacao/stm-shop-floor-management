@@ -334,7 +334,7 @@ def update_table_history_pg(light_theme):
         {"headerName": "Parada Programada", "field": "parada_programada"},
     ]
 
-    table = gag.create_grid_ag(df_history, "table-history-ag", light_theme, defs, 400)
+    table = gag.create_grid_ag(df_history, "table-history-ag", light_theme, defs, hei="400px")
 
     return table
 

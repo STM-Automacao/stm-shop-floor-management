@@ -46,6 +46,7 @@ layout = dbc.Stack(
                     dbc.CardBody(id="massadas"),
                 ],
                 class_name="p-0 shadow-sm",
+                outline=False,
             ),
             class_name="mb-3",
         ),

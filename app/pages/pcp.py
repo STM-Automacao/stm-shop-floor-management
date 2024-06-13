@@ -50,13 +50,6 @@ layout = [
         id="pcp-drawer",
         children=[
             dmc.NavLink(
-                label=dmc.Text("Produção Semanal", size="xl"),
-                id="pcp-production-navlink",
-                href="#pcp-production",
-                leftSection=DashIconify(icon="mdi:calendar-week"),
-                fz=30,
-            ),
-            dmc.NavLink(
                 label=dmc.Text("Análise de Massa", size="xl"),
                 id="massa-analysis-navlink",
                 href="#massa-analysis",
@@ -68,6 +61,13 @@ layout = [
                 id="massa-batidas-navlink",
                 href="#massa-batidas",
                 leftSection=DashIconify(icon="game-icons:dough-roller"),
+                fz=30,
+            ),
+            dmc.NavLink(
+                label=dmc.Text("Produção Semanal", size="xl"),
+                id="pcp-production-navlink",
+                href="#pcp-production",
+                leftSection=DashIconify(icon="mdi:calendar-week"),
                 fz=30,
             ),
         ],

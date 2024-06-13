@@ -9,7 +9,7 @@ import dash_mantine_components as dmc
 from dash import Input, Output, State, callback, dcc
 from dash_iconify import DashIconify
 from management.components import modal_estoque
-from management.pages import dashboards_pg, history_pg, production_cards_pg
+from management.pages import dashboards_pg, history_pg, production_cards_pg, tables_management_pg
 
 # ================================================================================================ #
 #                                              LAYOUT                                              #
@@ -31,7 +31,7 @@ layout = dbc.Stack(
             id="management-drawer",
             children=[
                 dmc.NavLink(
-                    label=dmc.Text("Produção Dia/Mês", size="xl"),
+                    label=dmc.Text("Produção do Dia/Mês", size="xl"),
                     id="production-cards-navlink",
                     href="#production-cards",
                     leftSection=DashIconify(icon="solar:box-outline"),
@@ -130,6 +130,7 @@ def management_render_page(hash_):
         "#production-cards": production_cards_pg.layout,
         "#dashboards-management": dashboards_pg.layout,
         "#management-history": history_pg.layout,
+        "#management-tables": tables_management_pg.layout,
     }
 
     return hash_dict.get(hash_, production_cards_pg.layout)
@@ -140,6 +141,7 @@ def management_render_page(hash_):
     Output("production-cards-navlink", "active"),
     Output("dashboards-navlink-management", "active"),
     Output("history-navlink", "active"),
+    Output("tables-navlink", "active"),
     Input("management-url", "hash"),
 )
 def update_active_navlink_management(hash_):
@@ -156,6 +158,7 @@ def update_active_navlink_management(hash_):
         hash_ == "#production-cards",
         hash_ == "#dashboards-management",
         hash_ == "#management-history",
+        hash_ == "#management-tables",
     )
 
 

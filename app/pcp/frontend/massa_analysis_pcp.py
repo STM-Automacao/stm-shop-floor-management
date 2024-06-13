@@ -5,6 +5,7 @@ Módulo para Análise de Massadas e pães e suas perdas ou sobras
 from io import StringIO
 
 import dash_bootstrap_components as dbc
+import dash_mantine_components as dmc
 import pandas as pd
 from components.grid_aggrid import GridAgGrid
 from dash import Input, Output, callback, html
@@ -21,7 +22,7 @@ afc = AuxFuncPcp()
 # ================================================================================================ #
 layout = dbc.Stack(
     [
-        dbc.Row(dbc.Card(id="pcp-paes-analysis", class_name="p-0 shadow-sm", body=True)),
+        dbc.Row(dmc.Card(id="pcp-paes-analysis", shadow="sm")),
     ]
 )
 
@@ -196,7 +197,7 @@ def update_paes(theme, prod_recheio, week_massa):
         },
     ]
 
-    title = html.H1("Pães - Análise", className="text-center mt-3 mb-3")
+    title = html.H1("Análise Massa Batida vs Consumo de Pães", className="text-center mt-3 mb-3")
 
     table = pcp_builder.create_grid_ag(df_prod_recheio, "grid-pcp-4", theme, defs)
 

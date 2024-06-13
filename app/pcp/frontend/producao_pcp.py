@@ -5,6 +5,7 @@ Módulo para Análise de Massadas e pães e suas perdas ou sobras
 from io import StringIO
 
 import dash_bootstrap_components as dbc
+import dash_mantine_components as dmc
 import pandas as pd
 from components.grid_aggrid import GridAgGrid
 from dash import Input, Output, callback, html
@@ -20,12 +21,9 @@ afc = AuxFuncPcp()
 # ================================================================================================ #
 layout = dbc.Stack(
     [
-        html.H1("Pães", className="text-center mt-3 mb-3"),
+        html.H1("Produção de Pães por Semana", className="text-center mt-3 mb-3"),
         dbc.Row(
-            dbc.Card(
-                [dbc.CardHeader("Produção por Semana"), dbc.CardBody(id="pcp-paes-prod")],
-                class_name="p-0 shadow-sm",
-            ),
+            dmc.Card(id="pcp-paes-prod", shadow="sm"),
         ),
     ]
 )

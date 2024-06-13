@@ -41,6 +41,7 @@
     "iloc",
     "isin",
     "iterrows",
+    "levelname",
     "lightgray",
     "maki",
     "mantine",
