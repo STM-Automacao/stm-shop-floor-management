@@ -155,6 +155,18 @@ class CleanData:
 
         return df
 
+    @staticmethod
+    def __adjust_to_backup(df: pd.DataFrame) -> pd.DataFrame:
+        # Se a coluna equipamento estiver entre os valoras 1 a 14(str) cria nova coluna
+        df["s_backup"] = np.where(
+            df["equipamento"].astype(str).str.isdigit(), df["equipamento"], None
+        )
+        df["equipamento"] = np.where(
+            df["equipamento"].astype(str).str.isdigit(), None, df["equipamento"]
+        )
+
+        return df
+
     def clean_data(self) -> tuple:
         """
         Cleans the data by performing various cleaning operations on different dataframes.
@@ -176,6 +188,9 @@ class CleanData:
 
         # Limpar os dados de informações
         self.df_info = self.__clean_info(self.df_info)
+
+        # Ajustar a saída para backup
+        self.df_ihm = self.__adjust_to_backup(self.df_ihm)
 
         # Limpar os dados de produção
         if not self.df_info_production.empty:

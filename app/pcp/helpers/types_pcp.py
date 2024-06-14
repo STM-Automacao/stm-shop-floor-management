@@ -22,19 +22,3 @@ PAO_POR_BANDEJA = {
     "PAO DOCE BOLINHA 10B/300GR": 12,
     "PAO CEBOLA BOL 10B/300GR": 12,
 }
-
-GRID_NUMBER_COLS = {
-    "filter": "agNumberColumnFilter",
-    "cellClass": "center-aligned-cell",
-    "cellDataType": "number",
-    "filterParams": {"buttons": ["apply", "reset"], "closeOnApply": "true"},
-    "headerClass": "center-aligned-header",
-}
-
-GRID_STR_NUM_COLS = {
-    "filter": "agNumberColumnFilter",
-    "cellClass": "center-aligned-cell",
-    "cellDataType": "string",
-    "filterParams": {"buttons": ["apply", "reset"], "closeOnApply": "true"},
-    "headerClass": "center-aligned-header",
-}

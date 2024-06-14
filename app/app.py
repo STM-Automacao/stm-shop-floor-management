@@ -6,6 +6,7 @@ import dash_bootstrap_components as dbc
 SCRIPTS = [
     "https://cdnjs.cloudflare.com/ajax/libs/dayjs/1.10.8/dayjs.min.js",
     "https://cdnjs.cloudflare.com/ajax/libs/dayjs/1.10.8/locale/pt-br.min.js",
+    "https://cdnjs.cloudflare.com/ajax/libs/dayjs/1.10.8/locale/de.min.js",
 ]
 
 ESTILOS = [
