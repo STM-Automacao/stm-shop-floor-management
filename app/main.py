@@ -23,6 +23,7 @@ from dash_bootstrap_templates import ThemeSwitchAIO
 # pylint: disable=E0401
 from database.last_month_ind import LastMonthInd
 from helpers.cache import MainDataCache
+from helpers.path_config import UrlPath
 from pages import grafana, hour_prod, main_page, management, pcp
 from service.big_data import BigData
 from waitress import serve
@@ -46,6 +47,12 @@ URL_DARKY = dbc.themes.DARKLY
 
 # ================================== Atualizações Em Background ================================== #
 def get_current_time():
+    """
+    Returns the current timestamp.
+
+    Returns:
+        pd.Timestamp: The current timestamp.
+    """
     return pd.Timestamp.now()
 
 
@@ -210,6 +217,7 @@ def update_tabs(pathname):
     Retorna:
     list: A lista de componentes da aba.
     """
+    # cSpell: words lider
 
     tabs_info = [
         (grafana.layout, "Ao Vivo", "tab-grafana"),
@@ -223,11 +231,11 @@ def update_tabs(pathname):
 
     tabs = {
         "/": all_tabs[:3],
-        "/1": all_tabs[:2],
-        "/2": all_tabs[:3],
-        "/3": all_tabs[:4],
-        "/4": [all_tabs[0], all_tabs[4]] + all_tabs[1:4],
-        "/5": all_tabs,
+        f"/{UrlPath.LIDER.value}": all_tabs[:2],
+        f"/{UrlPath.SUPERVISOR.value}": all_tabs[:3],
+        f"/{UrlPath.COORDENADOR.value}": all_tabs[:4],
+        f"/{UrlPath.PCP.value}": [all_tabs[0], all_tabs[4]] + all_tabs[1:4],
+        f"/{UrlPath.MAIN.value}": all_tabs,
     }
 
     return dbc.Tabs(tabs.get(pathname, all_tabs), id="dbc-tabs")
