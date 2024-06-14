@@ -8,7 +8,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from components.grid_aggrid import GridAgGrid
 from dash import Input, Output, callback, dcc
 from dash_iconify import DashIconify
-from pcp.frontend import massa_analysis_pcp, massa_batidas_pcp, producao_pcp
+from pcp.frontend import massa_analysis_pcp, massa_batidas_pcp, pasta_batidas_pcp, producao_pcp
 from pcp.helpers.cache_pcp import PcpDataCache
 
 from app import app
@@ -18,9 +18,6 @@ pcp_data = PcpDataCache(app)
 update_massa_cache = pcp_data.cache_massa_data
 scheduler = BackgroundScheduler()
 pcp_builder = GridAgGrid()
-layout_pcp_massa_analysis = massa_analysis_pcp.layout
-layout_pcp_massa_batidas = massa_batidas_pcp.layout
-layout_pcp_producao = producao_pcp.layout
 
 
 # ====================================== Cache Em Background ===================================== #
@@ -65,6 +62,13 @@ layout = [
                 fz=30,
             ),
             dmc.NavLink(
+                label=dmc.Text("Batidas de Pasta", size="xl"),
+                id="pasta-batidas-navlink",
+                href="#pasta-batidas",
+                leftSection=DashIconify(icon="arcticons:garlic-player"),
+                fz=30,
+            ),
+            dmc.NavLink(
                 label=dmc.Text("Produção Semanal", size="xl"),
                 id="pcp-production-navlink",
                 href="#pcp-production",
@@ -74,7 +78,7 @@ layout = [
         ],
     ),
     # =========================================== Body =========================================== #
-    dbc.Row(id="pcp-main-content", children=layout_pcp_massa_analysis, class_name="p-2"),
+    dbc.Row(id="pcp-main-content", children=massa_analysis_pcp.layout, class_name="p-2"),
 ]
 
 # ================================================================================================ #
@@ -129,6 +133,7 @@ def toggle_drawer(_):
     Output("massa-analysis-navlink", "active"),
     Output("massa-batidas-navlink", "active"),
     Output("pcp-production-navlink", "active"),
+    Output("pasta-batidas-navlink", "active"),
     Input("pcp-url", "hash"),
 )
 def update_content_and_navlink_active(hash_):
@@ -144,17 +149,18 @@ def update_content_and_navlink_active(hash_):
 
     # Dicionário de hash e layout
     hash_dict = {
-        "#massa-analysis": layout_pcp_massa_analysis,
-        "#massa-batidas": layout_pcp_massa_batidas,
-        "#pcp-production": layout_pcp_producao,
+        "#massa-analysis": massa_analysis_pcp.layout,
+        "#massa-batidas": massa_batidas_pcp.layout,
+        "#pcp-production": producao_pcp.layout,
+        "#pasta-batidas": pasta_batidas_pcp.layout,
     }
 
     # Verifica se o hash está no dicionário de hash, se não estiver, pega o primeiro hash
     if hash_ not in hash_dict:
-        hash_ = list(hash_dict.keys())[0]
+        hash_ = list(hash_dict)[0]
 
     # Pega o conteúdo e verifica qual NavLink está ativo
-    content = hash_dict.get(hash_, layout_pcp_massa_analysis)
-    active_navlinks = tuple(hash_ == hash_option for hash_option in hash_dict.keys())
+    content = hash_dict.get(hash_, massa_analysis_pcp.layout)
+    active_navlinks = tuple(hash_ == hash_option for hash_option in hash_dict)
 
     return content, *active_navlinks
