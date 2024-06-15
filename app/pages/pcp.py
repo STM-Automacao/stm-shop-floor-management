@@ -53,6 +53,7 @@ layout = [
                 label=dmc.Text("Análise de Massa", size="xl"),
                 id="massa-analysis-navlink",
                 href="#massa-analysis",
+                active=True,
                 leftSection=DashIconify(icon="mdi:bread"),
                 fz=30,
             ),
