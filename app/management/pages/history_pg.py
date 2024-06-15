@@ -3,6 +3,7 @@
 """
 
 import textwrap
+from io import StringIO
 
 import dash_bootstrap_components as dbc
 import dash_mantine_components as dmc
@@ -36,6 +37,9 @@ bcd = bar_chart_details.BarChartDetails()
 layout = dmc.Stack(
     [
         dcc.Interval(id="interval-component", interval=60 * 1000),
+        dcc.Interval(id="interval-component-2", interval=60 * 1000 * 60 * 2),
+        dcc.Store(id="big_data_store"),
+        dcc.Store(id="stops_data_store"),
         dbc.Row(
             [
                 dbc.Col(
@@ -232,6 +236,31 @@ def date_picker_block_update(_):
 
 
 @callback(
+    Output("big_data_store", "data"),
+    Output("stops_data_store", "data"),
+    Input("interval-component", "n_intervals"),
+)
+def update_data(_):
+    """
+    Atualiza os dados de big_data e stops_data.
+
+    Args:
+        _: O número de intervalos.
+
+    Returns:
+        tuple: Uma tupla contendo os DataFrames de big_data e stops_data.
+    """
+
+    bg = BigData()
+    big = bg.get_big_data()
+    stops, _, _ = last_month.get_historic_data_analysis()
+
+    return big.to_json(date_format="iso", orient="split"), stops.to_json(
+        date_format="iso", orient="split"
+    )
+
+
+@callback(
     Output("graph-history-pg-perdas", "figure"),
     [Input("store-info", "data"), Input(ThemeSwitchAIO.ids.switch("theme"), "value")],
 )
@@ -395,15 +424,9 @@ def line_filter(line: list[str], df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-# ===================================== Variáveis De Ambiente ==================================== #
-
-# Ler os dados de big data
-bg = BigData()
-df_big = bg.get_big_data()
-df_stops, _, _ = last_month.get_historic_data_analysis()
-
-
-def adjust_df(date: list[str], line: list[str]) -> pd.DataFrame:
+def adjust_df(
+    date: list[str], line: list[str], df_big: pd.DataFrame, df_stops: pd.DataFrame
+) -> pd.DataFrame:
     """
     Ajusta o DataFrame de acordo com os filtros de data, turno e linha.
 
@@ -417,7 +440,7 @@ def adjust_df(date: list[str], line: list[str]) -> pd.DataFrame:
     """
 
     # Filtrar os dados de acordo com a data
-    df, date = date_filter(date, df_big.copy(), df_stops.copy())
+    df, date = date_filter(date, df_big, df_stops)
 
     # Filtrar os dados de acordo com a linha
     df = line_filter(line, df)
@@ -432,9 +455,11 @@ def adjust_df(date: list[str], line: list[str]) -> pd.DataFrame:
         Input("multi-select-general", "value"),
         Input("date-picker-general", "value"),
         Input(ThemeSwitchAIO.ids.switch("theme"), "value"),
+        Input("big_data_store", "data"),
+        Input("stops_data_store", "data"),
     ],
 )
-def update_general_chart(turn, line, date, toggle_theme):
+def update_general_chart(turn, line, date, toggle_theme, big_data, stops_data):
     """
     Atualiza o gráfico geral com base nos parâmetros fornecidos.
 
@@ -443,6 +468,8 @@ def update_general_chart(turn, line, date, toggle_theme):
         line (List[str]): A(s) linha(s) a ser(em) filtrada(s).
         date (List[str]): A(s) data(s) a ser(em) filtrada(s).
         toggle_theme (bool): Indica se o tema está em modo claro ou escuro.
+        big_data (str): O DataFrame de big_data em formato JSON.
+        stops_data (str): O DataFrame de stops_data em formato JSON.
 
     Returns:
         Bar Chart: O gráfico atualizado.
@@ -451,8 +478,12 @@ def update_general_chart(turn, line, date, toggle_theme):
     # Verificar se o tema está em modo claro ou escuro
     template = TemplateType.LIGHT if toggle_theme else TemplateType.DARK
 
+    # Transformar os dados JSON em DataFrames
+    df_big = pd.read_json(StringIO(big_data), orient="split")
+    df_stops = pd.read_json(StringIO(stops_data), orient="split")
+
     # Ajustes no dataframe
-    df = adjust_df(date, line)
+    df = adjust_df(date, line, df_big, df_stops)
 
     # Se selecionar apenas uma data e ela não estiver no df devolver texto de aviso
     if (
@@ -485,9 +516,11 @@ def update_general_chart(turn, line, date, toggle_theme):
         Input("switch-block", "checked"),
         Input("switch-Programada-block", "checked"),
         Input(ThemeSwitchAIO.ids.switch("theme"), "value"),
+        Input("big_data_store", "data"),
+        Input("stops_data_store", "data"),
     ],
 )
-def update_icicle(path, line, date, switch, switch_programada, toggle_theme):
+def update_icicle(path, line, date, switch, switch_programada, toggle_theme, big_data, stops_data):
     """
     Atualiza o gráfico geral com base nos parâmetros fornecidos.
 
@@ -496,6 +529,8 @@ def update_icicle(path, line, date, switch, switch_programada, toggle_theme):
         line (List[str]): A(s) linha(s) a ser(em) filtrada(s).
         date (List[str]): A(s) data(s) a ser(em) filtrada(s).
         toggle_theme (bool): Indica se o tema está em modo claro ou escuro.
+        big_data (str): O DataFrame de big_data em formato JSON.
+        stops_data (str): O DataFrame de stops_data em formato JSON.
 
     Returns:
         Bar Chart: O gráfico atualizado.
@@ -504,8 +539,12 @@ def update_icicle(path, line, date, switch, switch_programada, toggle_theme):
     # Verificar se o tema está em modo claro ou escuro
     template = TemplateType.LIGHT if toggle_theme else TemplateType.DARK
 
+    # Transformar os dados JSON em DataFrames
+    df_big = pd.read_json(StringIO(big_data), orient="split")
+    df_stops = pd.read_json(StringIO(stops_data), orient="split")
+
     # Ajustes no dataframe
-    df = adjust_df(date, line)
+    df = adjust_df(date, line, df_big, df_stops)
 
     # Se selecionar apenas uma data e ela não estiver no df devolver texto de aviso
     if (
