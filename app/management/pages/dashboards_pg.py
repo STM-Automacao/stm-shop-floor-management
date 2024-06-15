@@ -8,11 +8,14 @@ import dash_bootstrap_components as dbc
 import dash_mantine_components as dmc
 import pandas as pd
 from components import bar_chart_details, date_picker_dmc, icicle_chart, segmented_btn
-from dash import Input, Output, State, callback, html
+from dash import Input, Output, State, callback
+from dash import callback_context as ctx
+from dash import html
 from dash.exceptions import PreventUpdate
 from dash_bootstrap_templates import ThemeSwitchAIO
 from dash_iconify import DashIconify
 from helpers.my_types import TURN_SEGMENTED_DICT, TemplateType
+from helpers.path_config import UrlPath
 from management.components import modal_insert_stops
 
 # =========================================== Variáveis ========================================== #
@@ -36,12 +39,14 @@ layout = [
                         md=4,
                     ),
                     dbc.Col(
-                        dmc.Button(
-                            "Inserir Parada",
-                            id="insert-stop-btn",
-                            leftSection=DashIconify(icon="mdi:plus-circle"),
-                            color="grey",
-                            variant="light",
+                        (
+                            dmc.Button(
+                                "Inserir Parada",
+                                id="insert-stop-btn",
+                                leftSection=DashIconify(icon="mdi:plus-circle"),
+                                color="grey",
+                                variant="light",
+                            )
                         ),
                         md={"size": 2, "offset": 6},
                     ),
@@ -53,6 +58,7 @@ layout = [
                         shadow="md",
                         title="Inserir Parada",
                         zIndex=200,
+                        opened=False,
                     ),
                 ],
             ),
@@ -152,6 +158,26 @@ layout = [
 
 # =========================================== Callbacks ========================================== #
 @callback(
+    Output("insert-stop-btn", "display"),
+    Input("url", "pathname"),
+)
+def update_bnt_visibility(path):
+    """
+    Determines the visibility of a button based on the given path.
+
+    Args:
+        path (str): The current path.
+
+    Returns:
+        tuple: A tuple containing a single button element if the path is
+        either 'SUPERVISOR' or 'MAIN', otherwise None.
+    """
+    if path not in [UrlPath.SUPERVISOR.value, UrlPath.MAIN.value]:
+        return "none"
+    return None
+
+
+@callback(
     [
         Output("date-picker", "minDate"),
         Output("date-picker", "maxDate"),
@@ -221,6 +247,9 @@ def toggle_modal(_n1, is_open):
     Returns:
         bool: The new visibility of the insert stop modal.
     """
+    if not ctx.triggered:
+        raise PreventUpdate
+
     return not is_open
 
 

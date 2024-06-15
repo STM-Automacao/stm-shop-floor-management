@@ -17,34 +17,16 @@ class InsertData:
         """
         self.insert = Insert()
 
-    def _insert_data(self, table: str, columns: list, values: list) -> None:
-        """
-        Insert data into the database.
-
-        Parameters
-        ----------
-        table : str
-            Table name
-        columns : list
-            List of columns
-        values : list
-            List of values
-        """
-        query = self.insert.create_insert_query(table, columns, values)
-        self.insert.insert_data(query)
-
     def insert_maq_ihm_data(self, values: list) -> None:
         """
         Insert data into the maq_ihm table.
 
         Parameters
         ----------
-        columns : list
-            List of columns
         values : list
             List of values
         """
-        table = "[AUTOMACAO].dbo.[maquina_ihm]"
+        table = "maquina_ihm"
 
         columns = [
             "linha",
@@ -59,4 +41,6 @@ class InsertData:
             "hora_registro",
         ]
 
-        self._insert_data(table, columns, values)
+        data = dict(zip(columns, values))
+
+        self.insert.insert_data(table, data)

@@ -29,8 +29,8 @@ class UrlPath(Enum):
         MAIN (int): The URL path for the role "MAIN".
     """
 
-    LIDER = 98334
-    SUPERVISOR = 2703448294
-    COORDENADOR = 39943361394
-    PCP = "030"
-    MAIN = 7186
+    LIDER = "/98334"
+    SUPERVISOR = "/2703448294"
+    COORDENADOR = "/39943361394"
+    PCP = "/030"
+    MAIN = "/7186"
