@@ -1,6 +1,6 @@
 """Módulo que contém as funções de inserção de dados no banco de dados."""
 
-# cSpell: words automacao
+# cSpell: words automacao autoload
 from database.connection import Connection
 from sqlalchemy import MetaData, Table, insert
 from sqlalchemy.exc import DatabaseError
