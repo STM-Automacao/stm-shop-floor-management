@@ -8,10 +8,15 @@ import dash_bootstrap_components as dbc
 import dash_mantine_components as dmc
 import pandas as pd
 from components import bar_chart_details, date_picker_dmc, icicle_chart, segmented_btn
-from dash import Input, Output, callback, html
+from dash import Input, Output, State, callback
+from dash import callback_context as ctx
+from dash import html
 from dash.exceptions import PreventUpdate
 from dash_bootstrap_templates import ThemeSwitchAIO
+from dash_iconify import DashIconify
 from helpers.my_types import TURN_SEGMENTED_DICT, TemplateType
+from helpers.path_config import UrlPath
+from management.components import modal_insert_stops
 
 # =========================================== Variáveis ========================================== #
 seg_btn = segmented_btn.SegmentedBtn()
@@ -24,15 +29,38 @@ layout = [
         [
             html.H3("Detalhes Tempos do Mês Corrente", className="text-center"),
             dbc.Row(
-                dbc.Col(
-                    seg_btn.create_segmented_btn(
-                        "dashboard-management-turno-btn",
-                        ["Noturno", "Matutino", "Vespertino", "Total"],
-                        "Total",
+                [
+                    dbc.Col(
+                        seg_btn.create_segmented_btn(
+                            "dashboard-management-turno-btn",
+                            ["Noturno", "Matutino", "Vespertino", "Total"],
+                            "Total",
+                        ),
+                        md=4,
                     ),
-                    md=4,
-                    xl=4,
-                ),
+                    dbc.Col(
+                        (
+                            dmc.Button(
+                                "Inserir Parada",
+                                id="insert-stop-btn",
+                                leftSection=DashIconify(icon="mdi:plus-circle"),
+                                color="grey",
+                                variant="light",
+                            )
+                        ),
+                        md={"size": 2, "offset": 6},
+                    ),
+                    dmc.Modal(
+                        id="insert-stop-modal",
+                        children=modal_insert_stops.layout,
+                        size="xl",
+                        radius="md",
+                        shadow="md",
+                        title="Inserir Parada",
+                        zIndex=200,
+                        opened=False,
+                    ),
+                ],
             ),
             dbc.Row(
                 dbc.Col(
@@ -130,6 +158,26 @@ layout = [
 
 # =========================================== Callbacks ========================================== #
 @callback(
+    Output("insert-stop-btn", "display"),
+    Input("url", "pathname"),
+)
+def update_bnt_visibility(path):
+    """
+    Determines the visibility of a button based on the given path.
+
+    Args:
+        path (str): The current path.
+
+    Returns:
+        tuple: A tuple containing a single button element if the path is
+        either 'SUPERVISOR' or 'MAIN', otherwise None.
+    """
+    if path not in [UrlPath.SUPERVISOR.value, UrlPath.MAIN.value]:
+        return "none"
+    return None
+
+
+@callback(
     [
         Output("date-picker", "minDate"),
         Output("date-picker", "maxDate"),
@@ -163,6 +211,49 @@ def details_picker(info):
     return str(min_date), str(max_date), str(min_date), str(max_date)
 
 
+# ========================================= Cor Do Botão ========================================= #
+@callback(
+    Output("insert-stop-btn", "style"),
+    Input(ThemeSwitchAIO.ids.switch("theme"), "value"),
+)
+def change_button_color(toggle_theme):
+    """
+    Changes the color of the insert stop button based on the current theme.
+
+    Args:
+        toggle_theme (bool): Indicates whether the theme is light or dark.
+
+    Returns:
+        str: The new color of the insert stop button.
+    """
+    return {"color": "dark-grey"} if toggle_theme else None
+
+
+# ============================================= Modal ============================================ #
+@callback(
+    Output("insert-stop-modal", "opened"),
+    Input("insert-stop-btn", "n_clicks"),
+    State("insert-stop-modal", "opened"),
+    prevent_initial_call=True,
+)
+def toggle_modal(_n1, is_open):
+    """
+    Toggles the visibility of the insert stop modal.
+
+    Args:
+        n1 (int): The number of times the insert stop button was clicked.
+        is_open (bool): The current visibility of the insert stop modal.
+
+    Returns:
+        bool: The new visibility of the insert stop modal.
+    """
+    if not ctx.triggered:
+        raise PreventUpdate
+
+    return not is_open
+
+
+# ============================================ Charts ============================================ #
 @callback(
     Output("bar-chart-details", "children"),
     [

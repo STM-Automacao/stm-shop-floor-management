@@ -21,7 +21,7 @@ afc = AuxFuncPcp()
 # ================================================================================================ #
 layout = dbc.Stack(
     [
-        html.H1("Produção de Pães por Semana", className="text-center mt-3 mb-3"),
+        html.H1("Produção de Pães por Semana e Produto", className="text-center mt-3 mb-3"),
         dbc.Row(
             dmc.Card(id="pcp-paes-prod", shadow="sm"),
         ),

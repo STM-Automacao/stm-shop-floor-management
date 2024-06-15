@@ -114,9 +114,13 @@ def management_toggle_drawer(_, estoque_is_open):
 # =========================================== Locations ========================================== #
 @callback(
     Output("management-main-content", "children"),
+    Output("production-cards-navlink", "active"),
+    Output("dashboards-navlink-management", "active"),
+    Output("history-navlink", "active"),
+    Output("tables-navlink", "active"),
     Input("management-url", "hash"),
 )
-def management_render_page(hash_):
+def management_content_navlink_update(hash_):
     """
     Renderiza a página de acordo com o hash.
 
@@ -126,6 +130,8 @@ def management_render_page(hash_):
     Retorno:
     list: Layout da página.
     """
+
+    # Dicionário de hash e layout
     hash_dict = {
         "#production-cards": production_cards_pg.layout,
         "#dashboards-management": dashboards_pg.layout,
@@ -133,33 +139,15 @@ def management_render_page(hash_):
         "#management-tables": tables_management_pg.layout,
     }
 
-    return hash_dict.get(hash_, production_cards_pg.layout)
+    # Verifica se o hash está no dicionário de hash, se não estiver, pega o primeiro hash
+    if hash_ not in hash_dict:
+        hash_ = list(hash_dict)[0]
 
+    # Pega o conteúdo e verifica qual NavLink está ativo
+    content = hash_dict.get(hash_, production_cards_pg.layout)
+    active_navlinks = tuple(hash_ == hash_option for hash_option in hash_dict)
 
-# Atualizar hash da URL
-@callback(
-    Output("production-cards-navlink", "active"),
-    Output("dashboards-navlink-management", "active"),
-    Output("history-navlink", "active"),
-    Output("tables-navlink", "active"),
-    Input("management-url", "hash"),
-)
-def update_active_navlink_management(hash_):
-    """
-    Atualiza o NavLink ativo.
-
-    Parâmetros:
-    hash_ (str): Hash da URL.
-
-    Retorno:
-    bool: True se o NavLink estiver ativo, False caso contrário.
-    """
-    return (
-        hash_ == "#production-cards",
-        hash_ == "#dashboards-management",
-        hash_ == "#management-history",
-        hash_ == "#management-tables",
-    )
+    return content, *active_navlinks
 
 
 # ============================================= Modal ============================================ #

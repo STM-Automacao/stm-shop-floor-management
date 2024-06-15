@@ -23,6 +23,7 @@ from dash_bootstrap_templates import ThemeSwitchAIO
 # pylint: disable=E0401
 from database.last_month_ind import LastMonthInd
 from helpers.cache import MainDataCache
+from helpers.path_config import UrlPath
 from pages import grafana, hour_prod, main_page, management, pcp
 from service.big_data import BigData
 from waitress import serve
@@ -46,6 +47,12 @@ URL_DARKY = dbc.themes.DARKLY
 
 # ================================== Atualizações Em Background ================================== #
 def get_current_time():
+    """
+    Returns the current timestamp.
+
+    Returns:
+        pd.Timestamp: The current timestamp.
+    """
     return pd.Timestamp.now()
 
 
@@ -106,7 +113,7 @@ def cache_daily_data():
 
 scheduler = BackgroundScheduler()
 scheduler.add_job(func=get_current_time, trigger="interval", minutes=1)
-scheduler.add_job(func=update_cache, trigger="interval", minutes=10)
+scheduler.add_job(func=update_cache, trigger="interval", minutes=5)
 scheduler.add_job(func=update_big_data, trigger="cron", hour=5)
 scheduler.add_job(func=cache_daily_data, trigger="cron", hour=0, minute=1)
 scheduler.add_job(func=update_last_month, trigger="cron", hour=1)  # Atualiza a cada 24 horas
@@ -210,6 +217,7 @@ def update_tabs(pathname):
     Retorna:
     list: A lista de componentes da aba.
     """
+    # cSpell: words lider
 
     tabs_info = [
         (grafana.layout, "Ao Vivo", "tab-grafana"),
@@ -223,11 +231,11 @@ def update_tabs(pathname):
 
     tabs = {
         "/": all_tabs[:3],
-        "/1": all_tabs[:2],
-        "/2": all_tabs[:3],
-        "/3": all_tabs[:4],
-        "/4": [all_tabs[0], all_tabs[4]] + all_tabs[1:4],
-        "/5": all_tabs,
+        UrlPath.LIDER.value: all_tabs[:2],
+        UrlPath.SUPERVISOR.value: all_tabs[:3],
+        UrlPath.COORDENADOR.value: all_tabs[:4],
+        UrlPath.PCP.value: [all_tabs[0], all_tabs[4]] + all_tabs[1:4],
+        UrlPath.MAIN.value: all_tabs,
     }
 
     return dbc.Tabs(tabs.get(pathname, all_tabs), id="dbc-tabs")
