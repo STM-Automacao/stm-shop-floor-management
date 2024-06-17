@@ -76,8 +76,8 @@ class IcicleChart:
         if path_choice == "Manutenção":
             df = df[df["motivo"] == "Manutenção"].reset_index(drop=True)
 
-        # Se motivo for limpeza, causa deve ser igual ao problema
-        df.loc[df["motivo"] == "Limpeza", "causa"] = df["problema"]
+        # Se a causa for nula, preenche com o problema
+        df["causa"] = df["causa"].fillna(df["problema"])
 
         # Editar a linha para que apareça "Linha 1" ao invés de 1
         df["linha"] = "Linha " + df["linha"].astype(str)
