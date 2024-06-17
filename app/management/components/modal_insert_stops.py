@@ -475,6 +475,7 @@ def update_cause(reason, equipment, problem):
 
 
 # ============================================ Button ============================================ #
+# pylint: disable=too-many-arguments
 @callback(
     Output("notification-insert-stop", "children"),
     Output("input-line", "value"),
@@ -500,7 +501,7 @@ def update_cause(reason, equipment, problem):
     State("input-stop-time", "value"),
     prevent_initial_call=True,
 )
-def insert_stop(
+def insert_stop(  # noqa: C901
     _n_clicks, line, machine, reason, equipment, problem, cause, os, operator, date, time
 ):
     """
@@ -549,6 +550,9 @@ def insert_stop(
             date,
             time,
         )
+
+    if equipment == "Linha":
+        equipment = ""
 
     try:
         insert_data(
