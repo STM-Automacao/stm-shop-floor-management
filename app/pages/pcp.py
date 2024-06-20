@@ -7,6 +7,7 @@ import dash_mantine_components as dmc
 from apscheduler.schedulers.background import BackgroundScheduler
 from components.grid_aggrid import GridAgGrid
 from dash import Input, Output, callback, dcc
+from dash.exceptions import PreventUpdate
 from dash_iconify import DashIconify
 from pcp.frontend import massa_analysis_pcp, massa_batidas_pcp, pasta_batidas_pcp, producao_pcp
 from pcp.helpers.cache_pcp import PcpDataCache
@@ -157,10 +158,10 @@ def update_content_and_navlink_active(hash_):
 
     # Verifica se o hash está no dicionário de hash, se não estiver, pega o primeiro hash
     if hash_ not in hash_dict:
-        hash_ = list(hash_dict)[0]
+        raise PreventUpdate
 
     # Pega o conteúdo e verifica qual NavLink está ativo
-    content = hash_dict.get(hash_, massa_analysis_pcp.layout)
+    content = hash_dict[hash_]
     active_navlinks = tuple(hash_ == hash_option for hash_option in hash_dict)
 
     return content, *active_navlinks

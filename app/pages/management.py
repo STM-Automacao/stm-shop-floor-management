@@ -7,6 +7,7 @@ Esta é a página de gestão da produção.
 import dash_bootstrap_components as dbc
 import dash_mantine_components as dmc
 from dash import Input, Output, State, callback, dcc
+from dash.exceptions import PreventUpdate
 from dash_iconify import DashIconify
 from management.components import modal_estoque
 from management.pages import dashboards_pg, history_pg, production_cards_pg, tables_management_pg
@@ -35,6 +36,7 @@ layout = dbc.Stack(
                     id="production-cards-navlink",
                     href="#production-cards",
                     leftSection=DashIconify(icon="solar:box-outline"),
+                    active=True,
                     fz=30,
                 ),
                 dmc.NavLink(
@@ -70,7 +72,9 @@ layout = dbc.Stack(
             ],
         ),
         # ========================================= Body ========================================= #
-        dbc.Row(id="management-main-content", class_name="p-2"),
+        dbc.Row(
+            id="management-main-content", children=production_cards_pg.layout, class_name="p-2"
+        ),
         # =================================== Modal De Estoque =================================== #
         dbc.Modal(
             children=modal_estoque.layout,
@@ -141,10 +145,10 @@ def management_content_navlink_update(hash_):
 
     # Verifica se o hash está no dicionário de hash, se não estiver, pega o primeiro hash
     if hash_ not in hash_dict:
-        hash_ = list(hash_dict)[0]
+        raise PreventUpdate
 
     # Pega o conteúdo e verifica qual NavLink está ativo
-    content = hash_dict.get(hash_, production_cards_pg.layout)
+    content = hash_dict[hash_]
     active_navlinks = tuple(hash_ == hash_option for hash_option in hash_dict)
 
     return content, *active_navlinks
