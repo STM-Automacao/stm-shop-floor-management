@@ -61,7 +61,7 @@ class JoinData:
             on="data_hora",
             by="maquina_id",
             direction="nearest",
-            tolerance=pd.Timedelta("1 min 10 s"),
+            tolerance=pd.Timedelta("2 min 02 s"),
         )
 
         # Define o tipo para colunas de ciclos e produção

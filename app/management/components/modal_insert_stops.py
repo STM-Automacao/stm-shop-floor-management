@@ -250,6 +250,7 @@ options = {
                 "Robô parado",
                 "Detector de metais com problema",
                 "Problema com montagem de caixas",
+                "Esteira parada",
             ],
         },
     },
