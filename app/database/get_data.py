@@ -9,6 +9,7 @@ import pandas as pd
 from database.db_read import Read
 from service.clean_data import CleanData
 from service.join_data import JoinData
+from service.join_discard_production import JoinDiscardProduction
 from service.service_info_ihm import ServiceInfoIHM
 
 
@@ -24,6 +25,7 @@ class GetData:
         self.clean_data = CleanData
         self.join_data = JoinData
         self.service = ServiceInfoIHM
+        self.join_discard_production = JoinDiscardProduction
 
     def get_data(self) -> tuple:
         """
@@ -107,6 +109,24 @@ class GetData:
 
         return df_ihm, df_info, df_info_production
 
+    def get_maq_quality_data(self) -> pd.DataFrame:
+        """
+        Retrieves data from the 'maquina_qualidade' table in the AUTOMACAO database.
+
+        Returns:
+            DataFrame: A pandas DataFrame containing the retrieved data.
+        """
+
+        # Encontrando o primeiro dia de 6 meses atrás
+        first_day = pd.to_datetime("today").replace(day=1).strftime("%Y-%m-%d")
+
+        # Query para leitura dos dados de qualidade
+        query = f"SELECT * FROM AUTOMACAO.dbo.qualidade_ihm WHERE data_registro >= '{first_day}'"
+
+        df = self.db_read.get_automacao_data(query)
+
+        return df
+
     def get_big_data(self) -> tuple:
         """
         Recupera dados grandes do banco de dados. Traz dados dos últimos 6 meses.
@@ -173,14 +193,18 @@ class GetData:
 
         # Dados do banco de dados (dataframe)
         df_ihm, df_info, df_info_production = self.get_data()
+        df_discard = self.get_maq_quality_data()
 
         # Limpeza inicial dos dados
-        df_ihm_cleaned, df_info_cleaned, df_info_production_cleaned = self.clean_data(
-            df_ihm, df_info, df_info_production
-        ).clean_data()
+        df_ihm_cleaned, df_info_cleaned, df_info_production_cleaned, df_discard_cleaned = (
+            self.clean_data(df_ihm, df_info, df_info_production, df_discard).clean_data()
+        )
 
         # Junção dos dados
         df_joined = self.join_data(df_ihm_cleaned, df_info_cleaned).join_data()
+        df_prod_discard_joined = self.join_discard_production(
+            df_discard_cleaned, df_info_production_cleaned
+        ).join_data()
 
         # Caso df_joined seja None, ou não tenha dados, lança erro personalizado
         if df_joined is None or df_joined.empty:
@@ -199,7 +223,7 @@ class GetData:
         df_stop_time = service.get_maq_stopped(df_info_ihm_adjusted)
 
         # Retorno dos dados
-        return df_stop_time, df_info_production_cleaned, df_working_minutes, df_info_cleaned
+        return df_stop_time, df_prod_discard_joined, df_working_minutes, df_info_cleaned
 
     def __get_last_month_data(self) -> tuple:
         """
@@ -283,12 +307,19 @@ class GetData:
             "ORDER BY data_registro DESC, linha"
         )
 
+        # Query para leitura dos dados de qualidade
+        query = (
+            "SELECT * FROM AUTOMACAO.dbo.qualidade_ihm"
+            f" WHERE data_registro >= '{first_day}' AND data_registro <= '{last_day}'"
+        )
+
         # Leitura dos dados
         df_ihm = self.db_read.get_automacao_data(query_ihm)
         df_info = self.db_read.get_automacao_data(query_info)
         df_info_production = self.db_read.get_automacao_data(query_production)
+        df_discard = self.db_read.get_automacao_data(query)
 
-        return df_ihm, df_info, df_info_production
+        return df_ihm, df_info, df_info_production, df_discard
 
     def get_last_month_data_cleaned(self) -> tuple:
         """
@@ -300,15 +331,18 @@ class GetData:
         """
 
         # Leitura dos dados
-        df_ihm, df_info, df_info_production = self.__get_last_month_data()
+        df_ihm, df_info, df_info_production, df_discard = self.__get_last_month_data()
 
         # Limpeza inicial dos dados
-        df_ihm_cleaned, df_info_cleaned, df_info_production_cleaned = self.clean_data(
-            df_ihm, df_info, df_info_production
-        ).clean_data()
+        df_ihm_cleaned, df_info_cleaned, df_info_production_cleaned, df_discard_cleaned = (
+            self.clean_data(df_ihm, df_info, df_info_production, df_discard).clean_data()
+        )
 
         # Junção dos dados
         df_joined = self.join_data(df_ihm_cleaned, df_info_cleaned).join_data()
+        df_prod_discard_joined = self.join_discard_production(
+            df_discard_cleaned, df_info_production_cleaned
+        ).join_data()
 
         # Instanciando Service
         service = self.service(df_joined)
@@ -320,7 +354,7 @@ class GetData:
         df_stop_time = service.get_maq_stopped(df_info_ihm_adjusted)
 
         # Retorno dos dados
-        return df_stop_time, df_info_production_cleaned
+        return df_stop_time, df_prod_discard_joined
 
     def get_maq_tela(self) -> pd.DataFrame:
         """
@@ -421,23 +455,5 @@ class GetData:
 
         if df.empty:
             raise ValueError("* --> Erro na leitura dos dados do DB TOTVSDB.")
-
-        return df
-
-    def get_maq_quality_data(self) -> pd.DataFrame:
-        """
-        Retrieves data from the 'maquina_qualidade' table in the AUTOMACAO database.
-
-        Returns:
-            DataFrame: A pandas DataFrame containing the retrieved data.
-        """
-
-        # Encontrando o primeiro dia de 6 meses atrás
-        first_day = pd.to_datetime("today").replace(day=1).strftime("%Y-%m-%d")
-
-        # Query para leitura dos dados de qualidade
-        query = f"SELECT * FROM AUTOMACAO.dbo.qualidade_ihm WHERE data_registro >= '{first_day}'"
-
-        df = self.db_read.get_automacao_data(query)
 
         return df

@@ -9,6 +9,7 @@ from datetime import time
 # cSpell:words usuario, solucao, dayofweek, sabado
 import numpy as np
 import pandas as pd
+from helpers.my_types import PESO_BANDEJAS, PESO_SACO
 
 
 class CleanData:
@@ -19,10 +20,11 @@ class CleanData:
         df_ihm (pd.DataFrame): The DataFrame containing basic data.
         df_info (pd.DataFrame): The DataFrame containing information data.
         df_info_production (pd.DataFrame): The DataFrame containing production data.
+        df_prod_discard (pd.DataFrame): The DataFrame containing production discard data.
 
     Returns:
         tuple: A tuple containing the cleaned DataFrames for basic data, information data,
-        and production data.
+        production data, and production discard data.
     """
 
     def __init__(
@@ -30,10 +32,12 @@ class CleanData:
         df_ihm: pd.DataFrame,
         df_info: pd.DataFrame,
         df_info_production: pd.DataFrame = pd.DataFrame(),
+        df_prod_discard: pd.DataFrame = pd.DataFrame(),
     ) -> None:
         self.df_ihm = df_ihm
         self.df_info = df_info
         self.df_info_production = df_info_production
+        self.df_prod_discard = df_prod_discard
 
     @staticmethod
     def __clean_basics(df: pd.DataFrame) -> pd.DataFrame:
@@ -167,14 +171,68 @@ class CleanData:
 
         return df
 
+    def __clean_prod_discard_data(self) -> pd.DataFrame:
+
+        # Cria uma cópia do dataframe
+        df = self.df_prod_discard.copy()
+
+        # Descartar coluna recno
+        df = df.drop(columns=["recno"])
+
+        # Arredondar valores para float com 3 casas decimais
+        df.bdj_vazias = df.bdj_vazias.round(3)
+        df.bdj_retrabalho = df.bdj_retrabalho.round(3)
+        df.descarte_paes_pasta = df.descarte_paes_pasta.round(3)
+        df.descarte_paes = df.descarte_paes.round(3)
+        df.descarte_pasta = df.descarte_pasta.round(3)
+
+        # Calcular descarte bandejas, caso o valor seja maior que 0
+        df.loc[df.bdj_vazias > 0, "bdj_vazias"] = (
+            (df.bdj_vazias - PESO_SACO) / PESO_BANDEJAS
+        ).round(0)
+        df.loc[df.bdj_retrabalho > 0, "bdj_retrabalho"] = (
+            (df.bdj_retrabalho - PESO_SACO) / PESO_BANDEJAS
+        ).round(0)
+
+        # Transforma em inteiro
+        df.bdj_vazias = df.bdj_vazias.astype(int)
+        df.bdj_retrabalho = df.bdj_retrabalho.astype(int)
+
+        # Se o valor for menor que 0, transforma em 0
+        df.loc[df.bdj_vazias < 0, "bdj_vazias"] = 0
+        df.loc[df.bdj_retrabalho < 0, "bdj_retrabalho"] = 0
+
+        # Definir cria coluna auxiliar com o turno (MAT, VES, NOT) muda a cada 8 horas (8, 16, 0)
+        df["turno"] = df.hora_registro.apply(lambda x: x.hour) // 8
+        df.turno = df.turno.map({0: "NOT", 1: "MAT", 2: "VES"})
+        df = df.drop(columns=["hora_registro"])
+
+        # Agrupar por turno e data e linha
+        df = (
+            df.groupby(["linha", "maquina_id", "data_registro", "turno"])
+            .sum()
+            .round(3)
+            .reset_index()
+        )
+
+        return df
+
     def clean_data(self) -> tuple:
         """
         Cleans the data by performing various cleaning operations on different dataframes.
+        Tuple with 4 DataFrames:
+        - df_ihm: The cleaned basic data.
+        - df_info: The cleaned information data.
+        - df_info_production: The cleaned production data.
+        - df_prod_discard: The cleaned production discard data.
 
-        Uses the private methods __clean_basics, __clean_info, and __clean_production.
+        Uses the private methods __clean_basics, __clean_info, __clean_production and
+        __clean_prod_discard_data to clean the basic data, information data, production data,
+        and production discard data, respectively.
 
         Returns:
-            tuple: A tuple containing the cleaned dataframes - df_ihm, df_info, df_info_production.
+            tuple: A tuple containing the cleaned DataFrames for basic data, information data,
+            production data, and production discard data.
         """
 
         # Limpar os dados básicos
@@ -196,4 +254,8 @@ class CleanData:
         if not self.df_info_production.empty:
             self.df_info_production = self.__clean_production(self.df_info_production)
 
-        return self.df_ihm, self.df_info, self.df_info_production
+        # Limpar os dados de descarte
+        if not self.df_prod_discard.empty:
+            self.df_prod_discard = self.__clean_prod_discard_data()
+
+        return self.df_ihm, self.df_info, self.df_info_production, self.df_prod_discard

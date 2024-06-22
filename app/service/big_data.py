@@ -31,7 +31,7 @@ class BigData:
         df_ihm, df_info = self._get_data.get_big_data()
 
         # Limpeza dos dados
-        df_ihm, df_info, _ = CleanData(df_ihm, df_info).clean_data()
+        df_ihm, df_info, _, _ = CleanData(df_ihm, df_info).clean_data()
 
         # Une os DataFrames
         df = JoinData(df_ihm, df_info).join_data()
