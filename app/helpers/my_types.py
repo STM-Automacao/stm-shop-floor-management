@@ -8,6 +8,9 @@ from enum import Enum
 import matplotlib.pyplot as plt
 
 CICLOS_ESPERADOS = 10.6
+TEMPO_AJUSTE = 2.5
+PESO_BANDEJAS = 0.028
+PESO_SACO = 0.080
 
 
 class IndicatorType(Enum):

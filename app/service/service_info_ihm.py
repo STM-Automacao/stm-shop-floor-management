@@ -7,6 +7,7 @@ import warnings
 
 import numpy as np
 import pandas as pd
+from helpers.my_types import TEMPO_AJUSTE
 
 warnings.simplefilter(action="ignore", category=FutureWarning)
 
@@ -230,7 +231,7 @@ class ServiceInfoIHM:
         # Ajustar status para levar em conta testes
         mask = (
             (df_joined["status"] == "rodando")
-            & (df_joined["tempo"] < 10)
+            & (df_joined["tempo"] < TEMPO_AJUSTE)
             & (df_joined["turno"].eq(df_joined["turno"].shift(-1)))
             & (df_joined["motivo"].shift() != "Parada Programada")
         )
