@@ -133,4 +133,7 @@
   ],
   "python.testing.pytestEnabled": false,
   "python.testing.unittestEnabled": true,
+  "cSpell.ignoreWords": [
+    "bsdm"
+  ],
 }
