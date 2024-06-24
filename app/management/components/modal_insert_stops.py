@@ -10,9 +10,6 @@ from dash import html
 from dash.exceptions import PreventUpdate
 from dash_iconify import DashIconify
 from database.insert_data import InsertData
-from helpers.cache import MainDataCache as mdc
-
-from app import app
 
 # cSpell:words termoformadoras lamecação kaizen
 
@@ -596,7 +593,6 @@ def insert_stop(  # noqa: C901
             time,
         )
 
-    mdc(app).update_cache()
     return notification_ok, "", None, None, None, None, None, "", "", None, ""
 
 
