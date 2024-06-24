@@ -181,8 +181,10 @@ def update_bnt_visibility(path):
     [
         Output("date-picker", "minDate"),
         Output("date-picker", "maxDate"),
+        Output("date-picker", "disabledDates"),
         Output("date-picker-stops-dashboard", "minDate"),
         Output("date-picker-stops-dashboard", "maxDate"),
+        Output("date-picker-stops-dashboard", "disabledDates"),
     ],
     Input("store-info", "data"),
 )
@@ -205,10 +207,28 @@ def details_picker(info):
 
     df = pd.read_json(StringIO(info), orient="split")
 
+    # Obter as datas únicas do dataframe como uma lista de strings no formato "YYYY-MM-DD"
+    unique_dates = pd.to_datetime(df["data_registro"]).dt.date.unique().astype(str)
+
+    # Obter a data mínima e máxima do dataframe
     min_date = pd.to_datetime(df["data_registro"]).min().date()
     max_date = pd.to_datetime(df["data_registro"]).max().date()
 
-    return str(min_date), str(max_date), str(min_date), str(max_date)
+    # unique dates são as datas presentes no dataframe e disabled dates são as datas que não estão
+    disabled_dates = [
+        date
+        for date in pd.date_range(start=min_date, end=max_date)
+        if date.strftime("%Y-%m-%d") not in unique_dates
+    ]
+
+    return (
+        str(min_date),
+        str(max_date),
+        str(disabled_dates),
+        str(min_date),
+        str(max_date),
+        str(disabled_dates),
+    )
 
 
 # ========================================= Cor Do Botão ========================================= #

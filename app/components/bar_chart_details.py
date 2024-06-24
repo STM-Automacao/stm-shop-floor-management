@@ -110,14 +110,22 @@ class BarChartDetails:
                 "motivo": "motivo".capitalize(),
             },
             template=template.value,
-            custom_data=["problema", "causa", "data_registro", "data_hora", "s_backup"],
+            custom_data=[
+                "problema",
+                "causa",
+                "data_registro",
+                "data_hora",
+                "s_backup",
+                "maquina_id",
+            ],
         )
 
         tick_color = "gray" if template == TemplateType.LIGHT else "lightgray"
 
         fig.update_traces(
             hovertemplate=(
-                "Linha: %{x}<br>"
+                f"{"Motivo" if alt else "Linha"}"": %{x}<br>"
+                "Maquina: %{customdata[5]}<br>"
                 "Tempo: %{y}<br>"
                 "Problema: %{customdata[0]}<br>"
                 "Causa: %{customdata[1]}<br>"
@@ -131,12 +139,12 @@ class BarChartDetails:
         fig.update_layout(
             xaxis=dict(
                 categoryorder="category ascending",
-                tickvals=df["linha"].unique(),
+                tickvals=df["linha"].unique() if not alt else df["motivo"].unique(),
                 tickfont=dict(color=tick_color),
             ),
             yaxis=dict(tickfont=dict(color=tick_color)),
             title_x=0.5,
-            xaxis_title="Linha",
+            xaxis_title="Linha" if not alt else "Motivo",
             yaxis_title="Tempo (min)",
             legend_title="motivo".capitalize(),
             plot_bgcolor="RGBA(0,0,0,0.01)",
