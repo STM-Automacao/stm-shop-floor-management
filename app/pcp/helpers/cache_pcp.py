@@ -26,8 +26,10 @@ class PcpDataCache(CacheManager):
 
     def __init__(self, app) -> None:
         self.__get_data = GetPcpData().get_massa_data
+        self.__get_pasta_data = GetPcpData().get_pasta_data
         self.__get_analysis = AnalysisPcpData()
         self.__clean_data = CleanPcpData().clean_massadas_data
+        self.__clean_pasta_data = CleanPcpData().clean_pasta_data
         super().__init__(app)
 
     def cache_massa_data(self) -> None:
@@ -56,3 +58,30 @@ class PcpDataCache(CacheManager):
         # Salva os dados no cache
         self.cache.set("df_sum", df_sum.to_json(date_format="iso", orient="split"))
         self.cache.set("df_week", df_week.to_json(date_format="iso", orient="split"))
+
+    def cache_pasta_data(self) -> None:
+        """
+        Realiza o cache dos dados relacionados à pasta.
+
+        Lê os dados do banco de dados, limpa os dados, analisa os dados e salva os dados no cache.
+
+        Parâmetros:
+        - self: A instância do objeto.
+
+        Retorno:
+        - None
+        """
+
+        # Lê os dados do banco de dados
+        data = self.__get_pasta_data()
+
+        # Limpa os dados
+        data_cleaned = self.__clean_pasta_data(data)
+
+        # Analisa os dados
+        df_pasta = self.__get_analysis.get_pasta_analysis(data_cleaned)
+        df_pasta_week = self.__get_analysis.get_pasta_week_analysis(df_pasta)
+
+        # Salva os dados no cache
+        self.cache.set("df_pasta", df_pasta.to_json(date_format="iso", orient="split"))
+        self.cache.set("df_pasta_week", df_pasta_week.to_json(date_format="iso", orient="split"))

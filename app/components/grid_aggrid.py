@@ -17,7 +17,7 @@ class GridAgGrid:
     def create_grid_ag(
         self,
         df: pd.DataFrame,
-        grid_id: int,
+        grid_id: str,
         theme: bool,
         defs: list[dict] = None,
         col_deft: dict = None,

@@ -17,6 +17,7 @@ from app import app
 # =========================================== Variáveis ========================================== #
 pcp_data = PcpDataCache(app)
 update_massa_cache = pcp_data.cache_massa_data
+update_pasta_cache = pcp_data.cache_pasta_data
 scheduler = BackgroundScheduler()
 pcp_builder = GridAgGrid()
 
@@ -24,6 +25,7 @@ pcp_builder = GridAgGrid()
 # ====================================== Cache Em Background ===================================== #
 
 scheduler.add_job(update_massa_cache, "interval", minutes=5)
+scheduler.add_job(update_pasta_cache, "interval", minutes=5)
 scheduler.start()
 
 # ================================================================================================ #
@@ -32,6 +34,8 @@ scheduler.start()
 layout = [
     dcc.Store(id="df_sum", storage_type="local"),
     dcc.Store(id="df_week", storage_type="local"),
+    dcc.Store(id="df_pasta", storage_type="local"),
+    dcc.Store(id="df_pasta_week", storage_type="local"),
     dcc.Interval(id="interval-component-pcp", interval=1000 * 60 * 5, n_intervals=0),
     dcc.Location(id="pcp-url"),
     # ============================================ Btn =========================================== #
@@ -91,6 +95,8 @@ layout = [
 @callback(
     Output("df_sum", "data"),
     Output("df_week", "data"),
+    Output("df_pasta", "data"),
+    Output("df_pasta_week", "data"),
     Input("interval-component-pcp", "n_intervals"),
 )
 def update_store(_):
@@ -108,6 +114,8 @@ def update_store(_):
     return (
         pcp_data.cache.get("df_sum"),
         pcp_data.cache.get("df_week"),
+        pcp_data.cache.get("df_pasta"),
+        pcp_data.cache.get("df_pasta_week"),
     )
 
 

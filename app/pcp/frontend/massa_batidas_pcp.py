@@ -6,19 +6,12 @@ from io import StringIO
 
 import dash_bootstrap_components as dbc
 import pandas as pd
-from apscheduler.schedulers.background import BackgroundScheduler
 from components import segmented_btn
 from components.grid_aggrid import GridAgGrid
 from dash import Input, Output, callback, html
 from dash_bootstrap_templates import ThemeSwitchAIO
-from pcp.helpers.cache_pcp import PcpDataCache
-
-from app import app
 
 # =========================================== Variáveis ========================================== #
-pcp_data = PcpDataCache(app)
-update_massa_cache = pcp_data.cache_massa_data
-scheduler = BackgroundScheduler()
 pcp_builder = GridAgGrid()
 seg_btn = segmented_btn.SegmentedBtn()
 
