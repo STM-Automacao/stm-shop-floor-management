@@ -238,6 +238,9 @@ class ServiceInfoIHM:
 
         df_joined["status"] = np.where(mask, "parada", df_joined["status"])
 
+        # Ajustando o motivo change
+        df_joined["motivo_change"] = np.where(mask, False, df_joined["motivo_change"].shift(-1))
+
         mask = (
             (df_joined["status"] == "rodando")
             & (df_joined["tempo"] <= TEMPO_AJUSTE)
