@@ -8,6 +8,7 @@ import dash_bootstrap_components as dbc
 import dash_mantine_components as dmc
 from dash import Input, Output, State, callback, dcc
 from dash.exceptions import PreventUpdate
+from dash_bootstrap_templates import ThemeSwitchAIO
 from dash_iconify import DashIconify
 from management.components import modal_estoque
 from management.pages import dashboards_pg, history_pg, production_cards_pg, tables_management_pg
@@ -100,7 +101,7 @@ layout = dbc.Stack(
     Input("modal-estoque", "is_open"),
     prevent_initial_call=True,
 )
-def management_toggle_drawer(_, estoque_is_open):
+def update_drawer_theme(_, estoque_is_open):
     """
     Abre ou fecha o drawer.
 
@@ -110,9 +111,28 @@ def management_toggle_drawer(_, estoque_is_open):
     Retorno:
     bool: True se o drawer estiver aberto, False caso contrário.
     """
+
     if estoque_is_open:
         return False
     return True
+
+
+# =========================================== Btn Theme ========================================== #
+@callback(
+    Output("management-drawer-btn", "outline"),
+    Input(ThemeSwitchAIO.ids.switch("theme"), "value"),
+)
+def update_btn_theme(theme):
+    """
+    Altera o estado do drawer de gerenciamento.
+
+    Args:
+        theme (str): O tema a ser aplicado ao drawer.
+
+    Returns:
+        str: O tema atualizado do drawer.
+    """
+    return theme
 
 
 # =========================================== Locations ========================================== #
