@@ -5,6 +5,7 @@ Módulo com dados de Batidas de massa.
 from io import StringIO
 
 import dash_bootstrap_components as dbc
+import dash_mantine_components as dmc
 import pandas as pd
 from components import segmented_btn
 from components.grid_aggrid import GridAgGrid
@@ -33,24 +34,11 @@ layout = dbc.Stack(
             class_name="mb-3",
         ),
         dbc.Row(
-            dbc.Card(
-                [
-                    dbc.CardHeader("Batidas por Dia"),
-                    dbc.CardBody(id="massadas"),
-                ],
-                class_name="p-0 shadow-sm",
-                outline=False,
-            ),
+            dmc.Card(id="massadas", shadow="sm"),
             class_name="mb-3",
         ),
         dbc.Row(
-            dbc.Card(
-                [
-                    dbc.CardHeader("Batidas por Semana"),
-                    dbc.CardBody(id="massadas-week"),
-                ],
-                class_name="p-0 shadow-sm",
-            ),
+            dmc.Card(id="massadas-week", shadow="sm"),
             class_name="mb-3",
         ),
     ]
@@ -116,7 +104,9 @@ def update_massadas_card(data, theme, choice):
 
     table = pcp_builder.create_grid_ag(df, "grid-pcp-1", theme)
 
-    return table
+    title = html.H4(f"Batidas de Massa - {choice}", className="text-center")
+
+    return [title, table]
 
 
 @callback(
@@ -178,4 +168,6 @@ def update_massadas_week_card(data, theme, choice):
 
     table = pcp_builder.create_grid_ag(df, "grid-pcp-2", theme)
 
-    return table
+    title = html.H4(f"Batidas de Massa - {choice} (Semana)", className="text-center")
+
+    return [title, table]
