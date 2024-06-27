@@ -136,4 +136,10 @@
   "cSpell.ignoreWords": [
     "bsdm"
   ],
+  "gitCommitMessageEditor.intelliSense.completion.scopes": [
+    {
+      "scope": "prod_per_hour",
+      "description": "Produção por hora"
+    }
+  ],
 }
