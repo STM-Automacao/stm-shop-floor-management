@@ -35,6 +35,10 @@ scheduler.add_job(update_massa_cache, "interval", minutes=5)
 scheduler.add_job(update_pasta_cache, "interval", minutes=5)
 scheduler.start()
 
+#  DEV HACK  O código a seguir deve ser removido ao fazer a integração com o código existente
+update_massa_cache()
+update_pasta_cache()
+
 # ================================================================================================ #
 #                                              LAYOUT                                              #
 # ================================================================================================ #

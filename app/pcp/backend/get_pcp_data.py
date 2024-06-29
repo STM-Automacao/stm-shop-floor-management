@@ -6,7 +6,7 @@ import pandas as pd
 from database.db_read import Read
 
 # cSpell: words CYV_CDMQ CYB_DSMQ CYV_QTATRP CYV_DTRPBG CYV_HRRPBG CYV_CDUSRP X6_CONTEUD
-# cSpell: words Codigo descricao usuario charindex usrf cdmq descr dtini hrini nrorpo
+# cSpell: words Codigo descricao usuario charindex usrf cdmq descr dtini hrini nrorpo fabr
 
 
 class GetPcpData:
@@ -160,8 +160,8 @@ class GetPcpData:
             ', T1.CYV_HRRPBG AS "Hora_Registro"'
             ', T1.CYV_CDUSRP AS "Usuario_Registro"'
             ", COALESCE("
-            "CASE WHEN CHARINDEX(T1.CYV_CDUSRP, T3.X6_CONTEUD) > 0 THEN 'Fab. 1' END,"
-            "CASE WHEN CHARINDEX(T1.CYV_CDUSRP, T4.X6_CONTEUD) > 0 THEN 'Fab. 2' END,"
+            "CASE WHEN CHARINDEX('1', T2.CYB_X_FABR) > 0 THEN 'Fab. 1' END,"
+            "CASE WHEN CHARINDEX('2', T2.CYB_X_FABR) > 0 THEN 'Fab. 2' END,"
             "'Não identificado'"
             ') AS "Fabrica"'
         )
@@ -171,8 +171,6 @@ class GetPcpData:
         join = (
             "JOIN CYB000 (NOLOCK) AS T2 ON T1.CYV_FILIAL = T2.CYB_FILIAL "
             "AND T1.CYV_CDMQ = T2.CYB_CDMQ AND T2.D_E_L_E_T_ <> '*'"
-            "LEFT JOIN SX6000 (NOLOCK) AS T3 ON T3.X6_VAR = 'MV_X_USRF1' "
-            "LEFT JOIN SX6000 (NOLOCK) AS T4 ON T4.X6_VAR = 'MV_X_USRF2' "
             "JOIN V9_000 (NOLOCK) AS T5 ON T1.CYV_CDMQ = T5.V9__MAQ AND T1.CYV_NRORPO = T5.V9__OP "
             "AND T1.CYV_DTRPBG = T5.V9__DTINI AND T1.CYV_HRRPBG = T5.V9__HRINI "
             "AND T5.V9__STATUS = 1 AND T5.D_E_L_E_T_ <> '*' "

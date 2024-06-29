@@ -114,7 +114,7 @@ def update_paes(theme, prod_recheio, week_massa):
     df_prod_recheio.Data_Semana = df_prod_recheio.Data_Semana.dt.strftime("%d/%m")
 
     # ============================== Definições De Estilo E Colunas ============================== #
-    class_rules = {"cellClassRules": {"text-light bg-danger": "params.value < 0"}}
+    class_rules = {"cellClassRules": {"text-light bg-danger": "params.value > 0"}}
 
     # Definições personalizadas
     defs = [
@@ -144,21 +144,21 @@ def update_paes(theme, prod_recheio, week_massa):
             "headerClass": "center-aligned-group-header",
             "children": [
                 {
-                    "headerName": "Baguete Produzida",
+                    "headerName": "Produzida",
                     "headerTooltip": "Quantidade de baguetes produzidas (unidades)",
                     "field": "Baguete_Total",
                     **GRID_FORMAT_NUMBER_BR,
                     **GRID_STR_NUM_COLS,
                 },
                 {
-                    "headerName": "Baguete Consumida",
+                    "headerName": "Consumida",
                     "headerTooltip": "Quantidade de baguetes consumidas (unidades)",
                     "field": "QTD",
                     **GRID_FORMAT_NUMBER_BR,
                     **GRID_STR_NUM_COLS,
                 },
                 {
-                    "headerName": "Baguete Sobra",
+                    "headerName": "Diferença",
                     "headerTooltip": "Diferença de baguetes produzidas e consumidas (unidades)",
                     "field": "baguete_sobra",
                     **GRID_FORMAT_NUMBER_BR,
@@ -172,21 +172,21 @@ def update_paes(theme, prod_recheio, week_massa):
             "headerClass": "center-aligned-group-header",
             "children": [
                 {
-                    "headerName": "Bolinha Produzida",
+                    "headerName": "Produzida",
                     "headerTooltip": "Quantidade de bolinhas produzidas (unidades)",
                     "field": "Bolinha_Total",
                     **GRID_FORMAT_NUMBER_BR,
                     **GRID_STR_NUM_COLS,
                 },
                 {
-                    "headerName": "Bolinha Consumida",
+                    "headerName": "Consumida",
                     "headerTooltip": "Quantidade de bolinhas consumidas (unidades)",
                     "field": "QTD_BOL",
                     **GRID_FORMAT_NUMBER_BR,
                     **GRID_STR_NUM_COLS,
                 },
                 {
-                    "headerName": "Bolinha Sobra",
+                    "headerName": "Diferença",
                     "headerTooltip": "Diferença de bolinhas produzidas e consumidas (unidades)",
                     "field": "bolinha_sobra",
                     **GRID_FORMAT_NUMBER_BR,

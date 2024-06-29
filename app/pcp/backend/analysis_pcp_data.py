@@ -229,8 +229,8 @@ class AnalysisPcpData:
                 Picante_Peso=("Picante_Peso", "sum"),
                 Cebola_Batidas=("Cebola_Batidas", "sum"),
                 Cebola_Peso=("Cebola_Peso", "sum"),
-                Pasta_Doce_Batidas=("Pasta_Doce_Batidas", "sum"),
-                Pasta_Doce_Peso=("Pasta_Doce_Peso", "sum"),
+                Doce_Batidas=("Pasta_Doce_Batidas", "sum"),
+                Doce_Peso=("Pasta_Doce_Peso", "sum"),
             )
             .reset_index()
         )
