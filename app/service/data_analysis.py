@@ -34,6 +34,7 @@ class DataAnalysis:
         # Dicionário com descontos de Performance
         self.desc_perf = {
             "Troca de Sabor": 15,
+            "Troca de Produto": 35,
             "Refeição": 60,
             "Café e Ginástica Laboral": 10,
             "Treinamento": 60,
