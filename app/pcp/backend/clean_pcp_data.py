@@ -5,7 +5,12 @@ Limpa os dados do PCP
 from datetime import datetime
 
 import pandas as pd
-from pcp.helpers.types_pcp import MASSADA_BOLINHA, MASSADA_CHEIA, MASSADA_REPROCESSO
+from pcp.helpers.types_pcp import (
+    MASSADA_BOLINHA,
+    MASSADA_BOLINHA_ATUALIZADA,
+    MASSADA_CHEIA,
+    MASSADA_REPROCESSO,
+)
 
 # cSpell: words codigo descricao usuario
 
@@ -108,7 +113,10 @@ class CleanPcpData:
         # Separando o dataframe conforme a quantidade de atropelamentos
         df_massadas_cheias = df[df["Quantidade_Atropelamento"] == MASSADA_CHEIA]
         df_massadas_reprocesso = df[df["Quantidade_Atropelamento"] == MASSADA_REPROCESSO]
-        df_massadas_bolinha = df[df["Quantidade_Atropelamento"] == MASSADA_BOLINHA]
+        df_massadas_bolinha = df[
+            (df["Quantidade_Atropelamento"] == (MASSADA_BOLINHA))
+            | (df["Quantidade_Atropelamento"] == (MASSADA_BOLINHA_ATUALIZADA))
+        ]
 
         # Soma os valores por maquina, data e turno
         df_massadas_cheias = self.__total_mass(df_massadas_cheias)
@@ -147,3 +155,45 @@ class CleanPcpData:
         df_massadas["Data_Registro"] = pd.to_datetime(df_massadas["Data_Registro"], format="%Y%m%d")
 
         return df_massadas
+
+    def clean_pasta_data(self, df: pd.DataFrame) -> pd.DataFrame:
+        """
+        Limpa os dados da pasta.
+
+        Args:
+            df (pd.DataFrame): O dataframe contendo os dados da pasta.
+
+        Returns:
+            pd.DataFrame: O dataframe com os dados da pasta limpos.
+        """
+
+        # Atribuir coluna turno com base no horário
+        df["Hora_Registro"] = pd.to_datetime(df["Hora_Registro"], format="%H:%M:%S").dt.time
+        df["Turno"] = df["Hora_Registro"].apply(self.__get_shift)
+
+        # Soma os valores por maquina, data e turno
+        df_massadas_total = (
+            df.groupby(
+                [
+                    "Codigo_Maquina",
+                    "Descricao_Maquina",
+                    "Data_Registro",
+                    "Turno",
+                    "Fabrica",
+                    "Produto",
+                ]
+            )
+            .agg(
+                Usuario_Registro=("Usuario_Registro", "first"),
+                Batidas_Pasta=("Quantidade_Atropelamento", "count"),
+                Peso_Pasta=("Quantidade_Atropelamento", "sum"),
+            )
+            .reset_index()
+        )
+
+        # Transformar data_registro em datetime no formato ano-mes-dia
+        df_massadas_total["Data_Registro"] = pd.to_datetime(
+            df_massadas_total["Data_Registro"], format="%Y%m%d"
+        )
+
+        return df_massadas_total

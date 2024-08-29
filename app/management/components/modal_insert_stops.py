@@ -1,9 +1,8 @@
 """This module contains the layout for the modal that allows the user to insert stops."""
 
-import datetime
-
 import dash_bootstrap_components as dbc
 import dash_mantine_components as dmc
+import pandas as pd
 from dash import Input, Output, State, callback
 from dash import callback_context as ctx
 from dash import html
@@ -15,6 +14,7 @@ from database.insert_data import InsertData
 
 # =========================================== Variáveis ========================================== #
 insert_data = InsertData().insert_maq_ihm_data
+now = pd.Timestamp.now()
 
 termoformadoras = [
     "TMF001",
@@ -370,7 +370,7 @@ layout = dmc.Stack(
                         label="Data da Parada",
                         placeholder="Insira a data",
                         id="input-stop-date",
-                        maxDate=datetime.date.today(),
+                        maxDate=now.date().strftime("%Y-%m-%d"),
                     ),
                     md=3,
                 ),

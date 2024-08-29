@@ -34,6 +34,7 @@ class DataAnalysis:
         # Dicionário com descontos de Performance
         self.desc_perf = {
             "Troca de Sabor": 15,
+            "Troca de Produto": 35,
             "Refeição": 60,
             "Café e Ginástica Laboral": 10,
             "Treinamento": 60,
@@ -62,7 +63,7 @@ class DataAnalysis:
         self,
         df: pd.DataFrame,
         desc_dict: dict[str, int],
-        not_dict: list[str],
+        skip_list: list[str],
         indicator: IndicatorType,
     ) -> pd.DataFrame:
         """
@@ -74,11 +75,7 @@ class DataAnalysis:
         df["desconto"] = 0
 
         # Caso o motivo, problema ou causa não afete o indicador, o desconto é igual a tempo
-        mask = (
-            df[["motivo", "problema", "causa"]]
-            .apply(lambda x: x.str.contains("|".join(not_dict), case=False, na=False))
-            .any(axis=1)
-        )
+        mask = df[["motivo", "problema", "causa"]].apply(lambda x: x.isin(skip_list).any(), axis=1)
         df.loc[mask, "desconto"] = 0 if indicator == IndicatorType.REPAIR else df["tempo"]
 
         # Cria um dict para indicadores

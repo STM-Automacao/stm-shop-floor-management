@@ -595,6 +595,22 @@ files = [
 ]
 
 [[package]]
+name = "dash-echarts"
+version = "0.0.12.9"
+description = "echarts for dash"
+optional = false
+python-versions = "*"
+files = [
+    {file = "dash_echarts-0.0.12.9-py3-none-any.whl", hash = "sha256:43b1759295198196cabb5e082c1dc3a91a59d7684ba05183c534f7f206a5094f"},
+]
+
+[package.dependencies]
+dash = "*"
+
+[package.extras]
+play = ["dash-bootstrap-components", "dash-extensions", "dash-tabulator"]
+
+[[package]]
 name = "dash-html-components"
 version = "2.0.0"
 description = "Vanilla HTML components for Dash"
@@ -3172,4 +3188,4 @@ testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "p
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "450ec81c3f29f41757bb359557fac3d94deaa6afb0452ceac5b2719a2b3b5bcc"
+content-hash = "cfbb3e1ff0853cbcdd90f459cacd307561df02a3e4e943c4a22ea4b810317a16"

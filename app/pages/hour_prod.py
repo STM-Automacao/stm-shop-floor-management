@@ -9,7 +9,7 @@ import dash_mantine_components as dmc
 import numpy as np
 import pandas as pd
 from components import grid_aggrid
-from dash import Input, Output, callback
+from dash import Input, Output, callback, html
 from dash_bootstrap_templates import ThemeSwitchAIO
 
 gag = grid_aggrid.GridAgGrid()
@@ -78,7 +78,12 @@ def update_hour_prod_table(data, theme):
     df_resampled = (
         df.groupby("linha")
         .resample("h", level="data_hora")
-        .agg({"contagem_total_produzido": ["first", "last"]})
+        .agg(
+            {
+                "contagem_total_produzido": ["first", "last"],
+                "contagem_total_ciclos": ["first", "last"],
+            }
+        )
     )
 
     # Calcule a diferença entre o primeiro e o último registro de cada hora
@@ -87,8 +92,19 @@ def update_hour_prod_table(data, theme):
         - df_resampled["contagem_total_produzido"]["first"]
     )
 
+    df_resampled["total_ciclos"] = (
+        df_resampled["contagem_total_ciclos"]["last"]
+        - df_resampled["contagem_total_ciclos"]["first"]
+    )
+
     # Reiniciar o índice do DataFrame
     df_resampled.reset_index(inplace=True)
+
+    # Ajusta a produção
+    mask = df_resampled["total_ciclos"] - df_resampled["total_produzido"] <= 60
+    df_resampled["total_produzido"] = np.where(
+        mask, df_resampled["total_produzido"], df_resampled["total_ciclos"]
+    )
 
     # Selecionar apenas as colunas necessárias
     df_final = df_resampled[["linha", "data_hora", "total_produzido"]]
@@ -113,4 +129,8 @@ def update_hour_prod_table(data, theme):
     # Renomeia as colunas para que sejam mais legíveis
     df_pivot.columns = [col if col == "Intervalo" else f"Linha {col}" for col in df_pivot.columns]
 
-    return gag.create_grid_ag(df_pivot, "hour-prod-table", theme, hei="1100px")
+    table = gag.create_grid_ag(df_pivot, "hour-prod-table", theme, hei="1100px")
+
+    title = html.H3("Produção de caixas por hora", className="text-center mb-3")
+
+    return [title, table]
