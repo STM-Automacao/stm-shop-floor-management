@@ -8,7 +8,7 @@ from enum import Enum
 import matplotlib.pyplot as plt
 
 CICLOS_ESPERADOS = 10.6
-TEMPO_AJUSTE = 5
+TEMPO_AJUSTE = 10
 PESO_BANDEJAS = 0.028
 PESO_SACO = 0.080
 
@@ -65,6 +65,7 @@ COLOR_DICT = {
     "Saída para Backup": BSColorsEnum.TEAL_COLOR.value,
     "Limpeza": BSColorsEnum.ORANGE_COLOR.value,
     "Rodando": BSColorsEnum.SUCCESS_COLOR.value,
+    "Liberada": BSColorsEnum.GREY_500_COLOR.value,
 }
 
 MANUT_COLORS = {

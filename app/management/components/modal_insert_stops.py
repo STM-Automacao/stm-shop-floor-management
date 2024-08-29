@@ -14,6 +14,7 @@ from database.insert_data import InsertData
 
 # =========================================== Variáveis ========================================== #
 insert_data = InsertData().insert_maq_ihm_data
+now = pd.Timestamp.now()
 
 termoformadoras = [
     "TMF001",
@@ -369,7 +370,7 @@ layout = dmc.Stack(
                         label="Data da Parada",
                         placeholder="Insira a data",
                         id="input-stop-date",
-                        maxDate=pd.to_datetime("today").strftime("%Y-%m-%d"),
+                        maxDate=now.date().strftime("%Y-%m-%d"),
                     ),
                     md=3,
                 ),

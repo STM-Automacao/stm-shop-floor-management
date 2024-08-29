@@ -8,8 +8,15 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from components.grid_aggrid import GridAgGrid
 from dash import Input, Output, callback, dcc
 from dash.exceptions import PreventUpdate
+from dash_bootstrap_templates import ThemeSwitchAIO
 from dash_iconify import DashIconify
-from pcp.frontend import massa_analysis_pcp, massa_batidas_pcp, pasta_batidas_pcp, producao_pcp
+from pcp.frontend import (
+    massa_analysis_pcp,
+    massa_batidas_pcp,
+    pasta_analysis_pcp,
+    pasta_batidas_pcp,
+    producao_pcp,
+)
 from pcp.helpers.cache_pcp import PcpDataCache
 
 from app import app
@@ -28,6 +35,10 @@ scheduler.add_job(update_massa_cache, "interval", minutes=5)
 scheduler.add_job(update_pasta_cache, "interval", minutes=5)
 scheduler.start()
 
+#  DEV HACK  O código a seguir deve ser removido ao fazer a integração com o código existente
+update_massa_cache()
+update_pasta_cache()
+
 # ================================================================================================ #
 #                                              LAYOUT                                              #
 # ================================================================================================ #
@@ -42,7 +53,6 @@ layout = [
     dbc.Button(
         id="pcp-drawer-btn",
         color="secondary",
-        outline=True,
         children=DashIconify(icon="mdi:menu"),
         style={"width": "50px"},
         class_name="d-flex justify-content-center align-items-center float-left mt-2 ml-2",
@@ -57,6 +67,13 @@ layout = [
                 href="#massa-analysis",
                 active=True,
                 leftSection=DashIconify(icon="mdi:bread"),
+                fz=30,
+            ),
+            dmc.NavLink(
+                label=dmc.Text("Análise de Pasta", size="xl"),
+                id="pasta-analysis-navlink",
+                href="#pasta-analysis",
+                leftSection=DashIconify(icon="arcticons:emoji-onion"),
                 fz=30,
             ),
             dmc.NavLink(
@@ -136,10 +153,29 @@ def toggle_drawer(_):
     return True
 
 
+# =========================================== Btn Theme ========================================== #
+@callback(
+    Output("pcp-drawer-btn", "outline"),
+    Input(ThemeSwitchAIO.ids.switch("theme"), "value"),
+)
+def update_btn_theme(theme):
+    """
+    Altera o estado do drawer de gerenciamento.
+
+    Args:
+        theme (str): O tema a ser aplicado ao drawer.
+
+    Returns:
+        str: O tema atualizado do drawer.
+    """
+    return theme
+
+
 # =========================================== Location =========================================== #
 @callback(
     Output("pcp-main-content", "children"),
     Output("massa-analysis-navlink", "active"),
+    Output("pasta-analysis-navlink", "active"),
     Output("massa-batidas-navlink", "active"),
     Output("pcp-production-navlink", "active"),
     Output("pasta-batidas-navlink", "active"),
@@ -159,6 +195,7 @@ def update_content_and_navlink_active(hash_):
     # Dicionário de hash e layout
     hash_dict = {
         "#massa-analysis": massa_analysis_pcp.layout,
+        "#pasta-analysis": pasta_analysis_pcp.layout,
         "#massa-batidas": massa_batidas_pcp.layout,
         "#pcp-production": producao_pcp.layout,
         "#pasta-batidas": pasta_batidas_pcp.layout,
