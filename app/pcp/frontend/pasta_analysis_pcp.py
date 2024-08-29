@@ -5,11 +5,18 @@ from io import StringIO
 
 import dash_bootstrap_components as dbc
 import dash_mantine_components as dmc
+import numpy as np
 import pandas as pd
+import plotly.express as px
 from components.grid_aggrid import GridAgGrid
-from dash import Input, Output, callback, html
+from dash import Input, Output, callback, dcc, html
 from dash_bootstrap_templates import ThemeSwitchAIO
-from helpers.my_types import GRID_FORMAT_NUMBER_BR, GRID_NUMBER_COLS, GRID_STR_NUM_COLS
+from helpers.my_types import (
+    GRID_FORMAT_NUMBER_BR,
+    GRID_NUMBER_COLS,
+    GRID_STR_NUM_COLS,
+    TemplateType,
+)
 from pcp.helpers.functions_pcp import AuxFuncPcp
 from pcp.helpers.types_pcp import RENDIMENTO_PASTA_PAO
 
@@ -24,6 +31,7 @@ afc = AuxFuncPcp()
 
 layout = dbc.Stack(
     [
+        dbc.Row(dmc.Card(id="pcp-pasta-analysis-graph", shadow="sm", className="mb-3")),
         dbc.Row(dmc.Card(id="pcp-pasta-analysis", shadow="sm")),
     ]
 )
@@ -300,3 +308,162 @@ def func_name(theme, prod_recheio, week_massa):
     table = pcp_builder.create_grid_ag(df_prod_recheio, "pcp-pasta-analysis-grid", theme, defs)
 
     return [title, table]
+
+
+@callback(
+    Output("pcp-pasta-analysis-graph", "children"),
+    [
+        Input(ThemeSwitchAIO.ids.switch("theme"), "value"),
+        Input("store-df-caixas-cf", "data"),
+        Input("df_pasta_week", "data"),
+    ],
+)
+def graph(theme, prod_recheio, week_massa):
+    """
+    Atualiza o card análise de pasta.
+
+    Args:
+        theme (str): O tema atual do dashboard.
+        data (str): Os dados no formato JSON para atualizar o card.
+
+    Returns:
+        dbc.Table: A tabela gerada a partir dos dados fornecidos.
+        Retorna a mensagem "Sem dados disponíveis." se data for None.
+    """
+
+    if prod_recheio is None or week_massa is None:
+        return "Sem dados disponíveis."
+
+    template = TemplateType.LIGHT if theme else TemplateType.DARK
+
+    # Carregar os dados
+    # pylint: disable=no-member
+    df_prod = pd.read_json(StringIO(prod_recheio), orient="split")
+    df_week = pd.read_json(StringIO(week_massa), orient="split")
+
+    # =============================== Lidando Com Dados Do Recheio =============================== #
+    # Ajustar os dados de produção
+    df_prod_recheio = afc.adjust_prod(df_prod)
+
+    # Calcula quantidade de massa gasta por produto
+    df_prod_recheio.QTD = df_prod_recheio.QTD * df_prod_recheio.PRODUTO.map(RENDIMENTO_PASTA_PAO)
+
+    # Mapeamento de substituições
+    prod_dict = {
+        r".*TRD.*": "Tradicional",
+        r".*CEB.*": "Cebola",
+        r".*PIC.*": "Picante",
+        r".*DOCE.*": "Doce",
+    }
+
+    # Usar expressão regular para substituir com base no mapeamento
+    df_prod_recheio.PRODUTO = df_prod_recheio.PRODUTO.replace(prod_dict, regex=True)
+
+    # Agrupar por semana, fabrica, dia, produto
+    df_prod_recheio = (
+        df_prod_recheio.groupby(["year", "week", "Data_Semana", "FABRICA", "PRODUTO"])
+        .sum()
+        .reset_index()
+    )
+
+    # Transformar coluna QTD em inteiro
+    df_prod_recheio.QTD = df_prod_recheio.QTD.astype(int)
+
+    # Transformar os produtos em colunas
+    df_prod_recheio = df_prod_recheio.pivot_table(
+        index=["year", "week", "Data_Semana", "FABRICA"],
+        columns="PRODUTO",
+        values="QTD",
+        fill_value=0,
+    ).reset_index()
+
+    # Renomear colunas com capitalização
+    df_prod_recheio.columns = df_prod_recheio.columns.str.title()
+
+    # =================================== Lidando Com Bisnagas =================================== #
+
+    # ================================= Dados De Batidas De Pasta ================================ #
+    df_week = (
+        df_week.groupby(["year", "week", "Data_Semana", "Fabrica"])
+        .sum()
+        .drop(columns="Turno")
+        .reset_index()
+    )
+
+    df_week.columns = df_week.columns.str.title()
+
+    # ==================================== Junção Das Tabelas ==================================== #
+    # Garantir que as duas datas sejam datetime
+    df_prod_recheio.Data_Semana = pd.to_datetime(df_prod_recheio.Data_Semana)
+    df_week.Data_Semana = pd.to_datetime(df_week.Data_Semana)
+
+    # Unir as duas tabelas
+    df_prod_recheio = df_prod_recheio.merge(
+        df_week, on=["Year", "Week", "Data_Semana", "Fabrica"], how="outer"
+    )
+
+    time.sleep(1)
+
+    # ============================ Diferença Entre Produção E Consumo ============================ #
+    # Cria coluna com a diferença entre as quantidades produzidas e consumidas
+    for col in df_prod_recheio.columns[4:8]:
+        df_prod_recheio[f"{col} Sobra"] = df_prod_recheio[f"{col}_Peso"] - df_prod_recheio[col]
+        df_prod_recheio[f"{col}_%"] = (
+            df_prod_recheio[f"{col} Sobra"] / df_prod_recheio[f"{col}_Peso"] * 100
+        )
+        # Remover os possíveis valores infinitos ou NaN
+        df_prod_recheio[f"{col}_%"] = df_prod_recheio[f"{col}_%"].replace(
+            [np.inf, -np.inf, np.nan], 0
+        )
+
+    # Ordenar a tabela
+    df_prod_recheio = df_prod_recheio.sort_values(
+        ["Year", "Week", "Fabrica"], ascending=[False, False, True]
+    )
+
+    # Filtrar os dados mantendo apenas os últimos 3 meses
+    df_prod_recheio = df_prod_recheio[
+        df_prod_recheio["Data_Semana"] >= pd.Timestamp.now() - pd.DateOffset(months=3)
+    ]
+
+    # ============================== Definições De Estilo E Colunas ============================== #
+    # Ajustar a data para dd/mm
+    df_prod_recheio.Data_Semana = df_prod_recheio.Data_Semana.dt.strftime("%d/%m")
+
+    # Figura - Gráfico de barras
+    fig = px.bar(
+        df_prod_recheio,
+        x="Data_Semana",
+        y=["Tradicional_%", "Picante_%", "Cebola_%", "Doce_%"],
+        barmode="group",
+        title="Perda de Pasta por Tipo de Pasta",
+        labels={
+            "value": "%",
+            "variable": "Tipo de Pasta",
+            "Fabrica": "Fábrica",
+        },
+        template=template.value,
+        facet_col="Fabrica",
+    )
+
+    fig.update_layout(
+        xaxis_title="Semana",
+        yaxis_title="Perda (%)",
+        legend_title="Tipo de Pão",
+        legend=dict(title_font=dict(size=12)),
+    )
+
+    fig.for_each_trace(lambda t: t.update(name=t.name.replace("_%", "")))
+
+    # Configurar o hover com o nome da fábrica, tipo de pão e perda
+    fig.update_traces(
+        hovertemplate="<br>".join(
+            [
+                "Semana: %{x}",
+                "Tipo de Recheio: %{fullData.name}",
+                "Perda: %{y:.2f}%",
+            ]
+        )
+    )
+
+    return dcc.Graph(figure=fig)

@@ -99,6 +99,9 @@ def update_massadas_card(data, theme, choice):
     }
     df = df_filter[choice]
 
+    # Ordenar por data desc e fabrica crescente
+    df = df.sort_values(["Data", "Fábrica"], ascending=[False, True])
+
     # Ajustar o formato da data
     df["Data"] = pd.to_datetime(df["Data"]).dt.strftime("%d/%m")
 

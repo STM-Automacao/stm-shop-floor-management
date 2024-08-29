@@ -5,7 +5,12 @@ Limpa os dados do PCP
 from datetime import datetime
 
 import pandas as pd
-from pcp.helpers.types_pcp import MASSADA_BOLINHA, MASSADA_CHEIA, MASSADA_REPROCESSO
+from pcp.helpers.types_pcp import (
+    MASSADA_BOLINHA,
+    MASSADA_BOLINHA_ATUALIZADA,
+    MASSADA_CHEIA,
+    MASSADA_REPROCESSO,
+)
 
 # cSpell: words codigo descricao usuario
 
@@ -108,7 +113,10 @@ class CleanPcpData:
         # Separando o dataframe conforme a quantidade de atropelamentos
         df_massadas_cheias = df[df["Quantidade_Atropelamento"] == MASSADA_CHEIA]
         df_massadas_reprocesso = df[df["Quantidade_Atropelamento"] == MASSADA_REPROCESSO]
-        df_massadas_bolinha = df[df["Quantidade_Atropelamento"] == MASSADA_BOLINHA]
+        df_massadas_bolinha = df[
+            (df["Quantidade_Atropelamento"] == (MASSADA_BOLINHA))
+            | (df["Quantidade_Atropelamento"] == (MASSADA_BOLINHA_ATUALIZADA))
+        ]
 
         # Soma os valores por maquina, data e turno
         df_massadas_cheias = self.__total_mass(df_massadas_cheias)

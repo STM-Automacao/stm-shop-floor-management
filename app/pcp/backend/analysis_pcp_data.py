@@ -3,7 +3,12 @@ Módulo de análise dos dados do PCP
 """
 
 import pandas as pd
-from pcp.helpers.types_pcp import RENDIMENTO_BOLINHA, RENDIMENTO_CHEIA, RENDIMENTO_REPROCESSO
+from pcp.helpers.types_pcp import (
+    RENDIMENTO_BOLINHA,
+    RENDIMENTO_BOLINHA_ATUALIZADO,
+    RENDIMENTO_CHEIA,
+    RENDIMENTO_REPROCESSO,
+)
 
 
 class AnalysisPcpData:
@@ -63,7 +68,18 @@ class AnalysisPcpData:
         )
 
         # Cálculo de pães bolinha produzidos
-        df_massa_agg["Bolinha_Total"] = df_massa_agg["Qtd_Batidas_Bolinha"] * RENDIMENTO_BOLINHA
+        # Garantir datas no mesmo formato
+        data_corte = pd.to_datetime("2024-08-01")
+        df_massa_agg["Data_Registro"] = pd.to_datetime(df_massa_agg["Data_Registro"])
+
+        # Atualizar rendimento de bolinha
+        df_massa_agg["Bolinha_Total"] = 0
+        df_massa_agg.loc[df_massa_agg["Data_Registro"] < data_corte, "Bolinha_Total"] = (
+            df_massa_agg["Qtd_Batidas_Bolinha"] * RENDIMENTO_BOLINHA
+        )
+        df_massa_agg.loc[df_massa_agg["Data_Registro"] >= data_corte, "Bolinha_Total"] = (
+            df_massa_agg["Qtd_Batidas_Bolinha"] * RENDIMENTO_BOLINHA_ATUALIZADO
+        )
 
         # Converter colunas que não são peso para inteiro
         cols = [
